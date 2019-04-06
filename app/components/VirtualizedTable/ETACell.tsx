@@ -1,0 +1,29 @@
+import React from 'react';
+import Typography from '@material-ui/core/Typography';
+var moment = require('moment');
+require('moment-precise-range-plugin');
+
+moment().format();
+
+interface Props {
+  timestamp: string;
+}
+
+const parseETA = (t:any) => {
+  return `${t.days>0 ? `${t.days}d` : ''} ${t.hours>0 ? `${t.hours}h` : ''} ${t.minutes>0 ? `${t.minutes}m` : ''} ${t.seconds>0 ? `${t.seconds}s` : ''}`;
+}
+
+const Cell: React.SFC<any> = ({ timestamp }:Props) => {
+  const [ETA, setETA] = React.useState(parseETA(moment.preciseDiff(timestamp, new Date(), true)));
+
+  React.useEffect(() => {
+    const timeout = setInterval(() => setETA(parseETA(moment.preciseDiff(timestamp, new Date(), true))), 1000);
+    return () => clearInterval(timeout);
+  }, [timestamp]);
+
+  return (
+    <Typography variant="caption">{ETA}</Typography>
+  );
+}
+
+export default Cell;

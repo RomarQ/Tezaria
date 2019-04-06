@@ -1,0 +1,10 @@
+{
+  "HOME": "/",
+  "NEW_ACCOUNT": "/new-account",
+  "IMPORT_ACCOUNT": "/import-account",
+  "DASHBOARD": "/dashboard",
+  "REWARDS": "/rewards",
+  "SETTINGS": "/settings",
+  "COUNTER": "/counter",
+  "PROTECT_ACCOUNT": "/protect-account"
+}
