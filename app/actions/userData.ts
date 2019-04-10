@@ -1,7 +1,7 @@
 import { Dispatch } from 'redux';
 import { UserDataType } from '../types';
 import { KeysType } from '../utils/padaria/types';
-import { crypto, storage } from '../utils/padaria';
+import storage from '../utils/storage';
 import { UserSettingsType } from '../types';
 
 export enum UserDataActionTypes {
@@ -43,25 +43,22 @@ export type ClearUserDataPrototype = () => void;
 export type SetBakerKeysPrototype = (keys:KeysType) => void;
 export type SetBakerSettingsPrototype = (settings:UserSettingsType) => void;
 
-const loadUserData = () =>
-    (dispatch:Dispatch) => {
+const loadUserData = () => (dispatch:Dispatch) => 
+    new Promise((resolve, reject) => {
         storage.getUserData()
             .then(userData => {
-                !userData.error 
-                    ? dispatch({ type: UserDataActionTypes.LOAD, userData })
-                    : console.error(userData.error)
+                if (!userData.error) {
+                    dispatch({ type: UserDataActionTypes.LOAD, userData });
+                    resolve(userData);
+                }
+                else reject(userData.error);
             });
-    }
+    });
 
 const clearUserData = () =>
     (dispatch:Dispatch) => {
-        storage.clearUserData()
-            .then(() => {
-                dispatch({ type: UserDataActionTypes.CLEAR });
-            })
-            .catch((e:Error) => { // Just log the error for now
-                console.log(e);
-            });
+        storage.clearUserData();
+        dispatch({ type: UserDataActionTypes.CLEAR });
     }
 
 const setBakerKeys = (keys:KeysType) => async (dispatch:Dispatch) => {

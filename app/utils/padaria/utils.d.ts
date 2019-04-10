@@ -2,6 +2,11 @@ import { number, string } from "prop-types";
 
 export type QueryType = QueryTypes | null;
 
+export type LoadOptions = {
+    nodeAddress: string;
+    apiAddress: string;
+}
+
 export type TezosUnitType = {
     char: string;
     unit: number;
@@ -33,7 +38,7 @@ export interface UtilsInterface {
     KTEZ:   TezosUnitType;
     MTEZ:   TezosUnitType;
     setDebugMode: (mode:boolean) => void,
-    load: () => Promise<boolean>;
+    load: (options:LoadOptions) => Promise<boolean>;
     setCurrentNetwork: () => Promise<void>;
     setNetworkConstants: () => Promise<void>;
     getCurrentHead: () => Promise<HeadType>;

@@ -8,11 +8,13 @@ import {
     CompletedBakingsFromServer,
     IncomingBakings,
     IncomingBakingsFromServer,
-    BakingRight,
+    BakingRight
+} from './baker.d';
+
+import {
     KeysType,
-    NonceType,
     HeadType,
-    operationsArrayType,
+    operationsArrayType
 } from './types';
 
 const baker:BakerProps = {
@@ -270,4 +272,5 @@ const baker:BakerProps = {
     },
 };
 
+export * from './baker.d';
 export default baker;
