@@ -3,23 +3,39 @@ import { withStyles, Theme, createStyles, WithStyles } from '@material-ui/core/s
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import Button from '@material-ui/core/Button';
+import Save from '@material-ui/icons/SaveOutlined';
+import Redo from '@material-ui/icons/Redo';
 import NumberPicker from '../NumberPicker';
 import { UserDataType } from '../../types';
 import { SetBakerSettingsPrototype } from '../../actions/userData';
 
-const styles = ({ palette }:Theme) => createStyles({
+const styles = ({ palette, spacing }:Theme) => createStyles({
     root: {
-        height: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        alignContent: 'center',
+        margin: 50
+    },
+    container: {
+        backgroundColor: palette.background.paper,
+        padding: 50,
+        borderRadius: 10,
+        boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)'
     },
     buttons: {
         margin: '25px 0 0px 0',
         display: 'flex',
         flexDirection: 'row',
-        justifyContent: 'space-evenly'
+        justifyContent: 'space-evenly',
+        alignContent: 'stretch'
+    },
+    button: {
+        flexBasis: '45%'
+    },
+    buttonIcon: {
+        paddingRight: spacing.unit
     },
     label: {
         color: palette.common.white
@@ -27,8 +43,8 @@ const styles = ({ palette }:Theme) => createStyles({
 });
 
 interface Props extends WithStyles<typeof styles> {
-  userData: UserDataType;
-  setBakerSettings: SetBakerSettingsPrototype;
+    userData: UserDataType;
+    setBakerSettings: SetBakerSettingsPrototype;
 }
 
 const Component: React.SFC<Props> = props => {
@@ -52,7 +68,7 @@ const Component: React.SFC<Props> = props => {
 
     return (
         <div className={classes.root}>
-            <form onSubmit={handleSubmit}>
+            <form className={classes.container} onSubmit={handleSubmit}>
                 <TextField
                     style={{ marginBottom: 10 }}
                     id="nodeAddress"
@@ -63,7 +79,7 @@ const Component: React.SFC<Props> = props => {
                     value={settings.nodeAddress || ''}
                     placeholder="Node Address"
                     fullWidth
-                    variant="filled"
+                    variant="outlined"
                     InputLabelProps={{
                         shrink: true
                     }}
@@ -78,7 +94,7 @@ const Component: React.SFC<Props> = props => {
                     value={settings.apiAddress || ''}
                     placeholder="API Address"
                     fullWidth
-                    variant="filled"
+                    variant="outlined"
                     InputLabelProps={{
                         shrink: true
                     }}
@@ -91,7 +107,7 @@ const Component: React.SFC<Props> = props => {
                     value={settings.delegatorFee}
                     placeholder="Delegator Fee"
                     fullWidth
-                    variant="filled"
+                    variant="outlined"
                     InputLabelProps={{
                         shrink: true
                     }}
@@ -104,20 +120,24 @@ const Component: React.SFC<Props> = props => {
                     }}
                 />
                 <div className={classes.buttons}>
-                    <Button 
+                    <Button
+                        className={classes.button}
                         disabled={JSON.stringify(currentSettings) === JSON.stringify(settings)}
-                        variant="contained"
+                        variant="outlined"
                         type="submit"
-                        children="Save Changes"
-                    />
+                    >
+                        <Save className={classes.buttonIcon}/> {"Save Changes"}
+                    </Button>
 
-                    <Button 
+                    <Button
+                        className={classes.button}
                         disabled={JSON.stringify(currentSettings) === JSON.stringify(settings)}
                         onClick={() => setSettings(currentSettings)}
                         color="secondary"
-                        variant="contained"
-                        children="Reset Changes"
-                    />
+                        variant="outlined"
+                    >
+                        <Redo className={classes.buttonIcon}/> {"Reset Changes"}
+                    </Button>
                 </div>
             </form>
         </div>

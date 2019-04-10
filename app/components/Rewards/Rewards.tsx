@@ -14,9 +14,16 @@ import { utils } from '../../utils/padaria';
 const styles = ({ typography, palette }: Theme) => createStyles({
     root: {
         margin: 50,
-        minHeight: '100vh',
+        minWidth: 800,
         display: 'flex',
-        justifyContent: 'center'
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignContent: 'center',
+        backgroundColor: palette.background.paper,
+        padding: 10,
+        borderRadius: 10,
+        boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)'
     },
     header: {
         backgroundColor: '#535671'

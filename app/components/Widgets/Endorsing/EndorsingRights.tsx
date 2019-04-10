@@ -16,7 +16,8 @@ interface Props extends WithStyles<typeof styles> {
 
 const styles = ({}:Theme) => createStyles({
   root: {
-    minWidth: 500
+    minWidth: 500,
+    margin: 20
   },
   title: {
     textAlign: 'center',
