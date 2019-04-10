@@ -1,6 +1,5 @@
 import { combineReducers } from 'redux';
 import { connectRouter } from 'connected-react-router';
-import counter from './counter';
 import loader from './loader';
 import userData from './userData';
 import bakingController from './bakingController';
@@ -11,7 +10,6 @@ export default function createRootReducer(history: History) {
     router: connectRouter(history),
     loader,
     userData,
-    counter,
     bakingController
   });
 }

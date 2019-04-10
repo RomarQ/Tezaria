@@ -5,6 +5,5 @@
   "DASHBOARD": "/dashboard",
   "REWARDS": "/rewards",
   "SETTINGS": "/settings",
-  "COUNTER": "/counter",
   "PROTECT_ACCOUNT": "/protect-account"
 }

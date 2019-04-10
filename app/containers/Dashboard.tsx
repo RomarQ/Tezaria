@@ -2,7 +2,6 @@ import React from 'react';
 import Wrapper from '../components/Dashboard/Dashboard';
 
 import { UserDataType } from '../types';
-import { UpdateUserDataPrototype } from '../actions/userData';
 
 type Props = {
   userData: UserDataType

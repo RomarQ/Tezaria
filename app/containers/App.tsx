@@ -30,10 +30,13 @@ class App extends React.PureComponent<Props> {
         super(props);
         
         props.loader(LoadTypes.USER_DATA);
-        props.userDataFunc.loadUserData();
-
-        props.loader(LoadTypes.PADARIA_NODE);
-        node.load()
+        props.userDataFunc.loadUserData().then(({ settings }:UserDataType) => {
+            props.loader(LoadTypes.PADARIA_NODE);
+            
+            node.load({
+                nodeAddress: settings.nodeAddress,
+                apiAddress: settings.apiAddress
+            })
             .then(() => {
                 props.loader(LoadTypes.PADARIA_NODE, true);
             })
@@ -41,6 +44,8 @@ class App extends React.PureComponent<Props> {
                 console.error(error);
                 props.loader(LoadTypes.PADARIA_NODE, true);
             });
+        })
+        .catch((e:string) => console.log(e));
     }
 
     render() {
@@ -51,7 +56,7 @@ class App extends React.PureComponent<Props> {
             ? <Splash waitingFor={pending} /> 
             : (
                 <React.Fragment>
-                    {userData.ready ? (
+                    {userData.ready && !userData.keys.encrypted ? (
                         <Nav
                             userData={userData}
                             userDataFunc={userDataFunc}
@@ -60,7 +65,9 @@ class App extends React.PureComponent<Props> {
                         />
                     ) : null
                     }
-                    <Routes {...this.props} />
+                    <div id="content">
+                        <Routes {...this.props} />
+                    </div>
                 </React.Fragment>
             )
         )
@@ -76,12 +83,12 @@ const UserDataProps = ({ userData }:{ userData:UserDataType }) => ({ userData })
 const UserDataDispatchers = (dispatch: Dispatch) => ({ userDataFunc: bindActionCreators(UserDataActions, dispatch) });
 
 export default compose(
-  connect(
-    LoaderProps,
-    LoaderDispatcher
-  ),
-  connect(
-    UserDataProps,
-    UserDataDispatchers
-  )
+    connect(
+        LoaderProps,
+        LoaderDispatcher
+    ),
+    connect(
+        UserDataProps,
+        UserDataDispatchers
+    )
 )(withRouter(App));

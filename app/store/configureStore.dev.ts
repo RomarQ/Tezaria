@@ -7,7 +7,6 @@ import { createLogger } from 'redux-logger';
 import createRootReducer from '../reducers';
 
 // Actions
-import * as counterActions from '../actions/counter';
 import * as loaderActions from '../actions/loader';
 import * as userDataActions from '../actions/userData';
 
@@ -48,7 +47,6 @@ const configureStore = (initialState?: any) => {
   const actionCreators = {
     ...userDataActions,
     ...loaderActions,
-    ...counterActions,
     ...routerActions
   };
   // If Redux DevTools Extension is installed use it, otherwise use Redux compose
