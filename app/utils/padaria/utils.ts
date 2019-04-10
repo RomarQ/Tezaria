@@ -2,7 +2,8 @@ import { HeadType } from "./types";
 import {
     NetworkConstants,
     QueryType,
-    UtilsInterface
+    UtilsInterface,
+    LoadOptions
 } from './utils.d';
 
 export enum QueryTypes {
@@ -37,7 +38,13 @@ const self:UtilsInterface = {
     KTEZ:   { char: 'Kꜩ',  unit: 1000000000 },
     MTEZ:   { char: 'Mꜩ',  unit: 1000000000000 },
     setDebugMode: (mode:boolean) => self.debug = mode,
-    load: async () => {
+    load: async (options:LoadOptions) => {
+        if (options.nodeAddress)
+            self.nodeAddress = options.nodeAddress;
+        
+        if (options.nodeAddress)
+            self.apiAddress = options.apiAddress;
+
         await self.setNetworkConstants();
         await self.setCurrentNetwork();
 

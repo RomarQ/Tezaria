@@ -1,5 +1,5 @@
 import React from 'react';
-import { createStyles, withStyles, Theme } from '@material-ui/core/styles';
+import { createStyles, withStyles, Theme, WithStyles } from '@material-ui/core/styles';
 
 import EndorsingRights from '../../containers/Widgets/Endorsing/EndorsingRights';
 import BakingRights from '../../containers/Widgets/Baking/BakingRights';
@@ -7,33 +7,33 @@ import BakingController from '../../containers/Widgets/BakingController';
 
 import { UserDataType } from '../../types';
 
-type Props = {
-    classes: any;
-    userData: UserDataType;
-    loader: () => void;
-    history: any;
-};
-
 const styles = ({}: Theme) => createStyles({
     root: {
-        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-around',
         alignItems: 'center',
-        alignContent: 'center'
+        alignContent: 'center',
+        margin: 50
     },
     widgets: {
         width: '100%',
         display: 'flex',
         flexDirection: 'row',
-        justifyContent: 'space-evenly',
+        justifyContent: 'space-around',
         alignItems: 'center',
-        alignContent: 'center'
-    }
+        alignContent: 'center',
+        flexWrap: 'wrap'
+    },
 });
 
-const Dashboard: React.SFC<Props> = (props) => {
+type Props = {
+    userData: UserDataType;
+    loader: () => void;
+    history: any;
+} & WithStyles<typeof styles>;
+
+const Dashboard: React.FC<Props> = (props) => {
     const isMounted = React.useRef(true);
     const { classes, userData: { keys } } = props;
 

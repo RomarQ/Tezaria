@@ -5,14 +5,20 @@ import Typography from '@material-ui/core/Typography';
 import FabLink from './FabLink';
 import routes from '../constants/routes.json';
 
-const styles = ({ spacing }: Theme) => createStyles({
+const styles = ({ palette, spacing }: Theme) => createStyles({
     root: {
-        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        alignContent: 'center'
+        alignContent: 'center',
+        margin: 50
+    },
+    container: {
+        backgroundColor: palette.background.paper,
+        padding: 50,
+        borderRadius: 10,
+        boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)'
     },
     buttons: {
         display: 'flex',
@@ -40,29 +46,31 @@ const Component: React.FC<WithStyles<typeof styles>> = props => {
 
     return (
         <div className={classes.root}>
-            <img src="../resources/assets/loader.png" className={classes.logo} />
-            <div className={classes.buttons}>
-                <FabLink
-                    to={routes.COUNTER}
-                    variant="extended"
-                    size="large"
-                    color="secondary"
-                    aria-label="new"
-                    className={classes.fab}
-                >
-                    Create a new Account
-                </FabLink>
-                <Typography variant="caption">OR</Typography>
-                <FabLink
-                    to={routes.IMPORT_ACCOUNT}
-                    variant="extended"
-                    size="large"
-                    color="secondary"
-                    aria-label="Import"
-                    className={classes.fab}
-                >
-                    Import an Account
-                </FabLink>
+            <div className={classes.container}>
+                <img src="../resources/assets/loader.png" className={classes.logo} />
+                <div className={classes.buttons}>
+                    <FabLink
+                        to={routes.NEW_ACCOUNT}
+                        variant="extended"
+                        size="large"
+                        color="secondary"
+                        aria-label="new"
+                        className={classes.fab}
+                    >
+                        Create a new Account
+                    </FabLink>
+                    <Typography variant="caption">OR</Typography>
+                    <FabLink
+                        to={routes.IMPORT_ACCOUNT}
+                        variant="extended"
+                        size="large"
+                        color="secondary"
+                        aria-label="Import"
+                        className={classes.fab}
+                    >
+                        Import an Account
+                    </FabLink>
+                </div>
             </div>
         </div>
     );

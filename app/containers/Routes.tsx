@@ -5,7 +5,6 @@ import routes from '../constants/routes.json';
 import HomePage from './HomePage';
 import Dashboard from './Dashboard';
 import Rewards from './Rewards';
-import CounterPage from './CounterPage';
 import ImportAccount from './Account/ImportAccount';
 import Settings from '../components/Account/Settings';
 import ProtectAccount from '../containers/Account/ProtectAccount';
@@ -15,7 +14,6 @@ export default (props:any) => {
     
     return (
         <Switch>
-            <Route exact path={routes.COUNTER} component={CounterPage} />
             <AuthRoute 
                 exact
                 userData={userData}
