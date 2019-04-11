@@ -1,4 +1,4 @@
-import node, { queryAPI } from './utils';
+import node, { queryAPI, QueryTypes } from './rpc';
 
 const DEFAULT_FEE_PERCENTAGE = 5;
 
@@ -6,22 +6,22 @@ const self = {
     feePercentage: DEFAULT_FEE_PERCENTAGE,
 
     getNumberOfDelegatorsByCycle: async (pkh: string, cycle: number):Promise<number> => {
-        const [total] = await node.queryAPI(`/nb_delegators/${pkh}?cycle=${cycle}`) as number[];
+        const [total] = await node.queryAPI(`/nb_delegators/${pkh}?cycle=${cycle}`, QueryTypes.GET) as number[];
         return total;
     },
     /*
     *   Returns an array with information about staking balance, number of delegators, rewards, fees, etc.
     */
     getRewards: async (pkh:string, items:number) => {
-        const rewards = await queryAPI(`/rewards_split_cycles/${pkh}?number=${items}`);
+        const rewards = await queryAPI(`/rewards_split_cycles/${pkh}?number=${items}`,QueryTypes.GET);
 
         return rewards;
     },
     getDelegatorsRewardsByCycle: (pkh: string, cycle: number) => (
-        queryAPI(`/rewards_split/${pkh}?cycle=${cycle}`)
+        queryAPI(`/rewards_split/${pkh}?cycle=${cycle}`, QueryTypes.GET)
     ),
     getDelegatorRewardsByCycle: async (delegatorPKH: string, cycle: number) => {
-        const rewards = await queryAPI(`/delegator_rewards/${delegatorPKH}`) as any[]; // TODO
+        const rewards = await queryAPI(`/delegator_rewards/${delegatorPKH}`, QueryTypes.GET) as any[]; // TODO
         
         return rewards[0] ? rewards.filter(r => r.cycle === cycle)[0] : undefined;
     },

@@ -1,4 +1,5 @@
-import utils, { queryNode, queryAPI, QueryTypes } from './utils';
+import rpc, { queryNode, queryAPI, QueryTypes } from './rpc';
+import utils from './utils';
 import crypto, { Prefix } from './crypto';
 import bakingController from './bakingController';
 
@@ -36,7 +37,7 @@ const baker:BakerProps = {
                 if(!cur) return;
                 
                 prev.push({
-                    rewards: utils.parseTEZWithSymbol(utils.networkConstants['block_reward']),
+                    rewards: utils.parseTEZWithSymbol(rpc.networkConstants['block_reward']),
                     level: cur.level,
                     cycle: cur.cycle,
                     priority: cur.priority,
@@ -168,7 +169,7 @@ const baker:BakerProps = {
             seedHex: ''
         };
         
-        if (level % utils.networkConstants['blocks_per_commitment'] === 0) {
+        if (level % rpc.networkConstants['blocks_per_commitment'] === 0) {
             operationArgs.seed = crypto.hexNonce(64);
             operationArgs.seedHash = crypto.seedHash(operationArgs.seed);
             operationArgs.nonceHash = crypto.b58encode(operationArgs.seedHash, Prefix.nce);

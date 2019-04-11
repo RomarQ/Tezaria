@@ -1,4 +1,5 @@
-import utils, { queryNode, queryAPI, QueryTypes } from './utils';
+import { queryNode, queryAPI, QueryTypes } from './rpc';
+import utils from './utils';
 import crypto, { Prefix } from './crypto';
 
 import {
@@ -9,11 +10,6 @@ import {
     IncomingEndorsingsFromServer,
     EndorsingRight,
 } from './endorser.d';
-
-import {
-    KeysType,
-    HeadType
-} from './types';
 
 const self:EndorderInterface = {
     //

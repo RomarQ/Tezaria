@@ -5,4 +5,9 @@
 <a href="http://redux.js.org/"><img src="./internals/img/redux-padded-90.png" /></a>
 <a href="https://github.com/ReactTraining/react-router"><img src="./internals/img/react-router-padded-90.png" /></a>
 
+
+## Progress Sample
+
+![Screenshot](progress.gif)
+
 </div>

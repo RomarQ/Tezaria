@@ -2,7 +2,7 @@ import { Dispatch, bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
 import Component from '../../components/Widgets/BakingController';
-import { BakingControllerState } from '../../utils/padaria/types';
+import { BakingControllerState } from '../../utils/padaria/bakingController';
 import ControllerActions from '../../actions/bakingController';
 
 const ControllerProps = ({ bakingController }: {bakingController: BakingControllerState}) => bakingController;
