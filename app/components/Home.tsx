@@ -49,7 +49,7 @@ const Component: React.FC<WithStyles<typeof styles>> = props => {
             <div className={classes.container}>
                 <img src="../resources/assets/loader.png" className={classes.logo} />
                 <div className={classes.buttons}>
-                    <FabLink
+                    {/*<FabLink
                         to={routes.NEW_ACCOUNT}
                         variant="extended"
                         size="large"
@@ -59,7 +59,7 @@ const Component: React.FC<WithStyles<typeof styles>> = props => {
                     >
                         Create a new Account
                     </FabLink>
-                    <Typography variant="caption">OR</Typography>
+                    <Typography variant="caption">OR</Typography>*/}
                     <FabLink
                         to={routes.IMPORT_ACCOUNT}
                         variant="extended"

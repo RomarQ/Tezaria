@@ -1,12 +1,12 @@
 import { UserDataActionTypes, UserDataActions } from '../actions/userData';
 import { UserDataType } from '../types';
-import { utils, rewardController } from '../utils/padaria';
+import { rpc, rewardController } from '../utils/padaria';
 
 const defaultState = {
     ready: false,
     settings: {
-        nodeAddress: utils.nodeAddress,
-        apiAddress: utils.apiAddress,
+        nodeAddress: rpc.nodeAddress,
+        apiAddress: rpc.apiAddress,
         delegatorFee: rewardController.feePercentage
     }
 }
@@ -38,8 +38,8 @@ export default (state: UserDataType = defaultState, action: UserDataActions) => 
                 encrypted: false
             };
         case UserDataActionTypes.SET_SETTINGS:
-            utils.nodeAddress = action.settings.nodeAddress;
-            utils.apiAddress = action.settings.apiAddress;
+            rpc.nodeAddress = action.settings.nodeAddress;
+            rpc.apiAddress = action.settings.apiAddress;
             rewardController.feePercentage = action.settings.delegatorFee;
 
             return {

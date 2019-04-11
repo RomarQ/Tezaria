@@ -3,7 +3,8 @@ import bs58check from 'bs58check';
 import sodium from 'libsodium-wrappers';
 import pbkdf2 from 'pbkdf2';
 
-import node from './utils';
+import rpc from './rpc';
+import utils from './utils';
 
 import { KeysType } from './types';
 
@@ -244,7 +245,7 @@ const crypto = {
         }
     },
     checkHash: (buffer:Uint8Array) => (
-        crypto.stampCheck(sodium.crypto_generichash(32, buffer)) <= node.networkConstants['proof_of_work_threshold']
+        crypto.stampCheck(sodium.crypto_generichash(32, buffer)) <= rpc.networkConstants['proof_of_work_threshold']
     ),
     stampCheck: (hash:Uint8Array) => {
         let value, i = value = 0;
@@ -274,7 +275,7 @@ const crypto = {
     ),
     POW: (forged:string, priority:number, seed_hex:string) => {
         const 
-            protocolData = node.createProtocolData(priority, node.PowHeader, '00000000', seed_hex),
+            protocolData = utils.createProtocolData(priority, rpc.PowHeader, '00000000', seed_hex),
             blockbytes = forged + protocolData,
             hashBuffer = crypto.hexToBuffer(blockbytes + "0".repeat(128)),
             forgedLength = forged.length/2,
