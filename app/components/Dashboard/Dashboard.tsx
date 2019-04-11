@@ -1,6 +1,8 @@
 import React from 'react';
 import { createStyles, withStyles, Theme, WithStyles } from '@material-ui/core/styles';
 
+import BakerInfo from '../Baker/BakerInfo';
+
 import EndorsingRights from '../../containers/Widgets/Endorsing/EndorsingRights';
 import BakingRights from '../../containers/Widgets/Baking/BakingRights';
 import BakingController from '../../containers/Widgets/BakingController';
@@ -12,9 +14,13 @@ const styles = ({}: Theme) => createStyles({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-around',
-        alignItems: 'center',
-        alignContent: 'center',
         margin: 50
+    },
+    top: {
+        display: 'flex',
+        justifyContent: 'space-evenly',
+        alignItems: 'stretch',
+        alignContent: 'center'
     },
     widgets: {
         width: '100%',
@@ -29,24 +35,18 @@ const styles = ({}: Theme) => createStyles({
 
 type Props = {
     userData: UserDataType;
-    loader: () => void;
-    history: any;
+    bakerInfo: any;
 } & WithStyles<typeof styles>;
 
 const Dashboard: React.FC<Props> = (props) => {
-    const isMounted = React.useRef(true);
-    const { classes, userData: { keys } } = props;
-
-    React.useEffect(() => {
-        isMounted.current = true;
-        return () => { isMounted.current = false; }
-    }, []);
-
-    console.log(props)
+    const { classes, userData: { keys }, bakerInfo } = props;
 
     return keys ? (
         <div className={classes.root}>
-            <BakingController keys={keys} />
+            <div className={classes.top}>
+                <BakerInfo bakerInfo={bakerInfo} />
+                <BakingController keys={keys} />
+            </div>
             <div className={classes.widgets}>
                 <EndorsingRights pkh={keys.pkh} />
                 <BakingRights pkh={keys.pkh} />

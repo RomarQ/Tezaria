@@ -57,8 +57,6 @@ export default (props:any) => {
                 render={() => (
                     <Dashboard
                         userData={userData}
-                        loader={loader}
-                        history={history}
                     />
                 )} 
             />

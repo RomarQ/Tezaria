@@ -26,6 +26,7 @@ export interface RPCInterface {
     getCurrentHead: () => Promise<HeadType>;
     queryNode: (path:string, type:QueryType, args?:any) => Promise<any>;
     queryAPI: (path:string, type:QueryType, args?:any) => Promise<any>;
+    getBalance: (pkh:string) => Promise<number>;
 }
 
 export type QueryType = 
