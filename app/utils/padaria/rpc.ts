@@ -128,7 +128,7 @@ const self:RPCInterface = {
             }
             catch(e) { reject(e) };
         }),
-    queryAPI: (path:string, type:QueryType = QueryTypes.GET, args?:any) =>
+    queryAPI: (path:string, type:QueryType = QueryTypes.GET, args?:any) => (
         new Promise((resolve, reject) => {
             try {
                 const http = new XMLHttpRequest();
@@ -184,8 +184,11 @@ const self:RPCInterface = {
                 else http.send();
             }
             catch(e) { reject(e) };
-        }),
-
+        })
+    ),
+    getBalance: async (pkh:string) => (
+        Number(await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/balance`, QueryTypes.GET))
+    ),
 };
 
 export const queryNode = self.queryNode;

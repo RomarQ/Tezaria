@@ -12,9 +12,9 @@ export default (props:Props) => {
     const [incomingBakings, setIB] = React.useState(null as IncomingBakings);
     const [completedBakings, setCB] = React.useState(null as CompletedBaking[]);
     React.useEffect(() => {
-        isMounted.current = true;
         getIncomingBakings();
         getCompletedBakings();
+        
         return () => { isMounted.current = false; }
     }, []);
 
