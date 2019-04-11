@@ -5,46 +5,6 @@ export interface KeysType {
     pkh: string;
 }
 
-//
-// Baking Controller
-//
-export interface BakingControllerProps {
-    intervalId: number;
-    baking: boolean;
-    endorsing: boolean;
-    accusing: boolean;
-    levelOnStart: number;
-    noncesToReveal: NonceType[];
-
-    firstCycleLevel: (level:number) => number;
-    lastCycleLevel: (level:number) => number;
-    revealNonce: (keys:KeysType, head:HeadType, nonce:NonceType) => Promise<void>;
-    revealNonces: (keys:KeysType, head:HeadType) => void;
-    loadNoncesFromStorage: () => void;
-    addNonce: (nonce:NonceType) => void;
-    run: (keys:KeysType) => void;
-    start: (keys: KeysType, options: BakingControllerStartOptions) => void;
-    stop: () => void;
-}
-
-export interface BakingControllerStartOptions {
-    baking: boolean;
-    endorsing: boolean;
-    accusing: boolean;
-}
-
-export interface BakingControllerState extends BakingControllerStartOptions {
-    active?: boolean;
-}
-
-export interface NonceType {
-    hash: string;
-    seedNonceHash: string;
-    seed: string;
-    level: number;
-    revealed : boolean;
-}
-
 export type HeadType = {
     chain_id?: string;
     hash?: string;
@@ -105,12 +65,20 @@ export type HeadType = {
     protocol?: string;
 }
 
-interface OperationProps {
+export type NonceType = {
+    hash: string;
+    seedNonceHash: string;
+    seed: string;
+    level: number;
+    revealed : boolean;
+};
+
+export type OperationProps = {
     protocol: string,
     branch: string,
     contents: string,
     signature: string
-}
+};
 
 // TODO: specify correct types
 export type operationsArrayType = [
@@ -118,4 +86,4 @@ export type operationsArrayType = [
     OperationProps[], //refused
     OperationProps[], //branch_refused
     OperationProps[]  //branch_delayed
-]
+];

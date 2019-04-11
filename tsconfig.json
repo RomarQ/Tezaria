@@ -19,5 +19,5 @@
         "skipLibCheck": true
     },
     "include": ["**/typings.d.ts", "**/*.d.ts", "**/*.ts", "**/*.tsx"],
-    "exclude": ["node_modules", "**/node_modules/*", "app/dist", "modules/**/dist"]
+    "exclude": ["node_modules", "**/node_modules/*", "app/dist"]
 }

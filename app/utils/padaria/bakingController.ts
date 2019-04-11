@@ -1,15 +1,19 @@
 import storage from './storage';
-import utils, { QueryTypes } from './utils';
+import rpc, { QueryTypes } from './rpc';
+import utils from './utils';
 import baker from './baker';
 import endorser from './endorser';
 
 import {
-  BakingControllerProps,
   KeysType,
-  NonceType,
-  BakingControllerStartOptions,
-  HeadType
+  HeadType,
+  NonceType
 } from './types';
+
+import {
+    BakingControllerProps,
+    BakingControllerStartOptions
+} from './bakingController.d';
 
 /*
 * Constants
@@ -29,12 +33,6 @@ const system:BakingControllerProps = {
     //
     // Functions
     //
-    firstCycleLevel: (level:number) => (
-        Math.floor(level/utils.cycleLength) * utils.cycleLength
-    ),
-    lastCycleLevel: (level:number) => (
-        (Math.floor(level/utils.cycleLength) * utils.cycleLength) + utils.cycleLength
-    ),
     revealNonce: async (keys:KeysType, head:HeadType, nonce:NonceType) => {
         const operationArgs = {
             "branch": head.hash,
@@ -47,15 +45,15 @@ const system:BakingControllerProps = {
             ]
         };
         
-        console.log( await utils.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operationArgs) );
+        console.log( await rpc.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operationArgs) );
     },
     revealNonces: async (keys:KeysType, head:HeadType) => {
         if (!head || !head.header) return;
 
         const nonces =
         system.noncesToReveal.reduce((prev:NonceType[], cur:NonceType) => {
-            const revealStart = system.firstCycleLevel(cur.level);
-            const revealEnd = system.lastCycleLevel(cur.level);
+            const revealStart = utils.firstCycleLevel(cur.level);
+            const revealEnd = utils.lastCycleLevel(cur.level);
 
             if (head.header.level > revealEnd) {
                 console.log("End of Reveal, cycle is OVER!");
@@ -85,7 +83,7 @@ const system:BakingControllerProps = {
         await storage.setBakerNonces(system.noncesToReveal);
     },
     run: async (keys:KeysType) => {
-        const head = await utils.getCurrentHead();
+        const head = await rpc.getCurrentHead();
         
         if (!head || !head.header) return;
 
@@ -99,7 +97,7 @@ const system:BakingControllerProps = {
         system.endorsing ? endorser.run(keys, head) : null;
     },
     start: (keys: KeysType, options: BakingControllerStartOptions) => {
-        if(!utils.ready) return;
+        if(!rpc.ready) return;
 
         system.stop();
 
@@ -117,4 +115,5 @@ const system:BakingControllerProps = {
     }
 };
 
+export * from './bakingController.d';
 export default system;

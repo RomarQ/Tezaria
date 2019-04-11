@@ -6,7 +6,7 @@ import { RouteComponentProps } from "react-router";
 import Routes from './Routes';
 import Splash from '../containers/Splash';
 
-import node from '../utils/padaria/utils';
+import rpc from '../utils/padaria/rpc';
 import { LoaderState } from '../reducers/loader';
 import LoaderAction, { LoadTypes, LoaderPrototype } from '../actions/loader';
 import { UserDataType } from '../types';
@@ -33,7 +33,7 @@ class App extends React.PureComponent<Props> {
         props.userDataFunc.loadUserData().then(({ settings }:UserDataType) => {
             props.loader(LoadTypes.PADARIA_NODE);
             
-            node.load({
+            rpc.load({
                 nodeAddress: settings.nodeAddress,
                 apiAddress: settings.apiAddress
             })
