@@ -4,7 +4,8 @@ import Button from '@material-ui/core/Button';
 import Switch from '@material-ui/core/Switch';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 
-import { BakingControllerState, KeysType } from '../../utils/padaria/types';
+import { BakingControllerState } from '../../utils/padaria/bakingController';
+import { KeysType } from '../../utils/padaria/types';
 import { StartControllerPrototype, StopControllerPrototype } from '../../actions/bakingController';
 
 const styles = ({ transitions, palette, shadows }: Theme) => createStyles({
