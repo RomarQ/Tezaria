@@ -1,6 +1,6 @@
 import { queryNode, queryAPI, QueryTypes } from './rpc';
-import utils from './utils';
-import crypto, { Prefix } from './crypto';
+import utils, { Prefix } from './utils';
+import crypto from './crypto';
 
 import {
     EndorderInterface,
@@ -115,7 +115,7 @@ const self:EndorderInterface = {
 
         const forgedOperation = await queryNode(`/chains/${head.chain_id}/blocks/${head.hash}/helpers/forge/operations`, QueryTypes.POST, operation) as string;
 
-        const signed = crypto.sign(forgedOperation, keys.sk, crypto.mergeBuffer(utils.watermark.endorsement, crypto.b58decode(head.chain_id, Prefix.chain_id)));
+        const signed = crypto.sign(forgedOperation, keys.sk, utils.mergeBuffers(utils.watermark.endorsement, utils.b58decode(head.chain_id, Prefix.chainId)));
         
         // Forge Operation cannot contain protocol field, so it needs to be added here instead.
         operation.protocol = head.protocol;

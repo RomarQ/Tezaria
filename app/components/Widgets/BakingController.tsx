@@ -62,7 +62,7 @@ const BakingController: React.FC<Props> = props => {
     return (
         <div className={classes.root}>
             <Button onClick={handleAction} variant="outlined" color="secondary" className={classes.button}>
-                {active ? "Stop Baking..." : "Start Baking..."}
+                {active ? "Stop Baking" : "Start Baking"}
             </Button>
             <div className={classes.switchRow}>
                 <Typography variant="h6" className={classes.label} children="Baker" />

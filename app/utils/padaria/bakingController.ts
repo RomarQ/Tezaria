@@ -1,12 +1,11 @@
 import storage from './storage';
-import rpc, { QueryTypes } from './rpc';
+import rpc, { QueryTypes, HeadType } from './rpc';
 import utils from './utils';
 import baker from './baker';
 import endorser from './endorser';
 
 import {
   KeysType,
-  HeadType,
   NonceType
 } from './types';
 

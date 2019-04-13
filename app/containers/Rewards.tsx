@@ -1,9 +1,10 @@
 import React from 'react';
+import gql from 'graphql-tag';
+import { Query } from 'react-apollo';
 
 import Component from '../components/Rewards/Rewards';
 import { UserDataType } from '../types';
-import { LoaderPrototype, LoadTypes } from '../actions/loader';
-import rewardController from '../utils/padaria/rewardController';
+import rewardController, { DelegatorReward } from '../utils/padaria/rewardController';
 import Splash from './Splash';
 
 interface Props {
@@ -24,10 +25,36 @@ const Container: React.FC<Props> = ({ userData }) => {
         return () => { isMounted.current = false; }
     }, []);
 
+    const handleRewardsPayment = async (selected:DelegatorReward[]) => {
+        console.log(await rewardController.sendSelectedRewards(userData.keys, selected));
+    };
+
+    const test = () => {
+        <Query query={getRewards}>
+            {(props:any) => {
+                console.log(props);
+                return <div/>
+            }}
+        </Query>
+    }
+    test();
+
     return !rewards ? <Splash /> : (
-        <Component pkh={userData.keys.pkh} rewards={rewards}/>
+        <Component 
+            pkh={userData.keys.pkh}
+            handleRewardsPayment={handleRewardsPayment}
+            rewards={rewards}
+        />
     );
 
 };
 
-export default Container;
+const getRewards = gql`{
+    cycle_reward_payment {
+        cycle
+        delegator
+        completed
+    }
+}`;
+
+export default Container; 

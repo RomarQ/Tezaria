@@ -71,18 +71,18 @@
             "package.json"
         ],
         "dmg": {
-        "contents": [
-            {
-                "x": 130,
-                "y": 220
-            },
-            {
-                "x": 410,
-                "y": 220,
-                "type": "link",
-                "path": "/Applications"
-            }
-        ]
+            "contents": [
+                {
+                    "x": 130,
+                    "y": 220
+                },
+                {
+                    "x": 410,
+                    "y": 220,
+                    "type": "link",
+                    "path": "/Applications"
+                }
+            ]
         },
         "win": {
             "target": [
@@ -172,8 +172,9 @@
         "@types/react": "^16.7.18",
         "@types/react-dom": "^16.8.2",
         "@types/react-redux": "^7.0.1",
-        "@types/react-router-dom": "^5.0.0",
+        "@types/react-router-dom": "^4.3.2",
         "@types/react-test-renderer": "^16.8.1",
+        "@types/react-virtualized": "^9.18.12",
         "@types/redux-logger": "^3.0.6",
         "@types/sinon": "^7.0.6",
         "@typescript-eslint/eslint-plugin": "^1.4.2",
@@ -192,7 +193,7 @@
         "detect-port": "^1.3.0",
         "devtron": "^1.4.0",
         "electron": "^4.0.6",
-        "electron-builder": "^20.38.5",
+        "electron-builder": "^20.40.2",
         "electron-devtools-installer": "^2.2.4",
         "enzyme": "^3.8.0",
         "enzyme-adapter-react-16": "^1.7.1",
@@ -250,7 +251,7 @@
         "@hot-loader/react-dom": "^16.8.3",
         "@material-ui/core": "^3.9.2",
         "@material-ui/icons": "^3.0.2",
-        "@types/react-virtualized": "^9.18.12",
+        "apollo-boost": "^0.3.1",
         "bignumber.js": "^8.1.1",
         "bip39": "^2.5.0",
         "bs58check": "^2.1.2",
@@ -258,14 +259,17 @@
         "electron-json-storage": "^4.1.6",
         "electron-log": "^3.0.1",
         "electron-updater": "^4.0.6",
+        "graphql": "^14.2.1",
+        "graphql-tag": "^2.10.1",
         "history": "^4.7.2",
         "install": "^0.12.2",
         "libsodium-wrappers": "^0.7.4",
         "moment": "^2.24.0",
         "moment-precise-range-plugin": "^1.3.0",
-        "npm": "^6.8.0",
+        "npm": "^6.9.0",
         "pbkdf2": "^3.0.17",
         "react": "^16.8.3",
+        "react-apollo": "^2.5.4",
         "react-blockies": "^1.4.1",
         "react-dom": "^16.8.3",
         "react-hot-loader": "^4.7.1",
