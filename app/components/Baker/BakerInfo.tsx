@@ -13,8 +13,7 @@ const styles = ({ palette }: Theme) => createStyles({
         backgroundColor: palette.background.paper,
         padding: 5,
         borderRadius: 10,
-        boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)',
-        marginBottom: 50
+        boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)'
     },
     leftSection: {
         display: 'flex',
@@ -44,7 +43,7 @@ const styles = ({ palette }: Theme) => createStyles({
         justifyContent: 'center',
         userSelect: 'none',
         borderRadius: '50%',
-        backgroundColor: '#bdbdbd',
+        backgroundColor: palette.grey[400],
         padding: 5,
         margin: 10
     },
@@ -70,16 +69,16 @@ const Component: React.FC<Props> = ({ classes, bakerInfo }) => {
                         seed={bakerInfo.keys.pkh}
                         className={classes.blockie}
                     />
-                    <Typography variant="caption" children="Balance" />
                     <Chip
                         label={bakerInfo.balance}
-                        color="secondary"
+                        color="primary"
                         className={classes.pkh}
                     />
                 </div>
                 <Chip
                     label={bakerInfo.keys.pkh}
-                    color="secondary"
+                    variant="outlined"
+                    color="primary"
                     className={classes.pkh}
                 />
             </div>

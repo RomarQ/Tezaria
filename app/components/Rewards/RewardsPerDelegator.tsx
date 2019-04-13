@@ -6,13 +6,13 @@ import Checkbox from '@material-ui/core/Checkbox';
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 import PaymentIcon from '@material-ui/icons/Payment';
-
+import { Typography } from '@material-ui/core';
 import Blockies from 'react-blockies';
 
 import EnhancedTable from '../Table/EnhancedTable';
 
-import { utils, rewardController } from '../../utils/padaria';
-import { Typography } from '@material-ui/core';
+import utils from '../../utils/padaria/utils';
+import rewardController, { DelegatorReward } from '../../utils/padaria/rewardController';
 
 const styles = ({palette}:Theme) => createStyles({
     root: {
@@ -72,23 +72,24 @@ const columnNames = [
     }
 ];
 
-interface Props extends WithStyles<typeof styles> {
+type Props = {
     paymentsAllowed: boolean;
     pkh: string;
     cycle: number;
-}
+    handleRewardsPayment: (selected:DelegatorReward[]) => Promise<any>;
+} & WithStyles<typeof styles>;
 
-const Component: React.SFC<Props> = ({classes, pkh, cycle, paymentsAllowed}) => {
+const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...props}) => {
     const isMounted = React.useRef(true);
     const [selected, setSelected] = React.useState([]);
     const [orderBy, setOrderBy] = React.useState('balance');
     const [direction, setDirection] = React.useState('desc' as "asc" | "desc");
-    const [rewards, setRewards] = React.useState([]);
+    const [rewards, setRewards] = React.useState([] as DelegatorReward[]);
 
     React.useEffect(() => {
         isMounted.current = true;
         rewardController.prepareRewardsToSendByCycle(pkh, cycle).then(res => {
-            if(isMounted.current) setRewards(res as []);
+            if(isMounted.current) setRewards(res);
         });
 
         return () => { isMounted.current = false; }
@@ -98,6 +99,11 @@ const Component: React.SFC<Props> = ({classes, pkh, cycle, paymentsAllowed}) => 
         const isDesc = orderBy === property && direction === 'desc';
         setDirection(isDesc ? 'asc' : 'desc');
         setOrderBy(property);
+    };
+
+    const handleRewardsPayment = () => {
+        if (paymentsAllowed)
+            props.handleRewardsPayment(rewards.filter(r => selected.includes(r.id)));
     }
 
     const getRow = (row:any, isItemSelected:boolean, handleClick:any) => (
@@ -140,7 +146,7 @@ const Component: React.SFC<Props> = ({classes, pkh, cycle, paymentsAllowed}) => 
         <div className={classes.actions}>
             {numSelected > 0 && paymentsAllowed ? (
                 <Tooltip title="Send Payment">
-                    <IconButton aria-label="Send Payment">
+                    <IconButton aria-label="Send Payment" onClick={handleRewardsPayment}>
                         <PaymentIcon color="secondary"/>
                     </IconButton>
                 </Tooltip>

@@ -1,6 +1,7 @@
-import rpc, { queryNode, queryAPI, QueryTypes } from './rpc';
-import utils from './utils';
-import crypto, { Prefix } from './crypto';
+import rpc, { queryNode, queryAPI, QueryTypes, HeadType } from './rpc';
+import { UnsignedOperations } from './operations';
+import utils, { Prefix } from './utils';
+import crypto from './crypto';
 import bakingController from './bakingController';
 
 import {
@@ -13,9 +14,7 @@ import {
 } from './baker.d';
 
 import {
-    KeysType,
-    HeadType,
-    operationsArrayType
+    KeysType
 } from './types';
 
 const baker:BakerProps = {
@@ -37,7 +36,7 @@ const baker:BakerProps = {
                 if(!cur) return;
                 
                 prev.push({
-                    rewards: utils.parseTEZWithSymbol(rpc.networkConstants['block_reward']),
+                    rewards: utils.parseTEZWithSymbol(Number(rpc.networkConstants['block_reward'])),
                     level: cur.level,
                     cycle: cur.cycle,
                     priority: cur.priority,
@@ -160,7 +159,7 @@ const baker:BakerProps = {
             [],
             [],
             []
-        ] as operationsArrayType;
+        ] as UnsignedOperations;
 
         const operationArgs = {
             seed: '',
@@ -172,8 +171,8 @@ const baker:BakerProps = {
         if (level % rpc.networkConstants['blocks_per_commitment'] === 0) {
             operationArgs.seed = crypto.hexNonce(64);
             operationArgs.seedHash = crypto.seedHash(operationArgs.seed);
-            operationArgs.nonceHash = crypto.b58encode(operationArgs.seedHash, Prefix.nce);
-            operationArgs.seedHex = crypto.bufferToHex(operationArgs.seedHash);
+            operationArgs.nonceHash = utils.b58encode(operationArgs.seedHash, Prefix.nce);
+            operationArgs.seedHex = utils.bufferToHex(operationArgs.seedHash);
         }
 
         const pendingOperations = await queryNode(`/chains/main/mempool/pending_operations`, QueryTypes.GET) as any;
@@ -191,10 +190,10 @@ const baker:BakerProps = {
                 
                 addedOps.push(op.hash);
                 operations[operationType].push({
-                    "protocol" : head.protocol,
-                    "branch": op.branch,
-                    "contents": op.contents,
-                    "signature": op.signature
+                    protocol: head.protocol,
+                    branch: op.branch,
+                    contents: op.contents,
+                    signature: op.signature
                 })
             }
         });
@@ -257,7 +256,7 @@ const baker:BakerProps = {
 
         console.log(`POW found in ${pow.att} attemps ${secs} seconds - ${((pow.att/secs)/1000).toLocaleString('fullwide', {maximumFractionDigits:2})} Kh/s`);
 
-        const signed = crypto.sign(pow.blockbytes, keys.sk, crypto.mergeBuffer(utils.watermark.blockHeader, crypto.b58decode(head.chain_id, Prefix.chain_id)));
+        const signed = crypto.sign(pow.blockbytes, keys.sk, utils.mergeBuffers(utils.watermark.blockHeader, utils.b58decode(head.chain_id, Prefix.chainId)));
 
         return {
             timestamp,

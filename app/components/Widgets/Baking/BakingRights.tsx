@@ -14,14 +14,13 @@ interface Props extends WithStyles<typeof styles> {
     completedBakings: CompletedBaking[]
 };
 
-const styles = ({}:Theme) => createStyles({
+const styles = ({ palette }:Theme) => createStyles({
     root: {
-        minWidth: 500,
-        margin: 20
+        flexBasis: '48%'
     },
     title: {
         textAlign: 'center',
-        backgroundColor: '#535671',
+        backgroundColor: palette.grey[300],
         padding: 10,
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10
@@ -32,7 +31,7 @@ const styles = ({}:Theme) => createStyles({
         borderTopRightRadius: 0
     },
     tableHeader: {
-        backgroundColor: '#535671',
+        backgroundColor: palette.grey[300],
         verticalAlign: 'middle',
         height: '100%',
         display: 'flex',
@@ -133,8 +132,8 @@ const Component: React.FC<Props> = props => {
 
     return (
         <div className={classes.root}>
-            <Typography className={classes.title}>Baking Rights</Typography>
-            <AppBar position="static">
+            <Typography color="secondary" className={classes.title}>Baking Rights</Typography>
+            <AppBar position="static" color="default">
                 <Tabs
                     value={tab}
                     onChange={handleChange}
@@ -148,37 +147,38 @@ const Component: React.FC<Props> = props => {
 
             <Paper className={classes.paper}>
                 {tab === 0 ? (
-                <Table
-                    ready={!!incomingBakings}
-                    headerClassName={classes.tableHeader}
-                    cellClassName={classes.tableCell}
-                    rowClassName={classes.tableRow}
-                    sortBy="level"
-                    rowCount={!!incomingBakings ? incomingBakings.bakings.length : 0}
-                    rowGetter={({ index }:any) => incomingBakings.bakings[index]}
-                    rowHeight={32}
-                    headerHeight={32}
-                    sortDirection="DESC"
-                    onRowClick={(event:any) => console.log(event)}
-                    columns={incoming_bakings_columns}
-                />
+                    <Table
+                        ready={!!incomingBakings}
+                        headerClassName={classes.tableHeader}
+                        cellClassName={classes.tableCell}
+                        rowClassName={classes.tableRow}
+                        sortBy="level"
+                        rowCount={!!incomingBakings ? incomingBakings.bakings.length : 0}
+                        rowGetter={({ index }:any) => incomingBakings.bakings[index]}
+                        rowHeight={32}
+                        headerHeight={32}
+                        sortDirection="DESC"
+                        onRowClick={(event:any) => console.log(event)}
+                        columns={incoming_bakings_columns}
+                    />
                 ) : (
-                <Table
-                    ready={!!completedBakings}
-                    headerClassName={classes.tableHeader}
-                    cellClassName={classes.tableCell}
-                    rowClassName={({ index }:any) => 
-                        completedBakings[index] && completedBakings[index].baked ? classes.tableRow : classes.tableRowMiss
-                    }
-                    sortBy="level"
-                    rowCount={!!completedBakings ? completedBakings.length : 0}
-                    rowGetter={({ index }:any) => completedBakings[index]}
-                    rowHeight={32}
-                    headerHeight={32}
-                    sortDirection="DESC"
-                    onRowClick={(event:any) => console.log(event)}
-                    columns={completed_bakings_columns}
-                />
+                    <Table
+                        ready={!!completedBakings}
+                        headerClassName={classes.tableHeader}
+                        cellClassName={classes.tableCell}
+                        rowClassName={({ index }:any) => 
+                            completedBakings[index] 
+                            && completedBakings[index].baked ? classes.tableRow : classes.tableRowMiss
+                        }
+                        sortBy="level"
+                        rowCount={!!completedBakings ? completedBakings.length : 0}
+                        rowGetter={({ index }:any) => completedBakings[index]}
+                        rowHeight={32}
+                        headerHeight={32}
+                        sortDirection="DESC"
+                        onRowClick={(event:any) => console.log(event)}
+                        columns={completed_bakings_columns}
+                    />
                 )}
             </Paper>
         </div>

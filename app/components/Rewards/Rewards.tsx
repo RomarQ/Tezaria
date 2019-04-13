@@ -8,22 +8,13 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 import RewardsPerDelegator from './RewardsPerDelegator';
 
-import { utils } from '../../utils/padaria';
-
+import utils from '../../utils/padaria/utils';
+import { DelegatorReward } from '../../utils/padaria/rewardController';
 
 const styles = ({ typography, palette }: Theme) => createStyles({
     root: {
         margin: 50,
-        minWidth: 800,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        alignContent: 'center',
-        backgroundColor: palette.background.paper,
-        padding: 10,
-        borderRadius: 10,
-        boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)'
+        width: '100%'
     },
     header: {
         backgroundColor: '#535671'
@@ -57,14 +48,15 @@ const styles = ({ typography, palette }: Theme) => createStyles({
     }
 });
 
-interface Props extends WithStyles<typeof styles> {
+type Props = {
     pkh: string;
-    rewards: any;
-}
+    rewards: DelegatorReward[];
+    handleRewardsPayment: (selected:DelegatorReward[]) => Promise<any>;
+} & WithStyles<typeof styles>;
 
-const Component: React.SFC<Props> = props => {
+const Component: React.FC<Props> = props => {
     const [expanded, setExpanded] = React.useState(undefined);
-    const { classes, rewards, pkh } = props;
+    const { classes, rewards, pkh, handleRewardsPayment } = props;
 
     const handleChange = (panel:any) => (event:any, isExpanded:any) => {
         setExpanded(isExpanded ? panel : false);
@@ -127,7 +119,12 @@ const Component: React.SFC<Props> = props => {
                                 <Typography className={status.className}>{status.label}</Typography>
                             </ExpansionPanelSummary>
                             <ExpansionPanelDetails>
-                                <RewardsPerDelegator paymentsAllowed={r.status.status === 'rewards_delivered'} pkh={pkh} cycle={r.cycle} />
+                                <RewardsPerDelegator
+                                    handleRewardsPayment={handleRewardsPayment}
+                                    paymentsAllowed={r.status.status === 'rewards_delivered'} 
+                                    pkh={pkh} 
+                                    cycle={r.cycle}
+                                />
                             </ExpansionPanelDetails>
                         </ExpansionPanel>
                     );
