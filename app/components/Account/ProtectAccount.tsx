@@ -24,7 +24,7 @@ const styles = ({palette}: Theme) => createStyles({
         margin: 50
     },
     container: {
-        backgroundColor: palette.background.paper,
+        backgroundColor: palette.grey[300],
         padding: 50,
         borderRadius: 10,
         boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)'
@@ -45,10 +45,9 @@ const styles = ({palette}: Theme) => createStyles({
         alignContent: 'center'
     },
     buttons: {
-        margin: '25px 0 0px 0',
+        margin: '20px 0 0 0',
         display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-evenly',
+        justifyContent: 'space-between',
         alignContent: 'stretch'
     },
     button: {
@@ -63,11 +62,12 @@ const styles = ({palette}: Theme) => createStyles({
         justifyContent: 'center',
         userSelect: 'none',
         borderRadius: '50%',
-        backgroundColor: '#bdbdbd',
+        backgroundColor: palette.grey[400],
         padding: 5,
         marginRight: 10
     },
     pkh: {
+        backgroundColor: palette.grey[400],
         margin: 10
     }
 });
@@ -117,8 +117,8 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
                     />
                     <Chip
                         label={keys.pkh}
-                        color="secondary"
                         className={classes.pkh}
+                        variant="outlined"
                     />
                 </div>
                 <form className={classes.form} onSubmit={keys.encrypted ? onEncryptedSubmit : onDecryptedSubmit }>
@@ -132,7 +132,7 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
                         placeholder="Password"
                         onChange={(e) => setPassword(e.target.value)}
                         fullWidth
-                        variant="outlined"
+                        variant="filled"
                         InputLabelProps={{
                             shrink: true
                         }}
@@ -153,7 +153,7 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
                         />
                     )}
                     <div className={classes.buttons}>
-                        <Button variant="outlined" className={classes.button} type="submit" >
+                        <Button variant="contained" className={classes.button} color="primary" type="submit" >
                             {keys.encrypted ? (
                                 <React.Fragment>
                                     <LockOpen />
@@ -166,7 +166,7 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
                                 </React.Fragment>
                             )}
                         </Button>
-                        <Button variant="outlined" className={classes.button} color="secondary" onClick={onDeleteWallet}>
+                        <Button variant="contained" className={classes.button} color="secondary" onClick={onDeleteWallet}>
                             <Delete />
                             {"Delete Wallet"}
                         </Button>

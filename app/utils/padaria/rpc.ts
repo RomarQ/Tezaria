@@ -1,5 +1,13 @@
-import { HeadType } from "./types";
+import crypto from './crypto';
+import utils, { Prefix } from './utils';
+import operations, {
+    OperationTypes,
+    UnsignedOperationProps,
+    OperationProps,
+}  from './operations';
+
 import {
+    HeadType,
     NetworkConstants,
     QueryType,
     RPCInterface,
@@ -21,10 +29,7 @@ const self:RPCInterface = {
     network: "",
     networkEpoch: "",
     debug: false,
-    cycleLength: 128, // 2048 for mainnet
-    BLOCKS_PER_COMMITMENT: 32,
-    blockTime: 20,
-    threshold: 70368744177663,
+    //http://tezos.gitlab.io/mainnet/protocols/003_PsddFKi3.html#more-details-on-fees-and-cost-model
     PowHeader: "ba69ab95",
     networkConstants: {},
     watermark: {
@@ -67,9 +72,14 @@ const self:RPCInterface = {
         throw Error('Cannot get the current tezos Network.')
     },
     setNetworkConstants: async () => {
-        self.networkConstants = await self.queryNode('/chains/main/blocks/head/context/constants', QueryTypes.GET) as Promise<NetworkConstants | {}>;
+        self.networkConstants = await self.queryNode('/chains/main/blocks/head/context/constants', QueryTypes.GET) as NetworkConstants;
     },
-    getCurrentHead: ():Promise<HeadType> => self.queryNode('/chains/main/blocks/head', QueryTypes.GET) as Promise<HeadType>,
+    getCurrentHead: () => (
+        self.queryNode('/chains/main/blocks/head', QueryTypes.GET)
+    ),
+    getCurrentBlockHeader: () => (
+        self.queryNode('/chains/main/blocks/head/header', QueryTypes.GET)
+    ),
     queryNode: (path:string, type:QueryType, args?:any) =>
         new Promise((resolve, reject) => {
             try {
@@ -186,9 +196,63 @@ const self:RPCInterface = {
             catch(e) { reject(e) };
         })
     ),
-    getBalance: async (pkh:string) => (
+    getCounter: async pkh => (
+        Number(await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/counter`, QueryTypes.GET))
+    ),
+    getManager: async pkh => (
+        await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/manager_key`, QueryTypes.GET)
+    ),
+    getBalance: async pkh => (
         Number(await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/balance`, QueryTypes.GET))
     ),
+    simulateOperation: async (from, keys, operation) => {
+        const {forgedConfirmation, ...verifiedOp} = await operations.prepareOperations(from, keys, [operation]);
+        
+        return await
+            self.queryNode('/chains/main/blocks/head/helpers/scripts/run_operation', QueryTypes.POST, verifiedOp);
+    },
+    forgeOperation: async (head, operation) => {
+        const forgedOperation = await self.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operation);
+
+        const forgedConfirmation = operation.contents.reduce((prev, cur) => {
+            return prev += operations.forgeOperationLocally(cur);
+        }, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
+        
+        console.log(forgedOperation);
+        console.log(forgedConfirmation);
+        if (forgedOperation !== forgedConfirmation) throw Error('[RPC] - Validation error on operation forge verification.');
+
+        return {
+            ...operation,
+            protocol: head.protocol,
+            forgedConfirmation
+        };
+    },
+    preapplyOperations: async operations => {
+        const preappliedOps = await self.queryNode('/chains/main/blocks/head/helpers/preapply/operations', QueryTypes.POST, operations) as UnsignedOperationProps[];
+
+        if (!Array.isArray(preappliedOps))
+            throw Error('[RPC] - Error on preapplying operations.');
+
+        console.log(preappliedOps)
+
+        if(
+            preappliedOps.some(({contents}) => contents.some(({metadata: { operation_result } }) => 
+            operation_result && operation_result.status === "failed"))
+        ) {
+            throw Error(`[RPC] - Failed to preapply operations.`);
+        }
+
+        return preappliedOps;
+    },
+    injectOperation: async ({signedOperationContents, ...rest}) => {
+        const [preappliedOp] = await self.preapplyOperations([rest]);
+
+        return {
+            hash: await self.queryNode('/injection/operation', QueryTypes.POST, signedOperationContents) as string,
+            ...preappliedOp
+        };
+    },
 };
 
 export const queryNode = self.queryNode;

@@ -1,3 +1,5 @@
+import { OperationProps } from './rpc';
+
 export type WaterMarkType = {
     blockHeader: Uint8Array;
     endorsement: Uint8Array;
@@ -17,6 +19,7 @@ export interface UtilsInterface {
     TEZ:    TezosUnitType;
     KTEZ:   TezosUnitType;
     MTEZ:   TezosUnitType;
+
     setDebugMode: (mode:boolean) => void,
     operationType: (op:{ contents: {kind:string}[] }) => number;
     createProtocolData: (priority:number, powHeader?:string, pow?:string, seed?:string) => string;
@@ -27,4 +30,10 @@ export interface UtilsInterface {
     parseTEZWithSymbol: (value:number) => string;
     firstCycleLevel: (level:number) => number;
     lastCycleLevel: (level:number) => number;
+    hexToBuffer: (hex:string) => Uint8Array;
+    bufferToHex: (buffer:Uint8Array) => string;
+    mergeBuffers: (Uint8Array, Uint8Array) => Uint8Array;
+    b58encode: (payload:Uint8Array, prefix:Uint8Array) => string;
+    b58decode: (encoded:string, prefix:Uint8Array) => Uint8Array;
+    numberToZarith: (value:number) => string;
 }
