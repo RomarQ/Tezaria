@@ -1,15 +1,16 @@
 import React from 'react';
 import gql from 'graphql-tag';
-import { Query } from 'react-apollo';
+
+import GQLclient from '../graphql-client';
 
 import Component from '../components/Rewards/Rewards';
 import { UserDataType } from '../types';
 import rewardController, { DelegatorReward } from '../utils/padaria/rewardController';
 import Splash from './Splash';
 
-interface Props {
+type Props = {
     userData: UserDataType;
-}
+};
 
 const Container: React.FC<Props> = ({ userData }) => {
     const isMounted = React.useRef(true);
@@ -25,19 +26,41 @@ const Container: React.FC<Props> = ({ userData }) => {
         return () => { isMounted.current = false; }
     }, []);
 
-    const handleRewardsPayment = async (selected:DelegatorReward[]) => {
-        console.log(await rewardController.sendSelectedRewards(userData.keys, selected));
-    };
+    const handleRewardsPayment = async (selected:DelegatorReward[], updateRewards:()=>void) => {
+        const cycle = selected[0].cycle;
+        const paymentsResponse = await rewardController.sendSelectedRewards(userData.keys, selected);
+  
+        GQLclient.mutate({
+            mutation: gql`
+                mutation insertRewards($list: [cycle_reward_payment_insert_input!]!) {
+                    insert_cycle_reward_payment (
+                        objects: $list
+                    ) {
+                        affected_rows
+                    }
+                }
+            `,
+            variables: {
+                list: (
+                    paymentsResponse.contents.reduce((prev, cur) => ([
+                        ...prev,
+                        {
+                            cycle,
+                            delegate: cur.source,
+                            delegator: cur.destination,
+                            completed: cur.metadata.operation_result.status !== "failed"
+                        }
+                    ]), [])
+                )
+            }
+        })
+        .then((insertReward) => {
+            console.log(insertReward);
+            updateRewards();
+        })
+        .catch((error:Error) => console.error(error));
 
-    const test = () => {
-        <Query query={getRewards}>
-            {(props:any) => {
-                console.log(props);
-                return <div/>
-            }}
-        </Query>
-    }
-    test();
+    };
 
     return !rewards ? <Splash /> : (
         <Component 
@@ -48,13 +71,5 @@ const Container: React.FC<Props> = ({ userData }) => {
     );
 
 };
-
-const getRewards = gql`{
-    cycle_reward_payment {
-        cycle
-        delegator
-        completed
-    }
-}`;
 
 export default Container; 
