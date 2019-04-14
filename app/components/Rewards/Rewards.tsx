@@ -7,7 +7,6 @@ import Typography from '@material-ui/core/Typography';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 import RewardsPerDelegator from './RewardsPerDelegator';
-
 import utils from '../../utils/padaria/utils';
 import { DelegatorReward } from '../../utils/padaria/rewardController';
 
@@ -51,7 +50,7 @@ const styles = ({ typography, palette }: Theme) => createStyles({
 type Props = {
     pkh: string;
     rewards: DelegatorReward[];
-    handleRewardsPayment: (selected:DelegatorReward[]) => Promise<any>;
+    handleRewardsPayment: (selected:DelegatorReward[], updateRewards:()=>void) => void;
 } & WithStyles<typeof styles>;
 
 const Component: React.FC<Props> = props => {

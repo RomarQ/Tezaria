@@ -6,10 +6,15 @@ import Checkbox from '@material-ui/core/Checkbox';
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 import PaymentIcon from '@material-ui/icons/Payment';
+import CheckIcon from '@material-ui/icons/Check';
 import { Typography } from '@material-ui/core';
 import Blockies from 'react-blockies';
 
+import gql from 'graphql-tag';
+import GQLclient from '../../graphql-client';
+
 import EnhancedTable from '../Table/EnhancedTable';
+import EnhancedTableHead from '../Table/EnhancedTableHead';
 
 import utils from '../../utils/padaria/utils';
 import rewardController, { DelegatorReward } from '../../utils/padaria/rewardController';
@@ -48,6 +53,12 @@ const styles = ({palette}:Theme) => createStyles({
 
 const columnNames = [
     {
+        id: 'paid',
+        label: 'Paid',
+        boolean: true,
+        orderWith: 'paid'
+    },
+    {
         id: 'delegator',
         label: 'Delegator',
         orderWith: 'pkh'
@@ -76,22 +87,18 @@ type Props = {
     paymentsAllowed: boolean;
     pkh: string;
     cycle: number;
-    handleRewardsPayment: (selected:DelegatorReward[]) => Promise<any>;
+    handleRewardsPayment: (selected:DelegatorReward[], updateRewards:()=>void) => void;
 } & WithStyles<typeof styles>;
 
 const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...props}) => {
     const isMounted = React.useRef(true);
-    const [selected, setSelected] = React.useState([]);
+    const [selected, setSelected] = React.useState([] as number[]);
     const [orderBy, setOrderBy] = React.useState('balance');
     const [direction, setDirection] = React.useState('desc' as "asc" | "desc");
     const [rewards, setRewards] = React.useState([] as DelegatorReward[]);
 
     React.useEffect(() => {
-        isMounted.current = true;
-        rewardController.prepareRewardsToSendByCycle(pkh, cycle).then(res => {
-            if(isMounted.current) setRewards(res);
-        });
-
+        updateRewards();
         return () => { isMounted.current = false; }
     }, []);
   
@@ -101,15 +108,54 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
         setOrderBy(property);
     };
 
+    const updateRewards = () => {
+        if (isMounted.current) {
+            rewardController.prepareRewardsToSendByCycle(pkh, cycle).then(res => {
+                GQLclient.query({
+                    query: gql`
+                        query paidRewards($cycle: Int!, $delegate: String!) {
+                            cycle_reward_payment (
+                                where: {
+                                    cycle: {_eq: $cycle},
+                                    delegate: {_eq: $delegate},
+                                    completed: {_eq: true}
+                                }
+                            )
+                            {
+                                delegator
+                            }
+                        }
+                    `,
+                    variables: {
+                        cycle,
+                        delegate: pkh
+                    },
+                    fetchPolicy: "network-only"
+                })
+                .then(({data}) => {
+                    const cleanRewards = res.map(r => ({
+                        ...r,
+                        paid: data.cycle_reward_payment.some((obj:any) => obj.delegator === r.pkh)
+                    }));
+
+                    if (isMounted.current) setRewards(cleanRewards);
+                })
+                .catch(error => console.error(error));
+            });
+        }
+    };
+
     const handleRewardsPayment = () => {
-        if (paymentsAllowed)
-            props.handleRewardsPayment(rewards.filter(r => selected.includes(r.id)));
+        if (paymentsAllowed) {
+            setRewards([]);
+            props.handleRewardsPayment(rewards.filter(r => selected.includes(r.id)), updateRewards);
+        }
     }
 
     const getRow = (row:any, isItemSelected:boolean, handleClick:any) => (
         <TableRow
             hover
-            onClick={event => handleClick(event, row.id)}
+            onClick={event => handleClick(event, Number(row.id))}
             role="checkbox"
             aria-checked={isItemSelected}
             tabIndex={-1}
@@ -117,7 +163,10 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
             selected={isItemSelected}
         >
             <TableCell padding="checkbox">
-                <Checkbox checked={isItemSelected} />
+                {!row.paid ? <Checkbox checked={isItemSelected} /> : undefined}
+            </TableCell>
+            <TableCell>
+                {row.paid ? <CheckIcon color="secondary" /> : undefined}
             </TableCell>
             <TableCell>
                 <a className={classes.delegatorLink}>
@@ -157,32 +206,44 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
 
     const handleSelectAll = (event:React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {
-            const newSelecteds = rewards.map(n => n.id);
-            setSelected(newSelecteds);
-            return;
+            setSelected(rewards.reduce((prev, cur) => !cur.paid ? [...prev, cur.id] : prev, []));
         }
-        setSelected([]);
+        else setSelected([]);
     }
 
-    const handleSelect = (event:React.MouseEvent<HTMLElement, MouseEvent>, id:string) => {
+    const handleSelect = (event:React.MouseEvent<HTMLElement, MouseEvent>, id:number) => {
+        if (rewards.some(r => r.id === id && r.paid)) return;
+
         const selectedIndex = selected.indexOf(id);
-        let newSelected = [] as any[];
+        let newSelected:number[];
     
-        if (selectedIndex === -1) {
-            newSelected = newSelected.concat(selected, id);
+        if (selectedIndex < 0) {
+            newSelected = [...selected, id];
         } else if (selectedIndex === 0) {
-            newSelected = newSelected.concat(selected.slice(1));
+            newSelected = selected.slice(1);
         } else if (selectedIndex === selected.length - 1) {
-            newSelected = newSelected.concat(selected.slice(0, -1));
+            newSelected = selected.slice(0, selected.length-1);
         } else if (selectedIndex > 0) {
-            newSelected = newSelected.concat(
-                selected.slice(0, selectedIndex),
-                selected.slice(selectedIndex + 1),
-            );
+            newSelected = [
+                ...selected.slice(0, selectedIndex),
+                ...selected.slice(selectedIndex + 1)
+            ];
         }
     
         setSelected(newSelected);
     };
+
+    const CustomEnhancedTableHead = (
+        <EnhancedTableHead
+            columnNames={columnNames}
+            numSelected={selected.length}
+            direction={direction}
+            orderBy={orderBy}
+            onSelectAll={handleSelectAll}
+            onSortRequest={handleSortRequest}
+            rowCount={rewards.filter(r => !r.paid).length}
+        />
+    );
 
     return (
         <EnhancedTable
@@ -190,6 +251,7 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
             tableTitle="Rewards per Delegator"
             columnNames={columnNames}
             data={rewards}
+            customHead={CustomEnhancedTableHead}
             selected={selected}
             getRow={getRow}
             getActions={getActions}

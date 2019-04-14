@@ -30,22 +30,17 @@ const self:RewardControllerInterface = {
         
         return rewards[0] ? rewards.filter(r => r.cycle == cycle)[0] : undefined;
     },
-    prepareRewardsToSendByCycle: (pkh: string, cycle: number) => new Promise(async (resolve, reject) => {
+    prepareRewardsToSendByCycle: async (pkh: string, cycle: number) => {
         const rewards = await self.getDelegatorsRewardsByCycle(pkh, cycle);
 
-        let rewardsPerDelegator = [] as any[];
-
-        rewards.delegators_balance.map(async ({ account }:any, index:number) => {
-            rewardsPerDelegator.push({
+        return Promise.all(
+            rewards.delegators_balance.map(async ({ account }:any, index:number) => ({
                 id: index, 
                 pkh: account.tz,
-                ...await self.getDelegatorRewardsByCycle(account.tz, cycle)
-            });
-        });
-
-        console.log(rewardsPerDelegator);
-        resolve(rewardsPerDelegator);
-    }),
+                ... await self.getDelegatorRewardsByCycle(account.tz, cycle)
+            }))
+        );
+    },
     sendRewardsByCycle: (pkh: string, cycle: number) => {
         const rewards = self.prepareRewardsToSendByCycle(pkh, cycle) as any;
     },

@@ -42,16 +42,17 @@ interface Props extends WithStyles<typeof styles> {
     selected: any[];
     data: any[];
     handleSelectAll: (event:React.ChangeEvent<HTMLInputElement>) => void;
-    handleSelect: (event:React.MouseEvent<HTMLElement, MouseEvent>, id:string) => void;
+    handleSelect: (event:React.MouseEvent<HTMLElement, MouseEvent>, id:number) => void;
     getRow: (row:any, isItemSelected:boolean, handleClick:any) => React.ReactChild;
     getActions: (numSelected:number) => React.ReactChild;
     className: string;
     handleSortRequest: (event:React.MouseEvent<HTMLElement, MouseEvent>, property:string) => void;
     direction: "asc" | "desc";
     orderBy: string;
+    customHead?: React.ReactChild;
 }
 
-const Component: React.SFC<Props> = props => {
+const Component: React.FC<Props> = props => {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
@@ -68,7 +69,8 @@ const Component: React.SFC<Props> = props => {
         handleSelect,
         handleSortRequest,
         direction = 'asc',
-        orderBy
+        orderBy,
+        customHead
     } = props;
 
     const stableSort = ()  => data.sort((a, b) => direction === 'desc' ? desc(a, b) : -desc(a, b));
@@ -94,7 +96,7 @@ const Component: React.SFC<Props> = props => {
                     <EnhancedTableToolbar tableTitle={tableTitle} numSelected={selected.length} getActions={getActions} />
                     <div className={classes.tableWrapper}>
                         <Table className={classes.table} aria-labelledby="tableTitle">
-                            <EnhancedTableHead
+                            {customHead ? customHead : (<EnhancedTableHead
                                 columnNames={columnNames}
                                 numSelected={selected.length}
                                 direction={direction}
@@ -102,7 +104,7 @@ const Component: React.SFC<Props> = props => {
                                 onSelectAll={handleSelectAll}
                                 onSortRequest={handleSortRequest}
                                 rowCount={data.length}
-                            />
+                            />)}
                             <TableBody>
                                 {stableSort().slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map(row => getRow(row, isSelected(row.id), handleSelect)
