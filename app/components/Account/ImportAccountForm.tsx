@@ -1,18 +1,11 @@
 import React from 'react';
-import { createStyles, withStyles, Theme } from '@material-ui/core/styles';
+import { createStyles, withStyles, Theme, WithStyles } from '@material-ui/core/styles';
 import Paper from '@material-ui/core/Paper';
 import ButtonLink from '../ButtonLink';
 import Button from '@material-ui/core/Button';
 import AppBar from '@material-ui/core/AppBar';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import Slide from '@material-ui/core/Slide';
-import TextField from '@material-ui/core/TextField';
 
 import MnemonicForm from './MnemonicForm';
 import SecretKeyForm from './SecretKeyForm';
@@ -21,9 +14,9 @@ import { crypto } from '../../utils/padaria';
 
 import routes from '../../constants/routes.json';
 import { SetBakerKeysPrototype } from '../../actions/userData'; 
-import { LoadTypes, LoaderPrototype } from '../../actions/loader';
+import { LoaderPrototype } from '../../actions/loader';
 
-const styles = ({}: Theme) => createStyles({
+const styles = ({ palette }: Theme) => createStyles({
     root: {
         minHeight: '100vh',
         display: 'flex',
@@ -35,7 +28,7 @@ const styles = ({}: Theme) => createStyles({
     paper: {
         minWidth: 500,
         maxWidth: 700,
-        backgroundColor: 'rgb(41, 45, 70)',
+        backgroundColor: palette.grey[300],
         border: '1px solid rgb(40, 43, 60)'
     },
     form: {
@@ -45,6 +38,9 @@ const styles = ({}: Theme) => createStyles({
         justifyContent: 'center',
         alignItems: 'stretch',
         alignContent: 'center'
+    },
+    bar: {
+        backgroundColor: palette.grey[400],
     },
     buttons: {
         margin: '25px 0 0px 0',
@@ -56,20 +52,17 @@ const styles = ({}: Theme) => createStyles({
 });
 
 type Props = {
-    classes: any;
     history: any;
     setBakerKeys: SetBakerKeysPrototype;
     loader: LoaderPrototype;
-};
+} & WithStyles<typeof styles>;
 
 const Forms = [
     MnemonicForm,
     SecretKeyForm
 ];
 
-const transition = (props:any) => <Slide direction="up" {...props} />;
-
-const ImportAccountForm: React.SFC<Props> = (props) => {
+const ImportAccountForm: React.FC<Props> = (props) => {
     const [tab, setTab] = React.useState(0);
     const handleChange = (event:any, newValue:number) => setTab(newValue);
 
@@ -121,11 +114,12 @@ const ImportAccountForm: React.SFC<Props> = (props) => {
         <div className={classes.root}>
             <Paper elevation={12} className={classes.paper}>
             
-                <AppBar position="static">
+                <AppBar position="static" className={classes.bar}>
                     <Tabs
+                        textColor="secondary"
                         value={tab}
                         onChange={handleChange}
-                        indicatorColor="primary"
+                        indicatorColor="secondary"
                         variant="fullWidth"
                     >
                         <Tab label="Seed Words" />

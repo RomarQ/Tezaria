@@ -1,4 +1,5 @@
 import { KeysType } from './types';
+import { UnsignedOperationProps } from './operations';
 
 export interface RewardControllerInterface {
     feePercentage: number,
@@ -10,7 +11,7 @@ export interface RewardControllerInterface {
     getDelegatorRewardsByCycle: (phk:string, cycle:number) => Promise<DelegatorReward>;
     prepareRewardsToSendByCycle: (pkh: string, cycle: number) => Promise<DelegatorReward[]>;
     sendRewardsByCycle: (pkh: string, cycle: number) => Promise<>;
-    sendSelectedRewards: (keys:KeysType, selected:DelegatorReward[]) => Promise<>;
+    sendSelectedRewards: (keys:KeysType, selected:DelegatorReward[]) => Promise<UnsignedOperationProps>;
 }
 
 export type RewardsInfo = {
@@ -62,6 +63,7 @@ export type RewardsSplit = {
 export type DelegatorReward = {
     id?: number; 
     pkh?:string;
+    paid?: boolean;
     //
     losses: number;
     extra_rewards: number;

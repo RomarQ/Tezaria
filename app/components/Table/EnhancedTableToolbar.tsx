@@ -25,13 +25,13 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
     },
 });
 
-interface Props extends WithStyles<typeof styles> {
+type Props = {
     getActions: (numSelected:number) => React.ReactChild;
     numSelected: number;
     tableTitle: string;
-}
+} & WithStyles<typeof styles>;
 
-const Component: React.SFC<Props> = ({classes, numSelected, tableTitle, getActions}) => {
+const Component: React.FC<Props> = ({classes, numSelected, tableTitle, getActions}) => {
 
     return (
         <Toolbar
