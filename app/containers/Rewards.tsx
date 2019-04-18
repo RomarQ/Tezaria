@@ -29,7 +29,7 @@ const Container: React.FC<Props> = ({ userData }) => {
     const handleRewardsPayment = async (selected:DelegatorReward[], updateRewards:()=>void) => {
         const cycle = selected[0].cycle;
         const paymentsResponse = await rewardController.sendSelectedRewards(userData.keys, selected);
-  
+        
         GQLclient.mutate({
             mutation: gql`
                 mutation insertRewards($list: [cycle_reward_payment_insert_input!]!) {

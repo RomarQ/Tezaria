@@ -1,4 +1,4 @@
-import { KeysType, HeadType } from './types';
+import { KeysType, BlockProps } from './types';
 
 export interface BakingControllerProps {
     intervalId: number;
@@ -7,14 +7,20 @@ export interface BakingControllerProps {
     accusing: boolean;
     levelOnStart: number;
     noncesToReveal: NonceType[];
+    locks: {
+        baker: boolean,
+        endorser: boolean,
+        accuser: boolean
+    }
 
-    revealNonce: (keys:KeysType, head:HeadType, nonce:NonceType) => Promise<void>;
-    revealNonces: (keys:KeysType, head:HeadType) => void;
+    revealNonce: (keys:KeysType, head:BlockProps, nonce:NonceType) => Promise<void>;
+    revealNonces: (keys:KeysType, head:BlockProps) => void;
     loadNoncesFromStorage: () => void;
     addNonce: (nonce:NonceType) => void;
     run: (keys:KeysType) => void;
     start: (keys: KeysType, options: BakingControllerStartOptions) => void;
     stop: () => void;
+    checkHashPower: () => Promise<number>;
 }
 
 export type BakingControllerStartOptions = {

@@ -1,4 +1,6 @@
-import { HeadType, KeysType } from "./types";
+import { KeysType } from "./types";
+
+import { BlockProps } from './rpc';
 
 export interface EndorderInterface {
     //
@@ -10,8 +12,8 @@ export interface EndorderInterface {
     //
     getCompletedEndorsings: (pkh:string) => Promise<CompletedEndorsing[]>;
     getIncomingEndorsings: (pkh:string) => Promise<IncomingEndorsings>;
-    run: (keys:KeysType, head:HeadType) => void;
-    endorse: (keys:KeysType, head:HeadType, slots: number[]) => Promise<any>;
+    run: (keys:KeysType, head:BlockProps) => Promise<void>;
+    endorse: (keys:KeysType, head:BlockProps, slots: number[]) => Promise<any>;
 };
 
 export type EndorsingRight = {
