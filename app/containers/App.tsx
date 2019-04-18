@@ -25,10 +25,10 @@ interface Props extends RouteComponentProps {
     pending: string[];
 }
 
-class App extends React.PureComponent<Props> {
-    constructor(props:Props) {
-        super(props);
-        
+const App: React.FC<Props> = props => {
+    const { loading, pending, userDataFunc, userData, loader, history } = props;
+
+    React.useEffect(() => {
         props.loader(LoadTypes.USER_DATA);
         props.userDataFunc.loadUserData().then(({ settings }:UserDataType) => {
             props.loader(LoadTypes.PADARIA_NODE);
@@ -46,19 +46,16 @@ class App extends React.PureComponent<Props> {
             });
         })
         .catch((e:string) => console.log(e));
-    }
-
-    render() {
-        const { loading, pending, userDataFunc, userData, loader, history } = this.props;
-        console.log(this.props)
-        return (
+    }, []);
+    
+    console.log(props);
+    return (
         loading 
             ? <Splash waitingFor={pending} /> 
             : (
                 <React.Fragment>
                     {userData.ready && !userData.keys.encrypted ? (
                         <Nav
-                            userData={userData}
                             userDataFunc={userDataFunc}
                             loader={loader}
                             history={history}
@@ -66,12 +63,11 @@ class App extends React.PureComponent<Props> {
                     ) : null
                     }
                     <div id="content">
-                        <Routes {...this.props} />
+                        <Routes {...props} />
                     </div>
                 </React.Fragment>
             )
-        )
-    }
+    )
 }
 
 // Loader

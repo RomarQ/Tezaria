@@ -31,6 +31,9 @@ export interface RPCInterface {
     injectOperation: (operation:UnsignedOperationProps) => Promise<UnsignedOperationProps>;
     getManager: (pkh:string) => Promise<{key:string, manager:string}>;
     getCounter: (pkh:string) => Promise<number>;
+    getEndorsementOperations: (blockId:string) => Promise<UnsignedOperationProps[]>;
+    getPredecessors: (blockHash:string, length:number) => Promise<string[]>;
+    getBlock: (blockHash:string) => Promise<BlockProps>;
 }
 
 export type QueryType = 
@@ -47,7 +50,7 @@ export type TezosUnitType = {
     unit: number;
 }
 
-export type HeadType = {
+export type BlockProps = {
     chain_id?: string;
     hash?: string;
     header: {

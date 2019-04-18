@@ -1,8 +1,10 @@
 import storage from './storage';
-import rpc, { QueryTypes, HeadType } from './rpc';
+import rpc, { QueryTypes } from './rpc';
 import utils from './utils';
 import baker from './baker';
 import endorser from './endorser';
+import accuser from './accuser';
+import crypto from './crypto';
 
 import {
   KeysType,
@@ -19,7 +21,7 @@ import {
 */
 const BAKING_INTERVAL = 1000; //ms
 
-const system:BakingControllerProps = {
+const self:BakingControllerProps = {
     //
     // States
     //
@@ -29,10 +31,15 @@ const system:BakingControllerProps = {
     accusing: false,
     levelOnStart: null,
     noncesToReveal: [],
+    locks: {
+        baker: false,
+        endorser: false,
+        accuser: false
+    },
     //
     // Functions
     //
-    revealNonce: async (keys:KeysType, head:HeadType, nonce:NonceType) => {
+    revealNonce: async (keys, head, nonce) => {
         const operationArgs = {
             "branch": head.hash,
             "contents" : [
@@ -46,11 +53,11 @@ const system:BakingControllerProps = {
         
         console.log( await rpc.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operationArgs) );
     },
-    revealNonces: async (keys:KeysType, head:HeadType) => {
+    revealNonces: async (keys, head) => {
         if (!head || !head.header) return;
 
         const nonces =
-        system.noncesToReveal.reduce((prev:NonceType[], cur:NonceType) => {
+        self.noncesToReveal.reduce((prev:NonceType[], cur:NonceType) => {
             const revealStart = utils.firstCycleLevel(cur.level);
             const revealEnd = utils.lastCycleLevel(cur.level);
 
@@ -60,7 +67,7 @@ const system:BakingControllerProps = {
             } 
             else if (head.header.level >= revealStart && cur.revealed === false) {
                 console.log("Revealing nonce ", cur);
-                system.revealNonce(keys, head, cur);
+                self.revealNonce(keys, head, cur);
                 return prev;
             } 
 
@@ -69,50 +76,90 @@ const system:BakingControllerProps = {
 
         }, []);
 
-        if (nonces.length != system.noncesToReveal.length){
-            system.noncesToReveal = nonces;
-            storage.setBakerNonces(system.noncesToReveal);
+        if (nonces.length != self.noncesToReveal.length){
+            self.noncesToReveal = nonces;
+            storage.setBakerNonces(self.noncesToReveal);
         }
     },
     loadNoncesFromStorage: async () => {
-        system.noncesToReveal = await storage.getBakerNonces();
+        self.noncesToReveal = await storage.getBakerNonces();
     },
     addNonce: async (nonce: NonceType) => {
-        system.noncesToReveal.push(nonce);
-        await storage.setBakerNonces(system.noncesToReveal);
+        self.noncesToReveal.push(nonce);
+        await storage.setBakerNonces(self.noncesToReveal);
     },
     run: async (keys:KeysType) => {
         const head = await rpc.getCurrentHead();
         
         if (!head || !head.header) return;
 
-        system.revealNonces(keys, head);
+        self.revealNonces(keys, head);
 
         // Stores the current level on Start UP
-        if (!system.levelOnStart) system.levelOnStart = head.header.level;
+        if (!self.levelOnStart) self.levelOnStart = head.header.level+1;
 
-        // Runners
-        system.baking ? baker.run(keys, head) : null;
-        system.endorsing ? endorser.run(keys, head) : null;
+        //Endorser
+        if (self.endorsing && !self.locks.endorser) {
+            self.locks.endorser = true;
+            endorser.run(keys, head)
+            .then(() => self.locks.endorser = false)
+            .catch(() => self.locks.endorser = false);
+        }
+        // Baker
+        if (self.baking && !self.locks.baker) {
+            self.locks.baker = true;
+            baker.run(keys, head)
+            .then(() => self.locks.baker = false)
+            .catch(() => self.locks.baker = false);
+        }
+        // Accuser
+        if (self.accusing && !self.locks.accuser) {
+            self.locks.accuser = true;
+            accuser.run(keys, head)
+            .then(() => self.locks.accuser = false)
+            .catch(() => self.locks.accuser = false);
+        }
     },
     start: (keys: KeysType, options: BakingControllerStartOptions) => {
         if(!rpc.ready) return;
 
-        system.stop();
+        self.stop();
 
-        system.baking = options.baking;
-        system.endorsing = options.endorsing;
-        system.accusing = options.accusing;
+        self.baking = options.baking;
+        self.endorsing = options.endorsing;
+        self.accusing = options.accusing;
 
-        system.intervalId = setInterval(() => system.run(keys), BAKING_INTERVAL) as any;
+        self.intervalId = setInterval(() => self.run(keys), BAKING_INTERVAL) as any;
     },
     stop: () => {
-        if(system.intervalId) {
-            clearInterval(system.intervalId);
-            system.intervalId = null;
+        if(self.intervalId) {
+            clearInterval(self.intervalId);
+            self.intervalId = null;
         }
-    }
+    },
+    checkHashPower: () => {
+        const tests:number[][] = [];
+        for (let i = 0; i < 5; i++){
+            tests[i] = [];
+            for (let ii = 0; ii < 131; ii++){
+                tests[i].push(Math.floor(Math.random()*256));
+            }
+        }
+        return new Promise(async (resolve, reject) => {
+            const start = Date.now();
+            const pows = [];
+            pows[0] = await crypto.POW(utils.bufferToHex(new Uint8Array(tests[0])), 0, "4e07e55960daee56883d231b3c41f223733f58be90b5a1ee2147df8de5b8ac86") as any;
+            pows[1] = await crypto.POW(utils.bufferToHex(new Uint8Array(tests[1])), 0, "4e07e55960daee56883d231b3c41f223733f58be90b5a1ee2147df8de5b8ac86") as any;
+            pows[2] = await crypto.POW(utils.bufferToHex(new Uint8Array(tests[2])), 0, "4e07e55960daee56883d231b3c41f223733f58be90b5a1ee2147df8de5b8ac86") as any;
+            pows[3] = await crypto.POW(utils.bufferToHex(new Uint8Array(tests[3])), 0, "4e07e55960daee56883d231b3c41f223733f58be90b5a1ee2147df8de5b8ac86") as any;
+            pows[4] = await crypto.POW(utils.bufferToHex(new Uint8Array(tests[4])), 0, "4e07e55960daee56883d231b3c41f223733f58be90b5a1ee2147df8de5b8ac86") as any;
+            
+            const tPoW = pows.reduce((p, c) => p+c.att, 0);
+            resolve((tPoW/Number(((new Date().getTime() - start)/1000).toFixed(3)))/1000);
+            
+        });
+    },
 };
 
 export * from './bakingController.d';
-export default system;
+export default self;

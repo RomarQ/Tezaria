@@ -149,6 +149,7 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
         if (paymentsAllowed) {
             setRewards([]);
             props.handleRewardsPayment(rewards.filter(r => selected.includes(r.id)), updateRewards);
+            setSelected([]);
         }
     }
 

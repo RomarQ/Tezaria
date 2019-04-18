@@ -1,3 +1,7 @@
+import { BlockProps } from './rpc';
+import { KeysType } from './types';
+import { UnsignedOperations } from './operations';
+
 type BakingRight = {
     cycle?: number;
     delegate: string;
@@ -38,20 +42,33 @@ type CompletedBakingsFromServer = {
     fees: number;
 } & CompletedBaking;
 
-export interface BakerProps {
+export interface BakerInterface {
     //
     // States
     //
-    intervalId: number;
-    bakedBlocks: any;
-    pendingBlocks: any;
+    injectedBlocks: string[];
+    bakedBlocks: number[];
+    pendingBlocks: PendingBlock[];
     noncesToReveal: NonceType[];
+    levelWaterMark: number;
     //
     // Functions
     //
     getCompletedBakings: (pkh:string) => Promise<CompletedBaking[]>;
     getIncomingBakings: (pkh:string) => Promise<IncomingBakings>;
 
-    run: (keys:KeysType, head:HeadType) => void;
+    run: (keys:KeysType, head:HeadType) => Promise<void>;
     bake: (keys:KeysType, head:HeadType, priority:number, timestamp:string) => Promise<any>;
+}
+
+export type PendingBlock = {
+    chain_id: string;
+    data: {
+        data: string;
+        operations: UnsignedOperations;
+    }
+    level: number;
+    seed: string;
+    seed_nonce_hash: string;
+    timestamp: string;
 }
