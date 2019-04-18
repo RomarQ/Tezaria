@@ -10,7 +10,6 @@ import Delete from '@material-ui/icons/DeleteOutlined';
 
 import ButtonLink from './ButtonLink';
 
-import { UserDataType } from '../types';
 import { LoaderPrototype, LoadTypes } from '../actions/loader';
 
 import routes from '../constants/routes.json';
@@ -33,17 +32,16 @@ const styles = ({ spacing }: Theme) => createStyles({
     }
 });
 
-interface Props extends WithStyles<typeof styles> {
-    userData: UserDataType;
+type Props = {
     userDataFunc: any;
     loader: LoaderPrototype;
     history: any;
-}
+} & WithStyles<typeof styles>;
 
 const Component: React.FC<Props> = props => {
     const [anchorEl, setAnchorEl] = React.useState(null);
     const open = Boolean(anchorEl);
-    const { classes, userDataFunc:{ clearUserData, loadUserData }, loader, history, userData } = props;
+    const { classes, userDataFunc:{ clearUserData, loadUserData }, loader, history } = props;
 
     const handleMenuClick = (event:any) => {
         setAnchorEl(event.currentTarget);

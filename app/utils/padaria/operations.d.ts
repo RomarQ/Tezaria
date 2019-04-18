@@ -43,13 +43,22 @@ export type OperationType =
     | "origination"
     | "delegation";
 
+
 // TODO: specify correct types
+export type UnsignedOperations = [
+    UnsignedOperationProps[], // endorsements
+    UnsignedOperationProps[], //refused
+    UnsignedOperationProps[], //branch_refused
+    UnsignedOperationProps[]  //branch_delayed
+];
+
+/* // TODO: specify correct types
 export type UnsignedOperations = [
     UnsignedOperationProps[], //applied
     UnsignedOperationProps[], //refused
     UnsignedOperationProps[], //branch_refused
     UnsignedOperationProps[]  //branch_delayed
-];
+]; */
 
 export type UnsignedOperationProps = {
     protocol?: string;

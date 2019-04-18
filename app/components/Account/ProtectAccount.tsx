@@ -14,7 +14,9 @@ import { SetBakerKeysPrototype, ClearUserDataPrototype } from '../../actions/use
 import { KeysType } from '../../utils/padaria/types';
 import { crypto, storage } from '../../utils/padaria';
 
-const styles = ({palette}: Theme) => createStyles({
+import bakingController from '../../utils/padaria/bakingController';
+
+const styles = ({ palette }: Theme) => createStyles({
     root: {
         display: 'flex',
         flexDirection: 'column',
@@ -105,7 +107,7 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
         clearUserData();
         history.push(routes.HOME);
     }
-
+    
     return (
         <div className={classes.root}>
             <div className={classes.container}>

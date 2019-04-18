@@ -1,11 +1,11 @@
-import rpc, { queryNode, queryAPI, QueryTypes, HeadType } from './rpc';
+import rpc, { queryNode, queryAPI, QueryTypes } from './rpc';
 import { UnsignedOperations } from './operations';
 import utils, { Prefix } from './utils';
 import crypto from './crypto';
 import bakingController from './bakingController';
 
 import {
-    BakerProps,
+    BakerInterface,
     CompletedBaking,
     CompletedBakingsFromServer,
     IncomingBakings,
@@ -13,18 +13,16 @@ import {
     BakingRight
 } from './baker.d';
 
-import {
-    KeysType
-} from './types';
-
-const baker:BakerProps = {
-    //
-    // States
-    //
-    intervalId: null,
+const self:BakerInterface = {
+    /*
+    *   States
+    */
+    injectedBlocks: [],
+    // Will keep the last 5 blocks only
     bakedBlocks: [],
     pendingBlocks: [],
     noncesToReveal: [],
+    levelWaterMark: 0,
     //
     // Functions
     //
@@ -32,7 +30,7 @@ const baker:BakerProps = {
         try {
             const res = await queryAPI(`/bakings/${pkh}`, QueryTypes.GET) as CompletedBakingsFromServer[];
 
-            return res.reduce((prev, cur, i):any => {
+            return res.reduce((prev, cur) => {
                 if(!cur) return;
                 
                 prev.push({
@@ -76,23 +74,33 @@ const baker:BakerProps = {
         } 
         catch(e) { console.error("Not able to get Incoming Baking Rights."); };
     },
-    run: async (keys:KeysType, head:HeadType) => {
+    run: async (keys, head) => {
+        self.levelWaterMark = head.header.level+1;
+
         try {
-            baker.pendingBlocks = baker.pendingBlocks.reduce((prev:any, block:any) => {
+            self.pendingBlocks = self.pendingBlocks.reduce((prev, block) => {
 
-                console.log(block.level, head.header.level, new Date() >= new Date(block.timestamp), new Date(), new Date(block.timestamp), block)
+                console.log(block.level, head.header.level, new Date() >= new Date(block.timestamp), new Date(), new Date(block.timestamp), self.pendingBlocks, self.bakedBlocks)
 
-                if(block.level <= head.header.level) return prev;
+                /*
+                *   Every block needs to be injected before their respective level starts
+                */
+                if(block.level <= head.header.level) {
+                    console.warn(`Block ${block.level} was too late to be injected, current head level ${head.header.level}.`)
+                    return prev;
+                }
 
+                /*
+                *   Inject the block if the "Baking Right Timestamp" for this block is now or has already passed
+                */
                 if(new Date() >= new Date(block.timestamp))
                 {
-                    //baker.injectedBlocks.push(block.level);
-                    queryNode('/injection/block?chain=main', QueryTypes.POST, block.data)
+                    rpc.queryNode('/injection/block?chain=main&force=true', QueryTypes.POST, block.data)
                         .then((injectionHash:string) => {
-                            console.log(injectionHash)
-
                             if(!injectionHash) throw Error("Inject failed");
                             
+                            self.injectedBlocks.push(injectionHash);
+
                             if(block.seed)
                             {
                                 bakingController.addNonce({
@@ -104,7 +112,7 @@ const baker:BakerProps = {
                                 });
                             }
                     
-                            console.log(`Baked pending block at level ${block.level}`);
+                            console.log(`Baked ${injectionHash} block at level ${block.level}`);
                         })
                         .catch((e:Error) => console.error(e));
                 }
@@ -113,46 +121,48 @@ const baker:BakerProps = {
                 return prev;
             }, []);
 
-            const { level } = head.header;
+            /*
+            *   Check if the block was already baked before
+            */
+            if (self.bakedBlocks.indexOf(self.levelWaterMark) !== -1) return;
 
-            if (baker.bakedBlocks.indexOf(level+1) != -1) return;
-
-            let bakingRight = await queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${keys.pkh}&level=${level+1}`, QueryTypes.GET) as BakingRight[];
+            let bakingRight = await queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${keys.pkh}&level=${self.levelWaterMark}&max_priority=5`, QueryTypes.GET) as BakingRight[];
         
             if(!Array.isArray(bakingRight)) {
                 console.error("Not able to get Baking Rights :(");
                 return;
             }
 
-            // Check if the block was already baked at this level
-            if (baker.bakedBlocks.indexOf(level+1) < 0) {
-                // If no baking rights were received, then add level as already baked.
-                if (bakingRight.length === 0) baker.bakedBlocks.push(level+1);
-                // Check if is time to bake
-                else if (new Date().getTime() >= (new Date(bakingRight[0].estimated_time).getTime() + 5000) && bakingRight[0].level === level+1)
-                {
-                    baker.bakedBlocks.push(level+1);
+            self.bakedBlocks = [
+                ...self.bakedBlocks.slice(1, self.bakedBlocks.length > 5 ? 4 : self.bakedBlocks.length-1), 
+                self.levelWaterMark
+            ];
 
-                    console.log(`Baking a block with a priority of [ ${bakingRight[0].priority} ] on level ${bakingRight[0].level+1}`);
+            // If no baking rights were received, then add level as already baked.
+            if (bakingRight.length === 0) return;
+            
+            // Check if is time to bake
+            else if (new Date().getTime() >= new Date(bakingRight[0].estimated_time).getTime() && bakingRight[0].level === self.levelWaterMark)
+            {
+                console.log(`Baking a block with a priority of [ ${bakingRight[0].priority} ] on level ${bakingRight[0].level}`);
 
-                    const bake = await baker.bake(keys, head, bakingRight[0].priority, bakingRight[0].estimated_time);
+                const bake = await self.bake(keys, head, bakingRight[0].priority, bakingRight[0].estimated_time);
 
-                    if(bake) {
-                        baker.pendingBlocks.push(bake);
-                        console.log(`Block baked, in pending state now...`);
-                    }
-                    else console.error(`Failed to bake Block on level ${level+1} :(`);
+                console.log(bake);
+
+                if(bake) {
+                    self.pendingBlocks.push(bake);
+                    console.log(`Block baked, in pending state now...`);
                 }
+                else console.error(`Failed to bake Block on level ${self.levelWaterMark} :(`);
             }
         }
         catch(e) { console.error(e); };
     },
-    bake: async (keys:KeysType, head:HeadType, priority:number, timestamp:string) => {
+    bake: async (keys, head, priority, timestamp) => {
         console.log('\n\nBaking...\n\n');
 
         const newTimestamp = Math.max(Math.floor(Date.now()/1000), new Date(timestamp).getTime()/1000);
-
-        const level = head.header.level+1;
 
         const operations = [
             [],
@@ -168,14 +178,14 @@ const baker:BakerProps = {
             seedHex: ''
         };
         
-        if (level % rpc.networkConstants['blocks_per_commitment'] === 0) {
+        if (self.levelWaterMark % Number(rpc.networkConstants['blocks_per_commitment']) === 0) {
             operationArgs.seed = crypto.hexNonce(64);
             operationArgs.seedHash = crypto.seedHash(operationArgs.seed);
             operationArgs.nonceHash = utils.b58encode(operationArgs.seedHash, Prefix.nce);
             operationArgs.seedHex = utils.bufferToHex(operationArgs.seedHash);
         }
 
-        const pendingOperations = await queryNode(`/chains/main/mempool/pending_operations`, QueryTypes.GET) as any;
+        const pendingOperations = await queryNode(`/chains/main/mempool/pending_operations`, QueryTypes.GET);
         
         if(!pendingOperations || !pendingOperations.applied) return;
         
@@ -200,26 +210,30 @@ const baker:BakerProps = {
 
         // Signature cannot be empty, using a dumb signature. [Is not important for this operation]
         let header = {
-            "protocol_data": {
+            protocol_data: {
                 protocol : head.protocol,
                 priority,
                 proof_of_work_nonce : "0000000000000000",
                 signature : "edsigtdv1u5ZbjH4ZTyWsahG1XZeKV64kaZypXqysxvEZtq5L36RAwbQamXmGMJecEiUgb2tQaYk5EXgeuD4Zov6uEa7t7L63f5"
             },
-            "operations": operations
+            operations: operations
         };
 
         if(operationArgs.nonceHash) header.protocol_data["seed_nonce_hash"] = operationArgs.nonceHash;
 
-        let res = await queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header);
-        
+        let res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header)
+        .catch(() =>
+            // Hackish fix for id: "error: baking.timestamp_too_early"
+            queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp+20}`, QueryTypes.POST, header)
+        );
+
         if(!res) {
             console.log("Preapply failed, sending empty operations now.");
             header.operations = [[],[],[],[]];
             res = await queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header);
         };
 
-        if(!res) return;
+        console.log('res', res);
 
         console.log("!Starting POW...", res);
 
@@ -227,7 +241,7 @@ const baker:BakerProps = {
 
         shell_header['protocol_data'] = utils.createProtocolData(priority);
 
-        // Will fail with hash field, 
+        // Will fail with hash field, hash field needs to be removed
         ops = ops.reduce((prev:any, cur:any) => {
             prev.push(
                 // Hash field is not allowed here, needs to be removed 
@@ -266,11 +280,11 @@ const baker:BakerProps = {
             },
             seed_nonce_hash: operationArgs.seedHex,
             seed: operationArgs.seed,
-            level,
+            level: self.levelWaterMark,
             chain_id: head.chain_id
         };
     },
 };
 
 export * from './baker.d';
-export default baker;
+export default self;

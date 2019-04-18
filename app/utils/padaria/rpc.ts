@@ -7,12 +7,13 @@ import operations, {
 }  from './operations';
 
 import {
-    HeadType,
+    BlockProps,
     NetworkConstants,
     QueryType,
     RPCInterface,
     LoadOptions
 } from './rpc.d';
+import { UnsignedOperations } from './operations';
 
 export enum QueryTypes {
     GET     = 'GET',
@@ -253,6 +254,19 @@ const self:RPCInterface = {
             ...preappliedOp
         };
     },
+    getEndorsementOperations: async blockId => {      
+        const operations = await self.queryNode(`/chains/main/blocks/${blockId}/operations`, QueryTypes.GET) as UnsignedOperations;
+        
+        return Array.isArray(operations) && operations.length ? operations[0] : [];
+    },
+    getPredecessors: async (blockHash, length) => {
+        const res = await self.queryNode(`/chains/main/blocks?head=${blockHash}&length=${length}`, QueryTypes.GET) as string[][];
+
+        return Array.isArray(res) && res.length > 0 ? res[0] : [];
+    },
+    getBlock: (blockHash) => (
+        self.queryNode(`/chains/main/blocks/${blockHash}`, QueryTypes.GET)
+    )
 };
 
 export const queryNode = self.queryNode;

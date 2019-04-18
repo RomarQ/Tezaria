@@ -173,7 +173,7 @@ const crypto = {
         }
     },
     checkHash: (buffer:Uint8Array) => (
-        String(crypto.stampCheck(sodium.crypto_generichash(32, buffer))) <= rpc.networkConstants['proof_of_work_threshold']
+        crypto.stampCheck(sodium.crypto_generichash(32, buffer)) <= Number(rpc.networkConstants['proof_of_work_threshold'])
     ),
     stampCheck: (hash:Uint8Array) => {
         let value, i = value = 0;
@@ -192,11 +192,11 @@ const crypto = {
     nonceHash: (nonce:Uint8Array) => (
         utils.b58encode(nonce, Prefix.nce)
     ),
-    POW: (forged:string, priority:number, seed_hex:string) => {
+    POW: (forged:string, priority:number, seedHex:string) => {
         const 
-            protocolData = utils.createProtocolData(priority, rpc.PowHeader, '00000000', seed_hex),
-            blockbytes = forged + protocolData,
-            hashBuffer = utils.hexToBuffer(blockbytes + "0".repeat(128)),
+            protocolData = utils.createProtocolData(priority, rpc.PowHeader, '00000000', seedHex),
+            blockBytes = forged + protocolData,
+            hashBuffer = utils.hexToBuffer(blockBytes + "0".repeat(128)),
             forgedLength = forged.length/2,
             priorityLength = 2,
             powHeaderLength = 4,
@@ -204,28 +204,31 @@ const crypto = {
             powLength = 4,
             syncBatchSize = 2000;
 
-        console.log(protocolData);
         return new Promise(resolve => {
             (function rec(att = 0, syncAtt = 0) {
                 att++;
                 syncAtt++;
                 for (let i = powLength-1; i >= 0; i--) {
-                    if (hashBuffer[protocolOffset+i] == 255) hashBuffer[protocolOffset+i] = 0;
+                    if (hashBuffer[protocolOffset+i] == 255) 
+                        hashBuffer[protocolOffset+i] = 0;
                     else {
                         hashBuffer[protocolOffset+i]++;
                         break;
                     }
                 }
+                
                 if (crypto.checkHash(hashBuffer)) {
-                    let hex = utils.bufferToHex(hashBuffer);
+                    const hex = utils.bufferToHex(hashBuffer);
                     resolve({
                         blockbytes: hex.substr(0, hex.length-128), 
                         att
                     });
                 }
                 else {
-                    if (syncAtt < syncBatchSize) rec(att, syncAtt);
-                    else setImmediate(rec, att, 0);
+                    if (syncAtt < syncBatchSize)
+                        rec(att, syncAtt);
+                    else
+                        setImmediate(rec, att, 0);
                 }
             })();
         });
