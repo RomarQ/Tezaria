@@ -43,7 +43,7 @@ const self:AccuserInterface = {
             *   Double Baking Found
             */
             if (evidenceIndex !== -1) {
-                /*if (cur.metadata.baker === keys.pkh) {
+                if (cur.metadata.baker === keys.pkh) {
                     bakingController.forcedLock = true;
                     logger({ 
                         message: `You double baked at level [ ${cur.header.level} ] on blocks [${cur.hash}, ${prev[evidenceIndex].hash}] , shutting down the baker...`,
@@ -51,7 +51,7 @@ const self:AccuserInterface = {
                         severity: LogSeverity.VERY_HIGH
                     });
                 }
-                else {*/
+                else {
                     logger({ 
                         message: `Baker ${cur.metadata.baker} double baked at level ${cur.header.level}, accusing now...`,
                         type: 'info',
@@ -59,7 +59,7 @@ const self:AccuserInterface = {
                     });
 
                     operations.doubleBakingEvidence(keys, [cur.header, prev[evidenceIndex].header]);
-                //}
+                }
 
                 return [
                     ...prev.slice(0, evidenceIndex),
