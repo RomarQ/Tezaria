@@ -1,10 +1,10 @@
-import { put, takeLatest, all } from 'redux-saga/effects';
+import { put, takeLatest } from 'redux-saga/effects';
 import { UserDataActionTypes } from '../actions/userData';
 import { LoaderActionTypes, LoadTypes } from '../actions/loader';
 
 function* loaded() {
-  yield put({ type: UserDataActionTypes.UPDATED });
-  yield put({type: LoaderActionTypes.STOP, loadType: LoadTypes.USER_DATA});
+    yield put({ type: UserDataActionTypes.UPDATED });
+    yield put({ type: LoaderActionTypes.STOP, loadType: LoadTypes.USER_DATA });
 }
 
 /*
@@ -15,8 +15,8 @@ function* loaded() {
 */
 
 export default [
-  takeLatest(UserDataActionTypes.LOAD, loaded),
-  takeLatest(UserDataActionTypes.CLEAR, loaded),
-  takeLatest(UserDataActionTypes.SET_KEYS, loaded),
-  takeLatest(UserDataActionTypes.SET_SETTINGS, loaded)
+    takeLatest(UserDataActionTypes.LOAD, loaded),
+    takeLatest(UserDataActionTypes.CLEAR, loaded),
+    takeLatest(UserDataActionTypes.SET_KEYS, loaded),
+    takeLatest(UserDataActionTypes.SET_SETTINGS, loaded)
 ];

@@ -1,4 +1,4 @@
-import { queryNode, queryAPI, QueryTypes } from './rpc';
+import rpc, { QueryTypes } from './rpc';
 import utils, { Prefix } from './utils';
 import crypto from './crypto';
 
@@ -10,6 +10,7 @@ import {
     IncomingEndorsingsFromServer,
     EndorsingRight,
 } from './endorser.d';
+import { OperationTypes } from './operations';
 
 const self:EndorderInterface = {
     //
@@ -21,7 +22,7 @@ const self:EndorderInterface = {
     //
     getCompletedEndorsings: async (pkh:string):Promise<CompletedEndorsing[]> => {
         try {
-            const res = await queryAPI(`/bakings_endorsement/${pkh}`, QueryTypes.GET) as CompletedEndorsingFromServer[];
+            const res = await rpc.queryAPI(`/bakings_endorsement/${pkh}`, QueryTypes.GET) as CompletedEndorsingFromServer[];
 
             return res.reduce((prev, cur, i):any => {
                 if(!cur) return;
@@ -50,7 +51,7 @@ const self:EndorderInterface = {
     },
     getIncomingEndorsings: async (pkh:string):Promise<IncomingEndorsings> => {
         try {
-            const res = await queryNode(`/incoming_endorsings?delegate=${pkh}`, QueryTypes.GET) as IncomingEndorsingsFromServer;
+            const res = await rpc.queryNode(`/incoming_endorsings?delegate=${pkh}`, QueryTypes.GET) as IncomingEndorsingsFromServer;
             const cycle = res.current_cycle;
 
             let endorsings:EndorsingRight[] = [];
@@ -78,7 +79,7 @@ const self:EndorderInterface = {
         const { hash, header: { level } } = head;
         try {
             if (self.endorsedBlocks.indexOf(head.header.level) < 0) {
-                const endorsingRight = await queryNode(`/chains/main/blocks/head/helpers/endorsing_rights?delegate=${keys.pkh}&level=${level}`, QueryTypes.GET);
+                const endorsingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/endorsing_rights?delegate=${keys.pkh}&level=${level}`, QueryTypes.GET);
                 console.log(endorsingRight)
                 if(!Array.isArray(endorsingRight)) {
                     console.error("Not able to get Endorsing Rights :(");
@@ -103,28 +104,26 @@ const self:EndorderInterface = {
         catch(e) { console.error(e); };
     },
     endorse: async (keys, head, slots) => {
-        let operation = {
-            "branch": head.hash,
-            "contents" : [
-              {          
-                "kind" : "endorsement",
-                "level" : head.header.level,
-              }
+        const operation = {
+            branch: head.hash,
+            contents : [
+                {          
+                    kind : OperationTypes.endorsement.type,
+                    level : head.header.level,
+                }
             ]
-        } as any;
+        };
 
-        const forgedOperation = await queryNode(`/chains/${head.chain_id}/blocks/${head.hash}/helpers/forge/operations`, QueryTypes.POST, operation) as string;
+        const forgedOperation = await rpc.queryNode(`/chains/${head.chain_id}/blocks/${head.hash}/helpers/forge/operations`, QueryTypes.POST, operation) as string;
 
         const signed = crypto.sign(forgedOperation, keys.sk, utils.mergeBuffers(utils.watermark.endorsement, utils.b58decode(head.chain_id, Prefix.chainId)));
-        
-        // Forge Operation cannot contain protocol field, so it needs to be added here instead.
-        operation.protocol = head.protocol;
-        operation.signature = signed.edsig;
 
-        //const res = await queryNode(`/chains/${head.chain_id}/blocks/${head.hash}/helpers/preapply/operations`, QueryTypes.POST,  [operation]);
-        //console.log(res);
-
-        return queryNode('/injection/operation?async=true', QueryTypes.POST, signed.signedBytes);
+        return rpc.injectOperation({
+            ...operation,
+            protocol: head.protocol,
+            signature: signed.edsig,
+            signedOperationContents: signed.signedBytes
+        });
     }
 };
 

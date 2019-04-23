@@ -59,6 +59,7 @@ const self: OperationsInterface = {
     *   where the new counter is not yet updated on the chain.
     */
     contractCounters: {},
+    contractManagers: {},
     transactionGasCost: '10200',
     transactionStorage: '0',
     revealGasCost: '10000',
@@ -68,7 +69,48 @@ const self: OperationsInterface = {
         medium: '1520',
         high: '3000'
     },
+    doubleBakingEvidence: async (keys, evidences) => {
+        const head = await rpc.getCurrentHead();
 
+        const operation = {
+            branch: head.hash,
+            contents: [{
+                kind: OperationTypes.doubleBakingEvidence.type,
+                bh1: evidences[0],
+                bh2: evidences[1]
+            }]
+        };
+
+        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(head, operation, true);
+        
+        const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
+        return await rpc.injectOperation({
+            ...verifiedOp,
+            signature: signed.edsig,
+            signedOperationContents: signed.signedBytes
+        });
+    },
+    doubleEndorsementEvidence: async (keys, evidences) => {
+        const head = await rpc.getCurrentHead();
+
+        const operation = {
+            branch: head.hash,
+            contents: [{
+                kind: OperationTypes.doubleEndorsementEvidence.type,
+                op1: evidences[0],
+                op2: evidences[1]
+            }]
+        };
+
+        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(head, operation, true);
+        
+        const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
+        return await rpc.injectOperation({
+            ...verifiedOp,
+            signature: signed.edsig,
+            signedOperationContents: signed.signedBytes
+        });
+    },
     transaction: (source, destinations, keys, fee = self.feeDefaults.low, gasLimit = self.transactionGasCost, storageLimit = self.transactionStorage) => {
         const operations = destinations.reduce((prev, cur) => ([
             ...prev,
@@ -105,31 +147,20 @@ const self: OperationsInterface = {
         });
     },
     prepareOperations: async (from, keys, operations) => {
-        let requiresReveal = false;
+        const head = await rpc.getCurrentHead();
 
-        const header = await rpc.getCurrentHead();
-
-        let contractManager:{
-            key: string;
-            manager: string;
-        };
+        if (!self.contractManagers[from]) {
+            self.contractManagers[from] = await rpc.getManager(from);
+        }
 
         if (!self.contractCounters[from]) {
             self.contractCounters[from] = await rpc.getCounter(from);
         } 
 
         /*
-        *   Verify if any operation requires reveal
-        */
-        if (operations.some(op => self.operationRequiresReveal(op.kind))) {
-            requiresReveal = true;
-            contractManager = await rpc.getManager(from);
-        }
-
-        /*
         *   Prepare reveal operation if required
         */
-        if (requiresReveal && !contractManager.key) {
+        if (!self.contractManagers[from].key) {
             operations = [
                 {
                     kind: OperationTypes.reveal.type,
@@ -156,9 +187,9 @@ const self: OperationsInterface = {
             return prev;
         }, []);
 
-        return rpc.forgeOperation(header, {
-            "branch": header.hash,
-            "contents": operations
+        return rpc.forgeOperation(head, {
+            branch: head.hash,
+            contents: operations
         });
     },
     forgeOperationLocally: (operation:OperationProps) => {
@@ -209,9 +240,6 @@ const self: OperationsInterface = {
         }
         return forgeResult;
     },
-    operationRequiresReveal: (operationType:OperationType) => (
-        ['transaction','origination','delegation'].includes(operationType)
-    ),
     operationRequiresSource: (operationType:OperationType) => (
         ['reveal','proposals','ballot','transaction','origination','delegation'].includes(operationType)
     ),

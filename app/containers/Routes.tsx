@@ -2,12 +2,13 @@ import React from 'react';
 import { Switch, Route } from 'react-router';
 import AuthRoute from '../components/CustomRoutes/AuthRoute';
 import routes from '../constants/routes.json';
-import HomePage from './HomePage';
+import HomePage from '../components/Home';
 import Dashboard from './Dashboard';
 import Rewards from './Rewards';
 import ImportAccount from './Account/ImportAccount';
 import Settings from '../components/Account/Settings';
 import ProtectAccount from '../containers/Account/ProtectAccount';
+import Logs from './Logs';
 
 export default (props:any) => {
     const { loader, history, userData, userDataFunc } = props;
@@ -19,11 +20,7 @@ export default (props:any) => {
                 userData={userData}
                 path={routes.HOME}
                 render={() => (
-                    <HomePage
-                        userData={userData}
-                        userDataFunc={userDataFunc}
-                        history={history}
-                    />
+                    <HomePage />
                 )}
             />
             <AuthRoute 
@@ -68,6 +65,14 @@ export default (props:any) => {
                     <Rewards
                         userData={userData}
                     />
+                )} 
+            />
+            <AuthRoute
+                exact
+                userData={userData}
+                path={routes.LOGS}
+                render={() => (
+                    <Logs />
                 )} 
             />
             <Route 

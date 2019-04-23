@@ -15,13 +15,13 @@ export default {
             test: /\.[jt]sx?$/,
             exclude: /node_modules/,
             use: [
-            {
-                loader: 'babel-loader',
-                options: {
-                cacheDirectory: true
-                }
-            },
-            'ts-loader'
+                {
+                    loader: 'babel-loader',
+                    options: {
+                    cacheDirectory: true
+                    }
+                },
+                'ts-loader'
             ]
         }
         ]

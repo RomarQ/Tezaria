@@ -1,5 +1,3 @@
-import { KeysType } from "./types";
-
 import { BlockProps } from './rpc';
 
 export interface EndorderInterface {

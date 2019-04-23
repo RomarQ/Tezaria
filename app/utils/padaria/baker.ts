@@ -1,5 +1,5 @@
-import rpc, { queryNode, queryAPI, QueryTypes } from './rpc';
-import { UnsignedOperations } from './operations';
+import rpc, { QueryTypes } from './rpc';
+import { UnsignedOperationProps, UnsignedOperations } from './operations';
 import utils, { Prefix } from './utils';
 import crypto from './crypto';
 import bakingController from './bakingController';
@@ -28,7 +28,7 @@ const self:BakerInterface = {
     //
     getCompletedBakings: async (pkh:string):Promise<CompletedBaking[]> => {
         try {
-            const res = await queryAPI(`/bakings/${pkh}`, QueryTypes.GET) as CompletedBakingsFromServer[];
+            const res = await rpc.queryAPI(`/bakings/${pkh}`, QueryTypes.GET) as CompletedBakingsFromServer[];
 
             return res.reduce((prev, cur) => {
                 if(!cur) return;
@@ -48,11 +48,11 @@ const self:BakerInterface = {
             }, []);
 
         }
-        catch(e) { console.error("Not able to get Completed Bakings."); };
+        catch(e) { throw "Not able to get Completed Bakings."; };
     },
     getIncomingBakings: async (pkh:string):Promise<IncomingBakings> => {
         try {
-            const res = await queryNode(`/incoming_bakings?delegate=${pkh}`, QueryTypes.GET) as IncomingBakingsFromServer;
+            const res = await rpc.queryNode(`/incoming_bakings?delegate=${pkh}`, QueryTypes.GET) as IncomingBakingsFromServer;
             const cycle = res.current_cycle;
 
             let bakings = res.bakings.reduce((prev, cur, i):any => {
@@ -72,77 +72,38 @@ const self:BakerInterface = {
                 bakings
             };
         } 
-        catch(e) { console.error("Not able to get Incoming Baking Rights."); };
+        catch(e) { throw "Not able to get Incoming Baking Rights."; };
     },
-    run: async (keys, head) => {
+    levelCompleted: () => {
+        self.bakedBlocks = [
+            ...self.bakedBlocks.slice(1, self.bakedBlocks.length > 5 ? 4 : self.bakedBlocks.length-1), 
+            self.levelWaterMark
+        ];
+    },
+    run: async (keys, head, logger) => {
         self.levelWaterMark = head.header.level+1;
 
         try {
-            self.pendingBlocks = self.pendingBlocks.reduce((prev, block) => {
-
-                console.log(block.level, head.header.level, new Date() >= new Date(block.timestamp), new Date(), new Date(block.timestamp), self.pendingBlocks, self.bakedBlocks)
-
-                /*
-                *   Every block needs to be injected before their respective level starts
-                */
-                if(block.level <= head.header.level) {
-                    console.warn(`Block ${block.level} was too late to be injected, current head level ${head.header.level}.`)
-                    return prev;
-                }
-
-                /*
-                *   Inject the block if the "Baking Right Timestamp" for this block is now or has already passed
-                */
-                if(new Date() >= new Date(block.timestamp))
-                {
-                    rpc.queryNode('/injection/block?chain=main&force=true', QueryTypes.POST, block.data)
-                        .then((injectionHash:string) => {
-                            if(!injectionHash) throw Error("Inject failed");
-                            
-                            self.injectedBlocks.push(injectionHash);
-
-                            if(block.seed)
-                            {
-                                bakingController.addNonce({
-                                    hash: injectionHash,
-                                    seedNonceHash: block.seed_nonce_hash,
-                                    seed: block.seed,
-                                    level: block.level,
-                                    revealed: false
-                                });
-                            }
-                    
-                            console.log(`Baked ${injectionHash} block at level ${block.level}`);
-                        })
-                        .catch((e:Error) => console.error(e));
-                }
-                else prev.push(block);
-
-                return prev;
-            }, []);
-
             /*
             *   Check if the block was already baked before
             */
             if (self.bakedBlocks.indexOf(self.levelWaterMark) !== -1) return;
 
-            let bakingRight = await queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${keys.pkh}&level=${self.levelWaterMark}&max_priority=5`, QueryTypes.GET) as BakingRight[];
-        
+            let bakingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${keys.pkh}&level=${self.levelWaterMark}&max_priority=5`, QueryTypes.GET) as BakingRight[];
+
             if(!Array.isArray(bakingRight)) {
                 console.error("Not able to get Baking Rights :(");
                 return;
             }
-
-            self.bakedBlocks = [
-                ...self.bakedBlocks.slice(1, self.bakedBlocks.length > 5 ? 4 : self.bakedBlocks.length-1), 
-                self.levelWaterMark
-            ];
-
-            // If no baking rights were received, then add level as already baked.
-            if (bakingRight.length === 0) return;
             
+            // If no baking rights were received, then add level as already baked.
+            if (bakingRight.length === 0) {
+                self.levelCompleted();
+                return;
+            }
+
             // Check if is time to bake
-            else if (new Date().getTime() >= new Date(bakingRight[0].estimated_time).getTime() && bakingRight[0].level === self.levelWaterMark)
+            if (new Date().getTime() >= new Date(bakingRight[0].estimated_time).getTime() && bakingRight[0].level === self.levelWaterMark)
             {
                 console.log(`Baking a block with a priority of [ ${bakingRight[0].priority} ] on level ${bakingRight[0].level}`);
 
@@ -154,10 +115,13 @@ const self:BakerInterface = {
                     self.pendingBlocks.push(bake);
                     console.log(`Block baked, in pending state now...`);
                 }
-                else console.error(`Failed to bake Block on level ${self.levelWaterMark} :(`);
+                else 
+                    console.error(`Failed to bake Block on level ${self.levelWaterMark} :(`);
+
+                self.levelCompleted();
             }
         }
-        catch(e) { console.error(e); };
+        catch(e) { console.error('error', e); };
     },
     bake: async (keys, head, priority, timestamp) => {
         console.log('\n\nBaking...\n\n');
@@ -185,12 +149,12 @@ const self:BakerInterface = {
             operationArgs.seedHex = utils.bufferToHex(operationArgs.seedHash);
         }
 
-        const pendingOperations = await queryNode(`/chains/main/mempool/pending_operations`, QueryTypes.GET);
+        const pendingOperations = await rpc.queryNode(`/chains/main/mempool/pending_operations`, QueryTypes.GET);
         
         if(!pendingOperations || !pendingOperations.applied) return;
         
         const addedOps = [] as string[];
-        pendingOperations.applied.map((op:any) => {
+        pendingOperations.applied.map((op:UnsignedOperationProps) => {
             if (addedOps.indexOf(op.hash) === -1) {
                 if(op.branch !== head.hash) return;
 
@@ -222,26 +186,27 @@ const self:BakerInterface = {
         if(operationArgs.nonceHash) header.protocol_data["seed_nonce_hash"] = operationArgs.nonceHash;
 
         let res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header)
-        .catch(() =>
+        .catch(error => {
+            console.log(error)
             // Hackish fix for id: "error: baking.timestamp_too_early"
-            queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp+20}`, QueryTypes.POST, header)
-        );
+            return rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp+20}`, QueryTypes.POST, header)
+        });
 
         if(!res) {
             console.log("Preapply failed, sending empty operations now.");
             header.operations = [[],[],[],[]];
-            res = await queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header);
+            res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header);
         };
 
         console.log('res', res);
 
         console.log("!Starting POW...", res);
 
-        let { shell_header, operations:ops }:any = res;
+        let { shell_header, operations:ops } = res;
 
         shell_header['protocol_data'] = utils.createProtocolData(priority);
 
-        // Will fail with hash field, hash field needs to be removed
+        // Cannot have hash field, needs to be removed
         ops = ops.reduce((prev:any, cur:any) => {
             prev.push(
                 // Hash field is not allowed here, needs to be removed 
@@ -256,9 +221,8 @@ const self:BakerInterface = {
             return prev;
         }, []);
 
-        console.log(ops)
-
-        const { block } = await queryNode('/chains/main/blocks/head/helpers/forge_block_header', QueryTypes.POST, shell_header) as { block:string };
+        console.log(shell_header, ops)
+        const { block } = await rpc.queryNode('/chains/main/blocks/head/helpers/forge_block_header', QueryTypes.POST, shell_header) as { block:string };
 
         let forged = block.substring(0, block.length - 22);
         

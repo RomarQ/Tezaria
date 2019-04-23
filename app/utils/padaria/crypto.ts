@@ -5,8 +5,6 @@ import pbkdf2 from 'pbkdf2';
 import rpc from './rpc';
 import utils, { Prefix } from './utils';
 
-import { KeysType } from './types';
-
 const DERIVATION_ITERATIONS = 32768;
 
 const crypto = {

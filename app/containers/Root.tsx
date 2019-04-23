@@ -5,8 +5,10 @@ import blue from '@material-ui/core/colors/blue';
 import { ConnectedRouter } from 'connected-react-router';
 import GQLclient from '../graphql-client';
 import { ApolloProvider } from 'react-apollo';
-import App from './App';
+import { SnackbarProvider } from 'notistack';
+
 import { History } from 'history';
+import App from './App';
 
 type Props = {
     store: any;
@@ -16,11 +18,6 @@ type Props = {
 const theme = createMuiTheme({
     palette: {
         primary: blue
-        /* {
-            light: "#535671",
-            main: "#292d46",
-            dark: "#00021f",
-        } */
     },
     typography: {
         useNextVariants: true,
@@ -34,7 +31,9 @@ export default (props:Props) => {
             <Provider store={store}>
                 <MuiThemeProvider theme={theme}>
                     <ConnectedRouter history={history}>
-                        <App />
+                        <SnackbarProvider maxSnack={4}>
+                            <App />
+                        </SnackbarProvider>
                     </ConnectedRouter>
                 </MuiThemeProvider>
             </Provider>

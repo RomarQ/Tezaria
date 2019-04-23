@@ -1,6 +1,5 @@
 import storage from 'electron-json-storage';
 
-import { NonceType, KeysType } from './types';
 import { UserDataType, UserSettingsType } from '../../types';
 
 export interface StorageDataProps {
