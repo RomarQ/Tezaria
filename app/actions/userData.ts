@@ -1,8 +1,8 @@
 import { Dispatch } from 'redux';
 import { UserDataType } from '../types';
-import { KeysType } from '../utils/padaria/types';
 import storage from '../utils/storage';
 import { UserSettingsType } from '../types';
+import rpc from '../utils/padaria/rpc';
 
 export enum UserDataActionTypes {
     LOAD          = 'LOAD',
@@ -37,11 +37,17 @@ interface SetSettingsAction {
 
 export type UserDataActions = LoadAction | UpdatedAction | ClearAction | SetKeysAction | SetSettingsAction;
 
-export type LoadUserDataPrototype = () => void;
-export type UpdateUserDataPrototype = (userData:UserDataType) => void;
+export type LoadUserDataPrototype = () => Promise<UserDataType>;
 export type ClearUserDataPrototype = () => void;
 export type SetBakerKeysPrototype = (keys:KeysType) => void;
 export type SetBakerSettingsPrototype = (settings:UserSettingsType) => void;
+
+export interface UserDataActionsProps {
+    loadUserData: LoadUserDataPrototype;
+    clearUserData: ClearUserDataPrototype;
+    setBakerKeys: SetBakerKeysPrototype;
+    setBakerSettings: SetBakerKeysPrototype;
+};
 
 const loadUserData = () => (dispatch:Dispatch) => 
     new Promise((resolve, reject) => {
@@ -67,7 +73,14 @@ const setBakerKeys = (keys:KeysType) => async (dispatch:Dispatch) => {
 
 const setBakerSettings = (settings:UserSettingsType) =>
     (dispatch:Dispatch) => 
-        storage.setBakerSettings(settings).then(() => dispatch({ type: UserDataActionTypes.SET_SETTINGS, settings }));
+        storage.setBakerSettings(settings).then(() => {
+            dispatch({ type: UserDataActionTypes.SET_SETTINGS, settings });
+            
+            rpc.load({
+                nodeAddress: settings.nodeAddress,
+                apiAddress: settings.apiAddress
+            });
+        });
 
 
 export default { loadUserData, clearUserData, setBakerKeys, setBakerSettings };

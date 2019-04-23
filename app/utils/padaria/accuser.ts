@@ -1,49 +1,81 @@
 import rpc, { QueryTypes } from './rpc';
-import utils, { Prefix } from './utils';
-import crypto from './crypto';
+import operations from './operations';
+import bakingController from './bakingController';
 
 import {
     AccuserInterface
 } from './accuser.d';
+import { BlockProps } from './rpc';
 
 const self:AccuserInterface = {
-    //
-    // States
-    //
-    // (* Endorsements seen so far *)
-    endorsements: [], //Kind.endorsement operation Delegate_Map.t HLevel.t ;
-    // (* Blocks received so far *)
-    blocks: [], //Block_hash.t Delegate_Map.t HLevel.t;
+    /*
+    * States
+    */
+    // Endorsements seen so far
+    endorsements: [],
+    // Blocks received so far
+    blocks: [],
     preservedLevels: 5,
-    // (* Highest level seen in a block *)
+    // Highest level seen in a block
     highestLevelEncountered: 0,
-    //
-    // Functions
-    //
-    run: async (keys, head) => {
-        const { hash, header: { level } } = head;
-        
-        const predecessors = await rpc.getPredecessors(hash, 10);
-        const blocks = await Promise.all(predecessors.map((blockHash:string, index) => rpc.getBlock(blockHash)));
+    /*
+    * Functions
+    */
+    run: async (keys, logger) => {
+        console.log('Start: ' + new Date())
+        const lastValidatedBlock = await rpc.queryNode('/monitor/valid_blocks', QueryTypes.GET);
 
-        console.log(blocks)
-        blocks.forEach((block, index) => {
-            if (self.highestLevelEncountered < block.header.level) {
-                self.highestLevelEncountered = block.header.level;
+        if (lastValidatedBlock.level > self.highestLevelEncountered) {
+            self.highestLevelEncountered = lastValidatedBlock.level;
+        }
+
+        self.blocks = await [
+            await rpc.getBlock(lastValidatedBlock.hash),
+            ...self.blocks.filter(b => b.header.level > self.highestLevelEncountered - self.preservedLevels)
+        ];
+        
+        console.log(self.blocks);
+
+        self.blocks.reduce((prev, cur) => {
+            const evidenceIndex = prev.findIndex(b => b.header.level == cur.header.level && b.metadata.baker == cur.metadata.baker);
+
+            /*
+            *   Double Baking Found
+            */
+            if (evidenceIndex !== -1) {
+                /*if (cur.metadata.baker === keys.pkh) {
+                    bakingController.forcedLock = true;
+                    logger({ 
+                        message: `You double baked at level [ ${cur.header.level} ] on blocks [${cur.hash}, ${prev[evidenceIndex].hash}] , shutting down the baker...`,
+                        type: 'error',
+                        severity: LogSeverity.VERY_HIGH
+                    });
+                }
+                else {*/
+                    logger({ 
+                        message: `Baker ${cur.metadata.baker} double baked at level ${cur.header.level}, accusing now...`,
+                        type: 'info',
+                        severity: LogSeverity.HIGH
+                    });
+
+                    operations.doubleBakingEvidence(keys, [cur.header, prev[evidenceIndex].header]);
+                //}
+
+                return [
+                    ...prev.slice(0, evidenceIndex),
+                    ...prev.slice(evidenceIndex+1, prev.length)
+                ];
             }
 
-            if(blocks.some(({ metadata: { baker }, header: { level } }, i) => 
-                i !== index && 
-                baker === block.metadata.baker &&
-                level === block.header.level
-            )) {
-                alert(`Double baking by: ${block.metadata.baker} on level [${block.header.level}]`);
-            }
-        });
-        
-    },
-    accuse: () => {
+            return [
+                cur,
+                ...prev
+            ];
 
+        }, [] as BlockProps[]);
+
+
+        console.log('End: ' + new Date())
     }
 };
 

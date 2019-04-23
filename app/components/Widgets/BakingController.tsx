@@ -2,12 +2,10 @@ import React from 'react';
 import { createStyles, withStyles, Theme, WithStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Switch from '@material-ui/core/Switch';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Typography from '@material-ui/core/Typography';
 
-import { BakingControllerState } from '../../utils/padaria/bakingController';
-import { KeysType } from '../../utils/padaria/types';
-import { StartControllerPrototype, StopControllerPrototype } from '../../actions/bakingController';
+import { BakingControllerActionsProps } from '../../actions/bakingController';
+import { BakingControllerStateProps } from '../../reducers/bakingController';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -38,31 +36,35 @@ const styles = ({ palette }: Theme) => createStyles({
 
 type Props = {
     keys: KeysType;
-    startController: StartControllerPrototype;
-    stopController: StopControllerPrototype;
-} & BakingControllerState & WithStyles<typeof styles>;
+    controllerState: BakingControllerStateProps;
+    controllerFunc: BakingControllerActionsProps;
+} & WithStyles<typeof styles>;
 
-const BakingController: React.FC<Props> = props => {
-    const [baking, setBaking] = React.useState(props.baking);
-    const [endorsing, setEndorsing] = React.useState(props.endorsing);
-    const [accusing, setAccusing] = React.useState(props.accusing);
-
-    const { classes, active, stopController, startController, keys } = props;
+const BakingController: React.FC<Props> = ({ classes, controllerState, controllerFunc, keys }) => {
+    const [baking, setBaking] = React.useState(controllerState.baking);
+    const [endorsing, setEndorsing] = React.useState(controllerState.endorsing);
+    const [accusing, setAccusing] = React.useState(controllerState.accusing);
 
     const handleAction = () => {
-        active ? stopController() : startController(keys, { baking, endorsing, accusing });
-    }
+        controllerState.active
+            ? controllerFunc.stopController()
+            : controllerFunc.startController(keys, { baking, endorsing, accusing, logger: handleControllerLogs });
+    };
+
+    const handleControllerLogs = (log:LogProps) => {
+        console.error(log);
+    };
 
     const handleChange = (setter:any, newValue:boolean) => {
-        if(!active) {
+        if(!controllerState.active) {
             setter(newValue);
         }
-    }
+    };
 
     return (
         <div className={classes.root}>
             <Button onClick={handleAction} variant="outlined" color="secondary" className={classes.button}>
-                {active ? "Stop Baking" : "Start Baking"}
+                {controllerState.active ? "Stop Baking" : "Start Baking"}
             </Button>
             <div className={classes.switchRow}>
                 <Typography variant="h6" className={classes.label} children="Baker" />

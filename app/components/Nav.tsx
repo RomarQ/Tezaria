@@ -5,8 +5,10 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
-import Lock from '@material-ui/icons/LockOutlined';
-import Delete from '@material-ui/icons/DeleteOutlined';
+import LockIcon from '@material-ui/icons/LockOutlined';
+import DeleteIcon from '@material-ui/icons/DeleteOutlined';
+import LogsIcon from '@material-ui/icons/ListAlt';
+import SettingsIcon from '@material-ui/icons/Settings';
 
 import ButtonLink from './ButtonLink';
 
@@ -81,7 +83,10 @@ const Component: React.FC<Props> = props => {
                     Reward System
                 </ButtonLink>
                 <IconButton color="inherit" aria-label="Settings" onClick={() => history.push(routes.SETTINGS)}>
-                    <i className="fa fa-cogs" />
+                    <SettingsIcon />
+                </IconButton>
+                <IconButton color="inherit" aria-label="Logs" onClick={() => history.push(routes.LOGS)}>
+                    <LogsIcon color="secondary"/>
                 </IconButton>
             </Toolbar>
             <Menu
@@ -99,10 +104,10 @@ const Component: React.FC<Props> = props => {
                 onClose={handleMenuClose}
             >
                 <MenuItem onClick={handleBakerLock}>
-                    <Lock className={classes.buttonIcon}/> {"Lock Account"}
+                    <LockIcon className={classes.buttonIcon}/> {"Lock Account"}
                 </MenuItem>
                 <MenuItem onClick={handleClearKeys}>
-                    <Delete className={classes.buttonIcon}/> {"Clear Wallet"}
+                    <DeleteIcon className={classes.buttonIcon}/> {"Clear Wallet"}
                 </MenuItem>
             </Menu>
         </AppBar>

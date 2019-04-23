@@ -7,11 +7,6 @@ import accuser from './accuser';
 import crypto from './crypto';
 
 import {
-  KeysType,
-  NonceType
-} from './types';
-
-import {
     BakingControllerProps,
     BakingControllerStartOptions
 } from './bakingController.d';
@@ -31,6 +26,13 @@ const self:BakingControllerProps = {
     accusing: false,
     levelOnStart: null,
     noncesToReveal: [],
+    locked: false,
+    /*
+    *   This lock will only be used in case of double baking/endorsing to force baker to Stop.
+    *
+    *   (This should never happen unless there is more than 1 baker running)
+    */
+    forcedLock: false,
     locks: {
         baker: false,
         endorser: false,
@@ -57,24 +59,24 @@ const self:BakingControllerProps = {
         if (!head || !head.header) return;
 
         const nonces =
-        self.noncesToReveal.reduce((prev:NonceType[], cur:NonceType) => {
-            const revealStart = utils.firstCycleLevel(cur.level);
-            const revealEnd = utils.lastCycleLevel(cur.level);
+            self.noncesToReveal.reduce((prev:NonceType[], cur:NonceType) => {
+                const revealStart = utils.firstCycleLevel(cur.level);
+                const revealEnd = utils.lastCycleLevel(cur.level);
 
-            if (head.header.level > revealEnd) {
-                console.log("End of Reveal, cycle is OVER!");
+                if (head.header.level > revealEnd) {
+                    console.log("End of Reveal, cycle is OVER!");
+                    return prev;
+                } 
+                else if (head.header.level >= revealStart && cur.revealed === false) {
+                    console.log("Revealing nonce ", cur);
+                    self.revealNonce(keys, head, cur);
+                    return prev;
+                } 
+
+                prev.push(cur);
                 return prev;
-            } 
-            else if (head.header.level >= revealStart && cur.revealed === false) {
-                console.log("Revealing nonce ", cur);
-                self.revealNonce(keys, head, cur);
-                return prev;
-            } 
 
-            prev.push(cur);
-            return prev;
-
-        }, []);
+            }, []);
 
         if (nonces.length != self.noncesToReveal.length){
             self.noncesToReveal = nonces;
@@ -88,48 +90,128 @@ const self:BakingControllerProps = {
         self.noncesToReveal.push(nonce);
         await storage.setBakerNonces(self.noncesToReveal);
     },
-    run: async (keys:KeysType) => {
+    run: async (keys, logger) => {
+        if (self.locked || self.forcedLock) return;
+        self.locked = true;
+
         const head = await rpc.getCurrentHead();
         
-        if (!head || !head.header) return;
+        if (!head || !head.header) {
+            self.locked = false;
+            return;
+        }
+
+        baker.pendingBlocks = baker.pendingBlocks.reduce((prev, block) => {
+            /*
+            *   Every block needs to be injected before their respective level starts
+            */
+            if(block.level <= head.header.level) {
+                logger({ 
+                    message: `Block ${block.level} was too late to be injected.`,
+                    type: 'error',
+                    severity: LogSeverity.NORMAL
+                });
+                return prev;
+            }
+
+            /*
+            *   Inject the block if the "Baking Right Timestamp" for this block is now or has already passed
+            */
+            if(new Date() >= new Date(block.timestamp))
+            {
+                rpc.queryNode('/injection/block?chain=main', QueryTypes.POST, block.data)
+                    .then((injectionHash:string) => {
+                        if(!injectionHash) {
+                            logger({ 
+                                message: 'Inject failed',
+                                type: 'error',
+                                severity: LogSeverity.NORMAL
+                            });
+                        }
+                        
+                        baker.injectedBlocks.push(injectionHash);
+
+                        if(block.seed)
+                        {
+                            self.addNonce({
+                                hash: injectionHash,
+                                seedNonceHash: block.seed_nonce_hash,
+                                seed: block.seed,
+                                level: block.level,
+                                revealed: false
+                            });
+                        }
+                
+                        console.log(`Baked ${injectionHash} block at level ${block.level}`);
+                    })
+                    .catch((e:Error) => console.error(e));
+            }
+            else prev.push(block);
+
+            return prev;
+        }, []);
 
         self.revealNonces(keys, head);
 
-        // Stores the current level on Start UP
-        if (!self.levelOnStart) self.levelOnStart = head.header.level+1;
+        /*
+        *   On StartUp avoid running the baker at a middle of a block
+        */
+        if (self.levelOnStart > head.header.level) {
+            console.log("Waiting for the next level...");
+            self.locked = false;
+            return;
+        }
 
         //Endorser
-        if (self.endorsing && !self.locks.endorser) {
-            self.locks.endorser = true;
-            endorser.run(keys, head)
-            .then(() => self.locks.endorser = false)
-            .catch(() => self.locks.endorser = false);
-        }
+        (async () => {
+            if (self.endorsing && !self.locks.endorser) {
+                self.locks.endorser = true;
+                await endorser.run(keys, head);
+                self.locks.endorser = false;
+            }
+        })();
         // Baker
-        if (self.baking && !self.locks.baker) {
-            self.locks.baker = true;
-            baker.run(keys, head)
-            .then(() => self.locks.baker = false)
-            .catch(() => self.locks.baker = false);
-        }
+        (async () => {
+            if (self.baking && !self.locks.baker) {
+                self.locks.baker = true;
+                await baker.run(keys, head, logger);
+                self.locks.baker = false;
+            }
+        })();
         // Accuser
-        if (self.accusing && !self.locks.accuser) {
-            self.locks.accuser = true;
-            accuser.run(keys, head)
-            .then(() => self.locks.accuser = false)
-            .catch(() => self.locks.accuser = false);
-        }
+        (async () => {
+            if (self.accusing && !self.locks.accuser) {
+                self.locks.accuser = true;
+                await accuser.run(keys, logger);
+                self.locks.accuser = false;
+            }
+        })();
+
+        self.locked = false;
     },
-    start: (keys: KeysType, options: BakingControllerStartOptions) => {
-        if(!rpc.ready) return;
+    start: async (keys: KeysType, options: BakingControllerStartOptions) => {
+        if(!rpc.ready) return false;
 
         self.stop();
 
+        self.forcedLock = false;
         self.baking = options.baking;
         self.endorsing = options.endorsing;
         self.accusing = options.accusing;
 
-        self.intervalId = setInterval(() => self.run(keys), BAKING_INTERVAL) as any;
+        try {
+            const head = await rpc.getCurrentHead();
+
+            // Stores the current level on Start UP
+            if (!self.levelOnStart) 
+                self.levelOnStart = head.header.level+1;
+        } catch {
+            console.error("Not able to start Baking Service! :(");
+        }
+
+        self.intervalId = setInterval(() => self.run(keys, options.logger), BAKING_INTERVAL) as any;
+
+        return true;
     },
     stop: () => {
         if(self.intervalId) {

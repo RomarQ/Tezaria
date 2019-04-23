@@ -3,8 +3,8 @@ import { withStyles, Theme, createStyles, WithStyles } from '@material-ui/core/s
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import Button from '@material-ui/core/Button';
-import Save from '@material-ui/icons/SaveOutlined';
-import Redo from '@material-ui/icons/Redo';
+import SaveIcon from '@material-ui/icons/SaveOutlined';
+import RedoIcon from '@material-ui/icons/Redo';
 import NumberPicker from '../NumberPicker';
 import { UserDataType } from '../../types';
 import { SetBakerSettingsPrototype } from '../../actions/userData';
@@ -126,7 +126,7 @@ const Component: React.SFC<Props> = props => {
                         variant="outlined"
                         type="submit"
                     >
-                        <Save className={classes.buttonIcon}/> {"Save Changes"}
+                        <SaveIcon className={classes.buttonIcon}/> {"Save Changes"}
                     </Button>
 
                     <Button
@@ -136,7 +136,7 @@ const Component: React.SFC<Props> = props => {
                         color="secondary"
                         variant="outlined"
                     >
-                        <Redo className={classes.buttonIcon}/> {"Reset Changes"}
+                        <RedoIcon className={classes.buttonIcon}/> {"Reset Changes"}
                     </Button>
                 </div>
             </form>

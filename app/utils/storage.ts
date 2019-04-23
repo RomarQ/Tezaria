@@ -1,6 +1,5 @@
 import storage from 'electron-json-storage';
 
-import { NonceType, KeysType } from './padaria/types';
 import { UserDataType, UserSettingsType } from '../types';
 
 export interface StorageDataProps {

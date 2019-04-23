@@ -1,5 +1,4 @@
 import { BlockProps } from './rpc';
-import { KeysType } from './types';
 import { UnsignedOperations } from './operations';
 
 type BakingRight = {
@@ -56,9 +55,20 @@ export interface BakerInterface {
     //
     getCompletedBakings: (pkh:string) => Promise<CompletedBaking[]>;
     getIncomingBakings: (pkh:string) => Promise<IncomingBakings>;
+    levelCompleted: () => void;
 
-    run: (keys:KeysType, head:HeadType) => Promise<void>;
-    bake: (keys:KeysType, head:HeadType, priority:number, timestamp:string) => Promise<any>;
+    run: (keys:KeysType, head:BlockProps, logger: (log:LogProps) => any) => Promise<void>;
+    bake: (keys:KeysType, head:BlockProps, priority:number, timestamp:string) => Promise<{
+        timestamp: string;
+        data: {
+            data: string;
+            operations: UnsignedOperations;
+        };
+        seed_nonce_hash: string;
+        seed: string;
+        level: number;
+        chain_id: string;
+    }>;
 }
 
 export type PendingBlock = {

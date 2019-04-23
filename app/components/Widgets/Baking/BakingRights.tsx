@@ -9,11 +9,6 @@ import Typography from '@material-ui/core/Typography';
 import Table from '../../VirtualizedTable/VirtualizedTable';
 import { IncomingBakings, CompletedBaking } from '../../../utils/padaria/baker.d';
 
-interface Props extends WithStyles<typeof styles> {
-    incomingBakings: IncomingBakings;
-    completedBakings: CompletedBaking[]
-};
-
 const styles = ({ palette }:Theme) => createStyles({
     root: {
         flexBasis: '48%'
@@ -123,6 +118,11 @@ const completed_bakings_columns = [
         eta: true
     }
 ];
+
+type Props = {
+    incomingBakings: IncomingBakings;
+    completedBakings: CompletedBaking[]
+} & WithStyles<typeof styles>;
 
 const Component: React.FC<Props> = props => {
     const [tab, setTab] = React.useState(0);

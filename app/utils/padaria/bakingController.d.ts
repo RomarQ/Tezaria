@@ -1,5 +1,3 @@
-import { KeysType, BlockProps } from './types';
-
 export interface BakingControllerProps {
     intervalId: number;
     baking: boolean;
@@ -7,6 +5,8 @@ export interface BakingControllerProps {
     accusing: boolean;
     levelOnStart: number;
     noncesToReveal: NonceType[];
+    locked: boolean;
+    forcedLock: boolean;
     locks: {
         baker: boolean,
         endorser: boolean,
@@ -17,8 +17,8 @@ export interface BakingControllerProps {
     revealNonces: (keys:KeysType, head:BlockProps) => void;
     loadNoncesFromStorage: () => void;
     addNonce: (nonce:NonceType) => void;
-    run: (keys:KeysType) => void;
-    start: (keys: KeysType, options: BakingControllerStartOptions) => void;
+    run: (keys:KeysType, logger: (log:LogProps) => any) => void;
+    start: (keys: KeysType, options: BakingControllerStartOptions) => Promise<boolean>;
     stop: () => void;
     checkHashPower: () => Promise<number>;
 }
@@ -27,6 +27,7 @@ export type BakingControllerStartOptions = {
     baking: boolean;
     endorsing: boolean;
     accusing: boolean;
+    logger: (log:LogProps) => any
 };
 
 export type BakingControllerState = {

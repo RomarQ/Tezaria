@@ -3,7 +3,6 @@ import { withStyles, createStyles, Theme, WithStyles } from '@material-ui/core/s
 import Chip from '@material-ui/core/Chip';
 import Typography from '@material-ui/core/Typography';
 import Blockies from 'react-blockies';
-import { KeysType } from '../../utils/padaria/types';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {

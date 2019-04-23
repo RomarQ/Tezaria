@@ -85,7 +85,15 @@ const self:RPCInterface = {
         new Promise((resolve, reject) => {
             try {
                 const http = new XMLHttpRequest();
+                
                 http.open(type, `${self.nodeAddress}${path}`, true);
+
+                /*
+                *   Stop the request after 10 seconds
+                *   (Could mean that the address is incorrect)
+                */
+                //http.timeout = 10000;
+
                 
                 //DEBUG
                 if (self.debug) console.log("Node call", path, args);
@@ -130,6 +138,11 @@ const self:RPCInterface = {
 
                     reject(http.statusText);
                 };
+                http.ontimeout = () => {
+                    if (self.debug) console.error("Timeout, you should confirm that Node Address is correct.");
+
+                    reject("Timeout, you should confirm that Node Address is correct.");
+                }
 
                 if (type === QueryTypes.POST) {
                     http.setRequestHeader("Content-Type", "application/json");
@@ -212,21 +225,23 @@ const self:RPCInterface = {
         return await
             self.queryNode('/chains/main/blocks/head/helpers/scripts/run_operation', QueryTypes.POST, verifiedOp);
     },
-    forgeOperation: async (head, operation) => {
+    forgeOperation: async (head, operation, skipConfirmation = false) => {
         const forgedOperation = await self.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operation);
 
-        const forgedConfirmation = operation.contents.reduce((prev, cur) => {
-            return prev += operations.forgeOperationLocally(cur);
-        }, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
-        
-        console.log(forgedOperation);
-        console.log(forgedConfirmation);
-        if (forgedOperation !== forgedConfirmation) throw Error('[RPC] - Validation error on operation forge verification.');
+        if (!skipConfirmation) {
+            const forgedConfirmation = operation.contents.reduce((prev, cur) => {
+                return prev += operations.forgeOperationLocally(cur);
+            }, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
+            
+            console.log(forgedOperation);
+            console.log(forgedConfirmation);
+            if (forgedOperation !== forgedConfirmation) throw Error('[RPC] - Validation error on operation forge verification.');
+        }
 
         return {
             ...operation,
             protocol: head.protocol,
-            forgedConfirmation
+            forgedConfirmation: forgedOperation
         };
     },
     preapplyOperations: async operations => {
