@@ -89,12 +89,11 @@ const self:RPCInterface = {
                 http.open(type, `${self.nodeAddress}${path}`, true);
 
                 /*
-                *   Stop the request after 10 seconds
-                *   (Could mean that the address is incorrect)
+                *   Kill the request after 60 seconds
+                *   (Could mean that the address is not available or network is down)
                 */
-                //http.timeout = 10000;
+                http.timeout = 60000;
 
-                
                 //DEBUG
                 if (self.debug) console.log("Node call", path, args);
                 
@@ -119,30 +118,19 @@ const self:RPCInterface = {
                     } 
                     else {
                         if (http.responseText) {
-                            //DEBUG
-                            if (self.debug) console.log(path, args, http.responseText);
-
                             reject(http.responseText);
                         }
-                        else {  
-                            //DEBUG
-                            if (self.debug) console.log(path, args, http.statusText);
-
+                        else {
                             reject(http.statusText);
                         }
                     }
                 };
                 http.onerror = () => {
-                    //DEBUG
-                    if (self.debug) console.log(path, args, http.statusText);
-
                     reject(http.statusText);
                 };
                 http.ontimeout = () => {
-                    if (self.debug) console.error("Timeout, you should confirm that Node Address is correct.");
-
-                    reject("Timeout, you should confirm that Node Address is correct.");
-                }
+                    reject("Timeout, not able to connect to the tezos node.");
+                };
 
                 if (type === QueryTypes.POST) {
                     http.setRequestHeader("Content-Type", "application/json");

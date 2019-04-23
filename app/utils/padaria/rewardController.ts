@@ -4,7 +4,8 @@ import operations from './operations';
 
 import {
     RewardControllerInterface,
-    DelegatorReward
+    DelegatorReward,
+    RewardsSplit
 } from './rewardController.d';
 
 const DEFAULT_FEE_PERCENTAGE = 5;
@@ -22,9 +23,20 @@ const self:RewardControllerInterface = {
     getRewards: (pkh, numberOfCycles) => (
         rpc.queryAPI(`/rewards_split_cycles/${pkh}?number=${numberOfCycles}`, QueryTypes.GET)
     ),
-    getDelegatorsRewardsByCycle: (pkh, cycle) => (
-        rpc.queryAPI(`/rewards_split/${pkh}?cycle=${cycle}`, QueryTypes.GET)
-    ),
+    getDelegatorsRewardsByCycle: async (pkh, cycle) => {
+        let pageNumber = 0;
+        const rewards = await rpc.queryAPI(`/rewards_split/${pkh}?cycle=${cycle}&number=50&p=${pageNumber++}`, QueryTypes.GET) as RewardsSplit;
+
+        while (rewards.delegators_balance.length < rewards.delegators_nb) {
+            const nextPage = await rpc.queryAPI(`/rewards_split/${pkh}?cycle=${cycle}&number=50&p=${pageNumber++}`, QueryTypes.GET) as RewardsSplit;
+            rewards.delegators_balance = [
+                ...rewards.delegators_balance,
+                ...nextPage.delegators_balance
+            ];
+        }
+
+        return rewards;
+    },
     getDelegatorRewardsByCycle: async (delegatorPKH: string, cycle: number) => {
         const rewards = await rpc.queryAPI(`/delegator_rewards/${delegatorPKH}`, QueryTypes.GET) as DelegatorReward[];
         
