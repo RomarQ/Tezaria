@@ -1,5 +1,11 @@
 import { ControllerActionTypes, ControllerActions } from '../actions/bakingController';
-import { BakingControllerState  } from '../utils/padaria/bakingController';
+
+export type BakingControllerStateProps = {
+    active:     boolean;
+    baking:     boolean;
+    endorsing:  boolean;
+    accusing:   boolean;
+};
 
 const defaultState = {
     active: false,
@@ -8,7 +14,7 @@ const defaultState = {
     accusing: false
 }
 
-export default (state: BakingControllerState = defaultState, action: ControllerActions) => {
+export default (state: BakingControllerStateProps = defaultState, action: ControllerActions) => {
     switch (action.type) {
       case ControllerActionTypes.START:
         return {

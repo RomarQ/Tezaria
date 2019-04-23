@@ -1,6 +1,5 @@
-import { Dispatch } from 'redux';
+import { Dispatch, ActionCreatorsMapObject } from 'redux';
 import bakingController, { BakingControllerStartOptions } from '../utils/padaria/bakingController';
-import { KeysType } from '../utils/padaria/types';
 
 export enum ControllerActionTypes {
     START = 'BAKING_CONTROLLER_START',
@@ -21,6 +20,11 @@ export type ControllerActions = StartAction | StopAction;
 export type StartControllerPrototype = (keys: KeysType, options:BakingControllerStartOptions) => void;
 export type StopControllerPrototype = () => void;
 
+export interface BakingControllerActionsProps extends ActionCreatorsMapObject {
+    startController: StartControllerPrototype;
+    stopController: StopControllerPrototype;
+};
+
 const startController:StartControllerPrototype = (keys, options) => {
     bakingController.start(keys, options);
 
@@ -37,4 +41,4 @@ const stopController:StartControllerPrototype = () => {
     }
 }
 
-export default { startController, stopController };
+export default { startController, stopController } as BakingControllerActionsProps;

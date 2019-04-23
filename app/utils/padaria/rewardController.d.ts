@@ -1,4 +1,3 @@
-import { KeysType } from './types';
 import { UnsignedOperationProps } from './operations';
 
 export interface RewardControllerInterface {

@@ -1,4 +1,3 @@
-import { KeysType } from './types';
 import { OperationsInterface, UnsignedOperationProps, OperationProps } from './operations';
 
 export interface RPCInterface {
@@ -20,13 +19,13 @@ export interface RPCInterface {
     load: (options:LoadOptions) => Promise<boolean>;
     setCurrentNetwork: () => Promise<void>;
     setNetworkConstants: () => Promise<void>;
-    getCurrentHead: () => Promise<HeadType>;
-    getCurrentBlockHeader: () => Promise<HeadType>;
+    getCurrentHead: () => Promise<BlockProps>;
+    getCurrentBlockHeader: () => Promise<BlockProps>;
     queryNode: (path:string, type:QueryType, args?:any) => Promise<any>;
     queryAPI: (path:string, type:QueryType, args?:any) => Promise<any>;
     getBalance: (pkh:string) => Promise<number>;
     simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
-    forgeOperation: (head:HeadType, operation:UnsignedOperationProps) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
+    forgeOperation: (head:BlockProps, operation:UnsignedOperationProps, skipConfirmation?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
     preapplyOperations: (operation:UnsignedOperationProps[]) => Promise<UnsignedOperationProps[]>;
     injectOperation: (operation:UnsignedOperationProps) => Promise<UnsignedOperationProps>;
     getManager: (pkh:string) => Promise<{key:string, manager:string}>;
@@ -51,21 +50,9 @@ export type TezosUnitType = {
 }
 
 export type BlockProps = {
-    chain_id?: string;
-    hash?: string;
-    header: {
-        context: string;
-        fitness: string[];
-        level: number;
-        operations_hash: string;
-        predecessor: string
-        priority: number;
-        proof_of_work_nonce: string;
-        proto: number
-        signature: string;
-        timestamp: string;
-        validation_pass: number;
-    };
+    chain_id: string;
+    hash: string;
+    header: BlockHeaderProps;
     metadata: {
         baker: string;
         balance_updates: Array<{

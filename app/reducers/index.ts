@@ -3,6 +3,7 @@ import { connectRouter } from 'connected-react-router';
 import loader from './loader';
 import userData from './userData';
 import bakingController from './bakingController';
+import logger from './logger';
 import { History } from 'history';
 
 export default function createRootReducer(history: History) {
@@ -10,6 +11,7 @@ export default function createRootReducer(history: History) {
     router: connectRouter(history),
     loader,
     userData,
-    bakingController
+    bakingController,
+    logger
   });
 }

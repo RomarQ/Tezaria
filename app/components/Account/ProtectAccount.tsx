@@ -10,8 +10,7 @@ import Delete from '@material-ui/icons/DeleteOutlined';
 import Blockies from 'react-blockies';
 
 import routes from '../../constants/routes.json';
-import { SetBakerKeysPrototype, ClearUserDataPrototype } from '../../actions/userData'; 
-import { KeysType } from '../../utils/padaria/types';
+import { SetBakerKeysPrototype, ClearUserDataPrototype } from '../../actions/userData';
 import { crypto, storage } from '../../utils/padaria';
 
 import bakingController from '../../utils/padaria/bakingController';
