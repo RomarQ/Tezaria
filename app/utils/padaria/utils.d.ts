@@ -13,6 +13,7 @@ export type TezosUnitType = {
 
 export interface UtilsInterface {
     debug: boolean;
+    PowHeader: string;
     watermark: WaterMarkType;
     uTEZ:   TezosUnitType;
     mTEZ:   TezosUnitType;
@@ -25,8 +26,9 @@ export interface UtilsInterface {
     createProtocolData: (priority:number, powHeader?:string, pow?:string, seed?:string) => string;
     convertUnit: (value:number, to:{char:string, unit:number}, from?:{char:string, unit:number}) => string;
     convertUnitWithSymbol: (value:number, to:{char:string, unit:number}, from?:{char:string, unit:number}) => string;
-    getSharePercentage: (balance:number, staking_balance:number) => string;
-    getShareReward: (balance:number, staking_balance:number, rewards:number) => number;
+    getRewardSharePercentage: (balance:number, staking_balance:number) => number;
+    getRewardShare: (balance:number, staking_balance:number, rewards:number) => number;
+    getRewardFee: (reward:number, rewardFee:number) => number;
     parseTEZWithSymbol: (value:number) => string;
     firstCycleLevel: (level:number) => number;
     lastCycleLevel: (level:number) => number;

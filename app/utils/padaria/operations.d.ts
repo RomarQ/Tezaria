@@ -1,5 +1,5 @@
 export interface OperationsInterface {
-    contractCounters: ContractCounter;
+    awaitingLock: AwaitingLock;
     contractManagers: ContractManager;
     transactionGasCost: string,
     transactionStorage: string,
@@ -11,10 +11,11 @@ export interface OperationsInterface {
         high: string;
     };
     // Methods
-    transaction: (source:string, destinations:TransactionDestination[], keys:KeysType, fee?:string, gasLimit?:string, storageLimit?:string) => Promise<UnsignedOperationProps>;
+    transaction: (source:string, destinations:TransactionDestination[], keys:KeysType, fee?:string, gasLimit?:string, storageLimit?:string) => Promise<UnsignedOperationProps[]>;
     doubleBakingEvidence: (keys:KeysType, evidences:BlockHeaderProps[]) => Promise<UnsignedOperationProps>;
     doubleEndorsementEvidence: (keys:KeysType, evidences:EndorsementOperationProps[]) => Promise<UnsignedOperationProps>;
     registerDelegate: (keys:KeysType) => Promise<UnsignedOperationProps>;
+    awaitForOperationToBeIncluded: (hash:string, prevHeadLevel:number) => Promise<boolean>;
     sendOperation: (source:string, keys:KeysType, operation:OperationProps[]) => Promise<UnsignedOperationProps>;
     prepareOperations: (source:string, keys:KeysType, operations:OperationProps[]) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
     forgeOperationLocally: (operation:OperationProps) => string;
@@ -22,8 +23,8 @@ export interface OperationsInterface {
     operationRequiresCounter: (operationType:OperationType) => boolean;
 };
 
-export type ContractCounter = {
-    [index: string]: number;
+export type AwaitingLock = {
+    [index: string]: boolean;
 };
 
 export type ContractManager = {
@@ -48,19 +49,11 @@ export type OperationType =
 
 
 export type UnsignedOperations = [
-    UnsignedOperationProps[], // endorsements
-    UnsignedOperationProps[], //refused
-    UnsignedOperationProps[], //branch_refused
-    UnsignedOperationProps[]  //branch_delayed
-];
-
-/* // TODO: specify correct types
-export type UnsignedOperations = [
     UnsignedOperationProps[], //applied
     UnsignedOperationProps[], //refused
     UnsignedOperationProps[], //branch_refused
     UnsignedOperationProps[]  //branch_delayed
-]; */
+];
 
 export type UnsignedOperationProps = {
     protocol?: string;

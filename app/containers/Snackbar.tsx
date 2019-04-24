@@ -20,7 +20,8 @@ const Container: React.FC<Props> = ({ logs, enqueueSnackbar }) => {
 
         const snack = logs[logs.length-1];
         if (snack.key > snackCounter.current++) {
-            enqueueSnackbar(snack.message, {
+            
+            enqueueSnackbar(String(snack.message), {
                 variant: snack.logType,
                 anchorOrigin: {
                     vertical: 'top',

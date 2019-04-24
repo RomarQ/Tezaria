@@ -79,7 +79,13 @@ const columnNames = [
         id: 'rewards_share',
         label: 'Rewards Share',
         numeric: true,
-        orderWith: 'rewards'
+        orderWith: 'balance'
+    },
+    {
+        id: 'rewards_fee',
+        label: 'Rewards Fee',
+        numeric: true,
+        orderWith: 'balance'
     }
 ];
 
@@ -110,7 +116,7 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
 
     const updateRewards = () => {
         if (isMounted.current) {
-            rewardController.prepareRewardsToSendByCycle(pkh, cycle).then(res => {
+            rewardController.prepareRewardsToSendByCycle(pkh, cycle).then(rewardsList => {
                 GQLclient.query({
                     query: gql`
                         query paidRewards($cycle: Int!, $delegate: String!) {
@@ -133,9 +139,9 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
                     fetchPolicy: "network-only"
                 })
                 .then(({data}) => {
-                    const cleanRewards = res.map(r => ({
-                        ...r,
-                        paid: data.cycle_reward_payment.some((obj:any) => obj.delegator === r.pkh)
+                    const cleanRewards = rewardsList.map(reward => ({
+                        ...reward,
+                        paid: data.cycle_reward_payment.some(({delegator}:any) => delegator === reward.delegatorContract)
                     }));
 
                     if (isMounted.current) setRewards(cleanRewards);
@@ -153,7 +159,7 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
         }
     }
 
-    const getRow = (row:any, isItemSelected:boolean, handleClick:any) => (
+    const getRow = (row:DelegatorReward, isItemSelected:boolean, handleClick:any) => (
         <TableRow
             hover
             onClick={event => handleClick(event, Number(row.id))}
@@ -164,29 +170,34 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
             selected={isItemSelected}
         >
             <TableCell padding="checkbox">
-                {!row.paid ? <Checkbox checked={isItemSelected} /> : undefined}
+                {!row.paid ? <Checkbox checked={isItemSelected} /> : null}
             </TableCell>
             <TableCell>
-                {row.paid ? <CheckIcon color="secondary" /> : undefined}
+                {row.paid ? <CheckIcon color="secondary" /> : null}
             </TableCell>
             <TableCell>
                 <a className={classes.delegatorLink}>
                     <Blockies
-                        seed={row.pkh}
+                        seed={row.delegatorContract}
                         className={classes.blockie}
                     />
-                    <Typography variant="caption">{row.pkh}</Typography>
+                    <Typography variant="caption">{row.delegatorContract}</Typography>
                 </a>
             </TableCell>
             <TableCell align="right">
                 <Typography variant="caption">{utils.parseTEZWithSymbol(row.balance)}</Typography>
             </TableCell>
             <TableCell align="right">
-                <Typography variant="caption">{utils.getSharePercentage(row.balance, row.staking_balance)}</Typography>
+                <Typography variant="caption">{`${row.rewardSharePercentage}%`}</Typography>
             </TableCell>
             <TableCell align="right">
                 <Typography variant="caption">
-                    {utils.parseTEZWithSymbol(utils.getShareReward(row.balance, row.staking_balance, row.rewards))}
+                    {utils.parseTEZWithSymbol(row.rewardShare)}
+                </Typography>
+            </TableCell>
+            <TableCell align="right">
+                <Typography variant="caption">
+                    {utils.parseTEZWithSymbol(row.rewardFee)}
                 </Typography>
             </TableCell>
         </TableRow>

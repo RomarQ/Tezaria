@@ -74,7 +74,6 @@ const self:AccuserInterface = {
 
         }, [] as BlockProps[]);
 
-
         console.log('End: ' + new Date())
     }
 };
