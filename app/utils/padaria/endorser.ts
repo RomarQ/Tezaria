@@ -13,13 +13,13 @@ import {
 import { OperationTypes } from './operations';
 
 const self:EndorderInterface = {
-    //
-    // States
-    //
+    /*
+    *   States
+    */
     endorsedBlocks: [],
-    //
-    // Functions
-    //
+    /*
+    /*  Functions
+    */
     getCompletedEndorsings: async (pkh:string):Promise<CompletedEndorsing[]> => {
         try {
             const res = await rpc.queryAPI(`/bakings_endorsement/${pkh}`, QueryTypes.GET) as CompletedEndorsingFromServer[];
@@ -47,11 +47,11 @@ const self:EndorderInterface = {
                 return prev;
             }, []);
 
-        } catch(e) { console.error("Not able to get Completed Endorsings."); }
+        } catch(e) { console.error(e); }
     },
     getIncomingEndorsings: async (pkh:string):Promise<IncomingEndorsings> => {
         try {
-            const res = await rpc.queryNode(`/incoming_endorsings?delegate=${pkh}`, QueryTypes.GET) as IncomingEndorsingsFromServer;
+            const res = await rpc.queryNode(`/incoming_endorsings/?delegate=${pkh}`, QueryTypes.GET) as IncomingEndorsingsFromServer;
             const cycle = res.current_cycle;
 
             let endorsings:EndorsingRight[] = [];

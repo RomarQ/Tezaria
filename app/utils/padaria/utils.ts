@@ -72,6 +72,7 @@ const self:UtilsInterface = {
         endorsement:        new Uint8Array([2]), //0x02
         genericOperation:   new Uint8Array([3]), //0x03
     },
+    PowHeader: "ba69ab95",
     uTEZ:   { char: 'μꜩ',  unit: 1 },
     mTEZ:   { char: 'mꜩ',  unit: 1000 },
     TEZ:    { char: 'ꜩ',   unit: 1000000 },
@@ -95,19 +96,22 @@ const self:UtilsInterface = {
     createProtocolData: (priority:number, powHeader = '', pow = '', seed = '') => {
         return `${priority.toString(16).padStart(4,"0")}${powHeader.padEnd(8, "0")}${pow.padEnd(8, "0")}${seed ? "ff"+seed.padEnd(64, "0") : "00"}`;
     },
-    convertUnit: (value:number, to:{char:string, unit:number}, from:{char:string, unit:number} = self.uTEZ) => (
+    convertUnit: (value, to, from = self.uTEZ) => (
         ((value / to.unit) * from.unit).toLocaleString('fullwide', {maximumFractionDigits:3})
     ),
     convertUnitWithSymbol: (value:number, to:{char:string, unit:number}, from:{char:string, unit:number} = self.uTEZ) => (
         `${self.convertUnit(value, to, from)} ${to.char}`
     ),
-    getSharePercentage: (balance:number, staking_balance:number) => (
-        `${((balance * 100) / staking_balance).toLocaleString('fullwide', {maximumFractionDigits:2})}%`
+    getRewardSharePercentage: (balance, staking_balance) => (
+        Number(((balance * 100) / staking_balance).toLocaleString('fullwide', {maximumFractionDigits:2}))
     ),
-    getShareReward: (balance:number, staking_balance:number, rewards:number) => (
-        ((balance * rewards) / staking_balance)
+    getRewardShare: (balance, staking_balance, rewards) => (
+        Math.floor((balance * rewards) / staking_balance)
     ),
-    parseTEZWithSymbol: (value:number) => {
+    getRewardFee: (reward, rewardFee) => (
+        Math.floor(reward * (rewardFee/100))
+    ),
+    parseTEZWithSymbol: value => {
         if (value > self.MTEZ.unit) {
             return self.convertUnitWithSymbol(value, self.MTEZ);
         } else if (value > self.KTEZ.unit) {

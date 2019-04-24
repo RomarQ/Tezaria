@@ -10,7 +10,7 @@ export interface RewardControllerInterface {
     getDelegatorRewardsByCycle: (phk:string, cycle:number) => Promise<DelegatorReward>;
     prepareRewardsToSendByCycle: (pkh: string, cycle: number) => Promise<DelegatorReward[]>;
     sendRewardsByCycle: (pkh: string, cycle: number) => Promise<>;
-    sendSelectedRewards: (keys:KeysType, selected:DelegatorReward[]) => Promise<UnsignedOperationProps>;
+    sendSelectedRewards: (keys:KeysType, selected:DelegatorReward[]) => Promise<UnsignedOperationProps[]>;
 }
 
 export type RewardsInfo = {
@@ -36,6 +36,9 @@ export type RewardsInfo = {
 }
 
 export type RewardsSplit = {
+    // Custom parameters
+    totalRewards?: number;
+    // Response parameters
     lost_revelation_fees: number;
     lost_revelation_rewards: number;
     revelation_rewards: number;
@@ -60,21 +63,12 @@ export type RewardsSplit = {
 };
 
 export type DelegatorReward = {
-    id?: number; 
-    pkh?:string;
-    paid?: boolean;
-    //
-    losses: number;
-    extra_rewards: number;
-    rewards: number;
+    id: number; 
+    delegatorContract: string;
+    rewardShare: number;
+    rewardSharePercentage: number;
+    rewardFee: number;
     balance: number;
-    staking_balance: number;
     cycle: number;
-    delegate: {
-        tz: string;
-        alias?: string;
-    };
-    status: {
-        status: string;
-    };
+    paid?: boolean;
 }

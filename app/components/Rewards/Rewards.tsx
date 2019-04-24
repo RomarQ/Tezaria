@@ -118,12 +118,15 @@ const Component: React.FC<Props> = props => {
                                 <Typography className={status.className}>{status.label}</Typography>
                             </ExpansionPanelSummary>
                             <ExpansionPanelDetails>
-                                <RewardsPerDelegator
-                                    handleRewardsPayment={handleRewardsPayment}
-                                    paymentsAllowed={r.status.status === 'rewards_delivered'} 
-                                    pkh={pkh} 
-                                    cycle={r.cycle}
-                                />
+                                {expanded === index ? (
+                                    <RewardsPerDelegator
+                                        handleRewardsPayment={handleRewardsPayment}
+                                        paymentsAllowed={r.status.status === 'rewards_delivered'} 
+                                        pkh={pkh} 
+                                        cycle={r.cycle}
+                                    />
+                                ) : <span />
+                                }
                             </ExpansionPanelDetails>
                         </ExpansionPanel>
                     );
