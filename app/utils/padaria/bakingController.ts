@@ -119,7 +119,7 @@ const self:BakingControllerProps = {
             */
             if(new Date() >= new Date(block.timestamp))
             {
-                rpc.queryNode('/injection/block?chain=main', QueryTypes.POST, block.data)
+                rpc.queryNode('/injection/block/?chain=main', QueryTypes.POST, block.data)
                     .then((injectionHash:string) => {
                         if(!injectionHash) {
                             logger({ 

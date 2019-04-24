@@ -1,4 +1,4 @@
-import rpc from './rpc';
+import rpc, { QueryTypes } from './rpc';
 import crypto from './crypto';
 import utils, { Prefix } from './utils';
 
@@ -53,12 +53,11 @@ export const OperationTypes = {
 
 const self: OperationsInterface = {
     /*
-    *   Stores future distict contract counters
-    *   ---------------------------------------
-    *   This is used to avoid contract counters to be rejected in situations 
-    *   where the new counter is not yet updated on the chain.
+    *   Locks any operations from the same source while that same source 
+    *   is waiting for an operation to be included
     */
-    contractCounters: {},
+    awaitingLock: {},
+    //
     contractManagers: {},
     transactionGasCost: '10200',
     transactionStorage: '0',
@@ -111,20 +110,55 @@ const self: OperationsInterface = {
             signedOperationContents: signed.signedBytes
         });
     },
-    transaction: (source, destinations, keys, fee = self.feeDefaults.low, gasLimit = self.transactionGasCost, storageLimit = self.transactionStorage) => {
-        const operations = destinations.reduce((prev, cur) => ([
-            ...prev,
-            {
+    transaction: async (source, destinations, keys, fee = self.feeDefaults.low, gasLimit = self.transactionGasCost, storageLimit = self.transactionStorage) => {
+        const operations = destinations.reduce((prev, cur) => {
+            if (prev[prev.length-1].length === 200) {
+                return [
+                    ...prev,
+                    [
+                        {
+                            kind: OperationTypes.transaction.type,
+                            fee: String(self.feeDefaults.low),
+                            gas_limit: String(gasLimit),
+                            storage_limit: String(storageLimit),
+                            amount: String(cur.amount),
+                            destination: cur.destination
+                        }
+                    ]
+                ]
+            }
+
+            prev[prev.length-1].push({
                 kind: OperationTypes.transaction.type,
                 fee: String(self.feeDefaults.low),
                 gas_limit: String(gasLimit),
                 storage_limit: String(storageLimit),
                 amount: String(cur.amount),
                 destination: cur.destination
-            }
-        ]), []);
+            });
+            
+            return prev;
 
-        return self.sendOperation(source, keys, operations);
+        }, [[]]);
+
+        const ops = [];
+        for (const batch of operations) {
+            console.log(`START: ${new Date().toJSON()}`)
+            const op = await self.sendOperation(source, keys, batch);
+            // The result operation hash needs to be a string, otherwise is a error
+            if (typeof op.hash !== 'string') {
+                return [];
+            }
+
+            // Need to wait for each operation to be included, 
+            // otherwise the next operation will be rejected because counter will too high
+            self.awaitingLock[source] = true;
+            await self.awaitForOperationToBeIncluded(op.hash, 0);
+            self.awaitingLock[source] = false;
+
+            ops.push(op);
+        }
+        return ops;
     },
     registerDelegate: keys => {
         const operation = {
@@ -136,10 +170,28 @@ const self: OperationsInterface = {
         };
         return self.sendOperation(keys.pkh, keys, [operation]);
     },
+    awaitForOperationToBeIncluded: async (opHash, prevHeadLevel) => {
+        const head = await rpc.getCurrentHead();
+        if (prevHeadLevel == head.header.level)
+            return self.awaitForOperationToBeIncluded(opHash, prevHeadLevel);
+
+        for (const opCollection of head.operations) {
+            for (const op of opCollection) {
+                if (op.hash === opHash)
+                    return true;
+            }
+        }
+
+        return self.awaitForOperationToBeIncluded(opHash, head.header.level);
+    },
     sendOperation: async (from, keys, operation) => {
+        // Leave if this source is still waiting for an operation to be included
+        if (self.awaitingLock[from]) return;
+
         const {forgedConfirmation, ...verifiedOp} = await self.prepareOperations(from, keys, operation);
         
         const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
+
         return await rpc.injectOperation({
             ...verifiedOp,
             signature: signed.edsig,
@@ -153,9 +205,7 @@ const self: OperationsInterface = {
             self.contractManagers[from] = await rpc.getManager(from);
         }
 
-        if (!self.contractCounters[from]) {
-            self.contractCounters[from] = await rpc.getCounter(from);
-        } 
+        let counter = await rpc.getCounter(from);
 
         /*
         *   Prepare reveal operation if required
@@ -165,7 +215,7 @@ const self: OperationsInterface = {
                 {
                     kind: OperationTypes.reveal.type,
                     fee: String(self.feeDefaults.low),
-                    counter: String(++self.contractCounters[from]),
+                    counter: String(++counter),
                     public_key: keys.pk,
                     gas_limit: String(self.revealGasCost),
                     storage_limit: String(self.revealStorage)
@@ -181,7 +231,7 @@ const self: OperationsInterface = {
             if (self.operationRequiresCounter(cur.kind)) {
                 if (!cur.gas_limit) cur.gas_limit = String(0);
                 if (!cur.storage_limit) cur.storage_limit = String(0);
-                cur.counter = String(++self.contractCounters[from]);
+                cur.counter = String(++counter);
             }
             prev.push(cur);
             return prev;

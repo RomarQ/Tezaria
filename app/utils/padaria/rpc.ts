@@ -1,27 +1,26 @@
-import crypto from './crypto';
+import https from 'https';
+import http from 'http';
+import fs from 'fs';
+
 import utils, { Prefix } from './utils';
 import operations, {
-    OperationTypes,
     UnsignedOperationProps,
-    OperationProps,
+    UnsignedOperations
 }  from './operations';
 
 import {
-    BlockProps,
     NetworkConstants,
-    QueryType,
     RPCInterface,
     LoadOptions
 } from './rpc.d';
-import { UnsignedOperations } from './operations';
 
 export enum QueryTypes {
     GET     = 'GET',
     POST    = 'POST'
-}
+};
 
-export const DEFAULT_NODE_ADDRESS = 'https://67.207.68.241';
-export const DEFAULT_API_ADDRESS = 'https://api.zeronet.tzscan.io/v3';
+export const DEFAULT_NODE_ADDRESS = '67.207.68.241';
+export const DEFAULT_API_ADDRESS = 'www.api.zeronet.tzscan.io';
 
 const self:RPCInterface = {
     ready: false,
@@ -30,19 +29,7 @@ const self:RPCInterface = {
     network: "",
     networkEpoch: "",
     debug: false,
-    //http://tezos.gitlab.io/mainnet/protocols/003_PsddFKi3.html#more-details-on-fees-and-cost-model
-    PowHeader: "ba69ab95",
     networkConstants: {},
-    watermark: {
-        blockHeader:        new Uint8Array([1]), //0x01
-        endorsement:        new Uint8Array([2]), //0x02
-        genericOperation:   new Uint8Array([3]), //0x03
-    },
-    uTEZ:   { char: 'μꜩ',  unit: 1 },
-    mTEZ:   { char: 'mꜩ',  unit: 1000 },
-    TEZ:    { char: 'ꜩ',   unit: 1000000 },
-    KTEZ:   { char: 'Kꜩ',  unit: 1000000000 },
-    MTEZ:   { char: 'Mꜩ',  unit: 1000000000000 },
     setDebugMode: (mode:boolean) => self.debug = mode,
     load: async (options:LoadOptions) => {
         if (options.nodeAddress)
@@ -81,122 +68,93 @@ const self:RPCInterface = {
     getCurrentBlockHeader: () => (
         self.queryNode('/chains/main/blocks/head/header', QueryTypes.GET)
     ),
-    queryNode: (path:string, type:QueryType, args?:any) =>
+    queryNode: (path, method, args) => (
+        /*
+        *   All paths that contain parameters need to include / before the ?
+        *   (for example: https://address/.../?parameter=xyz)
+        */ 
         new Promise((resolve, reject) => {
             try {
-                const http = new XMLHttpRequest();
+                const options = {
+                    hostname: self.nodeAddress,
+                    port: 443,
+                    timeout: 60000, // 1min
+                    path,
+                    method,
+                    key: fs.readFileSync('app/certs/server.key'),
+                    cert: fs.readFileSync('app/certs/server.crt'),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    requestCert: false,
+                    rejectUnauthorized: false
+                } as any;
+
+                options.agent = new https.Agent(options);
+
+                const req = https.request(options, res => {
+                    res.setEncoding('utf8');
+                    let result = '';
+                    
+                    res.on('data', chunk => {
+                        result += chunk;
+                    });
+
+                    res.on('end', () => {
+                        res.statusCode === 200 ? resolve(JSON.parse(result)) : reject(res.statusMessage);
+                    });
+
+                });
+
+                req.on('error', e => reject(e.message));
                 
-                http.open(type, `${self.nodeAddress}${path}`, true);
-
-                /*
-                *   Kill the request after 60 seconds
-                *   (Could mean that the address is not available or network is down)
-                */
-                http.timeout = 60000;
-
-                //DEBUG
-                if (self.debug) console.log("Node call", path, args);
-                
-                http.onload = () => {
-                    if (http.status === 200) {
-                        if (http.responseText) {
-                            let res = JSON.parse(http.responseText);
-
-                            //DEBUG
-                            if (self.debug) console.log("Node response", path, args, res);
-
-                            if(!res) {
-                                resolve(null);
-                                return;
-                            }
-                            
-                            if(res.error) reject(res.error);
-                            else resolve(res);
-
-                        }
-                        else reject("Empty response returned");
-                    } 
-                    else {
-                        if (http.responseText) {
-                            reject(http.responseText);
-                        }
-                        else {
-                            reject(http.statusText);
-                        }
-                    }
-                };
-                http.onerror = () => {
-                    reject(http.statusText);
-                };
-                http.ontimeout = () => {
-                    reject("Timeout, not able to connect to the tezos node.");
-                };
-
-                if (type === QueryTypes.POST) {
-                    http.setRequestHeader("Content-Type", "application/json");
-                    http.send(JSON.stringify(args));        
+                if (method === QueryTypes.POST) {
+                    req.write(JSON.stringify(args));
                 }
-                else http.send();
+
+                req.end();
             }
-            catch(e) { reject(e) };
-        }),
-    queryAPI: (path:string, type:QueryType = QueryTypes.GET, args?:any) => (
-        new Promise((resolve, reject) => {
-            try {
-                const http = new XMLHttpRequest();
-                http.open(type, `${self.apiAddress}${path}`, true);
-                
-                //DEBUG
-                if (self.debug) console.log("API call", path, args);
-                
-                http.onload = () => {
-                    if (http.status === 200) {
-                        if (http.responseText) {
-                            let res = JSON.parse(http.responseText);
-                            
-                            //DEBUG
-                            if (self.debug) console.log("Node response", path, args, res);
-
-                            if(!res) {
-                                resolve(null);
-                                return;
-                            }
-                            
-                            if(res.error) reject(res.error);
-                            else resolve(res);
-                        } 
-                        else reject("Empty response returned");
-
-                    }
-                    else {
-                        if (http.responseText) {
-                            //DEBUG
-                            if (self.debug) console.log(path, args, http.responseText);
-
-                            reject(http.responseText);
-                        }
-                        else {  
-                            //DEBUG
-                            if (self.debug) console.log(path, args, http.statusText);
-
-                            reject(http.statusText);
-                        }
-                    }
-                };
-                http.onerror = () => {
-                    //DEBUG
-                    if (self.debug) console.log(path, args, http.responseText);
-
-                    reject(http.statusText);
-                };
-                if (type === QueryTypes.POST) {
-                    http.setRequestHeader("Content-Type", "application/json");
-                    http.send(JSON.stringify(args));        
-                }
-                else http.send();
-            }
-            catch(e) { reject(e) };
+            catch(e) { reject(e.message) };
         })
+    ),
+    queryAPI: (path, method = QueryTypes.GET, args) => (
+        /*
+        *   All paths that contain parameters need to include / before the ?
+        *   (for example: https://address/.../?parameter=xyz)
+        */ 
+        new Promise((resolve, reject) => {
+            try {
+                if (args) { args = JSON.stringify(args); }
+
+                const options = {
+                    hostname: self.apiAddress,
+                    port: 80,
+                    timeout: 60000, // 1min
+                    path: `/v3${path}`,
+                    method : QueryTypes.GET
+                };
+                
+                const req = http.request(options, res => {
+                    res.setEncoding('utf8');
+                    let result = '';
+                    
+                    res.on('data', chunk => {
+                        result += chunk;
+                    });
+
+                    res.on('end', () => {
+                        res.statusCode === 200 ? resolve(JSON.parse(result)) : reject(res.statusMessage);
+                    });
+
+                });
+
+                req.on('error', e => reject(e.message));
+
+                req.end();
+            }
+            catch(e) { reject(e.message) };
+        })
+        
     ),
     getCounter: async pkh => (
         Number(await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/counter`, QueryTypes.GET))
@@ -251,9 +209,10 @@ const self:RPCInterface = {
     },
     injectOperation: async ({signedOperationContents, ...rest}) => {
         const [preappliedOp] = await self.preapplyOperations([rest]);
-
+        const operationHash = await self.queryNode('/injection/operation', QueryTypes.POST, signedOperationContents) as string;
+        console.log(`END: ${new Date().toJSON()}`)
         return {
-            hash: await self.queryNode('/injection/operation', QueryTypes.POST, signedOperationContents) as string,
+            hash: operationHash,
             ...preappliedOp
         };
     },
@@ -263,7 +222,7 @@ const self:RPCInterface = {
         return Array.isArray(operations) && operations.length ? operations[0] : [];
     },
     getPredecessors: async (blockHash, length) => {
-        const res = await self.queryNode(`/chains/main/blocks?head=${blockHash}&length=${length}`, QueryTypes.GET) as string[][];
+        const res = await self.queryNode(`/chains/main/blocks/?head=${blockHash}&length=${length}`, QueryTypes.GET) as string[][];
 
         return Array.isArray(res) && res.length > 0 ? res[0] : [];
     },

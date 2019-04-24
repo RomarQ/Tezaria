@@ -192,7 +192,7 @@ const crypto = {
     ),
     POW: (forged:string, priority:number, seedHex:string) => {
         const 
-            protocolData = utils.createProtocolData(priority, rpc.PowHeader, '00000000', seedHex),
+            protocolData = utils.createProtocolData(priority, utils.PowHeader, '00000000', seedHex),
             blockBytes = forged + protocolData,
             hashBuffer = utils.hexToBuffer(blockBytes + "0".repeat(128)),
             forgedLength = forged.length/2,

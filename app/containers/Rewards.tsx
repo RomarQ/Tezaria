@@ -30,6 +30,8 @@ const Container: React.FC<Props> = ({ userData }) => {
         const cycle = selected[0].cycle;
         const paymentsResponse = await rewardController.sendSelectedRewards(userData.keys, selected);
         
+        console.log(paymentsResponse);
+
         GQLclient.mutate({
             mutation: gql`
                 mutation insertRewards($list: [cycle_reward_payment_insert_input!]!) {
@@ -42,15 +44,17 @@ const Container: React.FC<Props> = ({ userData }) => {
             `,
             variables: {
                 list: (
-                    paymentsResponse.contents.reduce((prev, cur) => ([
-                        ...prev,
-                        {
-                            cycle,
-                            delegate: cur.source,
-                            delegator: cur.destination,
-                            completed: cur.metadata.operation_result.status !== "failed"
-                        }
-                    ]), [])
+                    paymentsResponse.reduce((prev, cur) => {
+                        cur.contents.forEach(transaction => {
+                            prev.push({
+                                cycle,
+                                delegate: transaction.source,
+                                delegator: transaction.destination,
+                                completed: transaction.metadata.operation_result.status !== "failed"
+                            });
+                        });
+                        return prev;
+                    }, [])
                 )
             }
         })

@@ -1,4 +1,4 @@
-import { OperationsInterface, UnsignedOperationProps, OperationProps } from './operations';
+import { OperationsInterface, UnsignedOperationProps, OperationProps, UnsignedOperations } from './operations';
 
 export interface RPCInterface {
     ready: boolean;
@@ -7,22 +7,15 @@ export interface RPCInterface {
     network: string;
     networkEpoch: string;
     debug: boolean;
-    PowHeader: string;
     networkConstants: NetworkConstants,
-    watermark: WaterMarkType;
-    uTEZ:   TezosUnitType;
-    mTEZ:   TezosUnitType;
-    TEZ:    TezosUnitType;
-    KTEZ:   TezosUnitType;
-    MTEZ:   TezosUnitType;
     setDebugMode: (mode:boolean) => void;
     load: (options:LoadOptions) => Promise<boolean>;
     setCurrentNetwork: () => Promise<void>;
     setNetworkConstants: () => Promise<void>;
     getCurrentHead: () => Promise<BlockProps>;
     getCurrentBlockHeader: () => Promise<BlockProps>;
-    queryNode: (path:string, type:QueryType, args?:any) => Promise<any>;
-    queryAPI: (path:string, type:QueryType, args?:any) => Promise<any>;
+    queryNode: (path:string, mothod:QueryType, args?:any) => Promise<any>;
+    queryAPI: (path:string, mothod:QueryType, args?:any) => Promise<any>;
     getBalance: (pkh:string) => Promise<number>;
     simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
     forgeOperation: (head:BlockProps, operation:UnsignedOperationProps, skipConfirmation?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;

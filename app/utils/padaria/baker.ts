@@ -52,15 +52,15 @@ const self:BakerInterface = {
     },
     getIncomingBakings: async (pkh:string):Promise<IncomingBakings> => {
         try {
-            const res = await rpc.queryNode(`/incoming_bakings?delegate=${pkh}`, QueryTypes.GET) as IncomingBakingsFromServer;
+            const res = await rpc.queryNode(`/incoming_bakings/?delegate=${pkh}`, QueryTypes.GET) as IncomingBakingsFromServer;
             const cycle = res.current_cycle;
 
             let bakings = res.bakings.reduce((prev, cur, i):any => {
                 
                 cur.map(obj => {
-                if(obj.estimated_time && new Date(obj.estimated_time) > new Date()) {
-                    prev.push({ cycle: cycle+i, ...obj });
-                }
+                    if(obj.estimated_time && new Date(obj.estimated_time) > new Date()) {
+                        prev.push({ cycle: cycle+i, ...obj });
+                    }
                 })
 
                 return prev;
