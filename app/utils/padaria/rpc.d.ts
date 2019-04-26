@@ -6,16 +6,15 @@ export interface RPCInterface {
     apiAddress: string;
     network: string;
     networkEpoch: string;
-    debug: boolean;
-    networkConstants: NetworkConstants,
-    setDebugMode: (mode:boolean) => void;
+    networkConstants: NetworkConstants;
     load: (options:LoadOptions) => Promise<boolean>;
     setCurrentNetwork: () => Promise<void>;
     setNetworkConstants: () => Promise<void>;
     getCurrentHead: () => Promise<BlockProps>;
     getCurrentBlockHeader: () => Promise<BlockProps>;
     queryNode: (path:string, mothod:QueryType, args?:any) => Promise<any>;
-    queryAPI: (path:string, mothod:QueryType, args?:any) => Promise<any>;
+    queryTzScan: (path:string, mothod:QueryType, args?:any) => Promise<any>;
+    queryRequest: (options:RequestOptions, args?:any) => Promise<any>;
     getBalance: (pkh:string) => Promise<number>;
     simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
     forgeOperation: (head:BlockProps, operation:UnsignedOperationProps, skipConfirmation?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
@@ -27,6 +26,22 @@ export interface RPCInterface {
     getPredecessors: (blockHash:string, length:number) => Promise<string[]>;
     getBlock: (blockHash:string) => Promise<BlockProps>;
 }
+
+type RequestOptions = {
+    hostname: string;
+    port: number;
+    timeout?: number;
+    path: string;
+    method: string;
+    key?: string;
+    cert?: string;
+    headers?: {
+        [index: string]: string;
+    },
+    agent?: any;
+    requestCert?: boolean;
+    rejectUnauthorized?: boolean;
+};
 
 export type QueryType = 
     | 'GET'

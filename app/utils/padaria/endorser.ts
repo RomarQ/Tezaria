@@ -22,7 +22,7 @@ const self:EndorderInterface = {
     */
     getCompletedEndorsings: async (pkh:string):Promise<CompletedEndorsing[]> => {
         try {
-            const res = await rpc.queryAPI(`/bakings_endorsement/${pkh}`, QueryTypes.GET) as CompletedEndorsingFromServer[];
+            const res = await rpc.queryTzScan(`/bakings_endorsement/${pkh}`, QueryTypes.GET) as CompletedEndorsingFromServer[];
 
             return res.reduce((prev, cur, i):any => {
                 if(!cur) return;
