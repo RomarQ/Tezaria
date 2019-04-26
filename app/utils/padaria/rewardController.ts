@@ -7,7 +7,6 @@ import {
     DelegatorReward,
     RewardsSplit
 } from './rewardController.d';
-import { number } from 'prop-types';
 
 const DEFAULT_FEE_PERCENTAGE = 10;
 
@@ -15,21 +14,21 @@ const self:RewardControllerInterface = {
     feePercentage: DEFAULT_FEE_PERCENTAGE,
 
     getNumberOfDelegatorsByCycle: async (pkh, cycle) => {
-        const [total] = await rpc.queryAPI(`/nb_delegators/${pkh}/?cycle=${cycle}`, QueryTypes.GET) as number[];
+        const [total] = await rpc.queryTzScan(`/nb_delegators/${pkh}/?cycle=${cycle}`, QueryTypes.GET) as number[];
         return total;
     },
     /*
     *   Returns an array with information about staking balance, number of delegators, rewards, fees, etc.
     */
     getRewards: (pkh, numberOfCycles) => (
-        rpc.queryAPI(`/rewards_split_cycles/${pkh}/?number=${numberOfCycles}`, QueryTypes.GET)
+        rpc.queryTzScan(`/rewards_split_cycles/${pkh}/?number=${numberOfCycles}`, QueryTypes.GET)
     ),
     getDelegatorsRewardsByCycle: async (pkh, cycle) => {
         let pageNumber = 0;
-        const rewards = await rpc.queryAPI(`/rewards_split/${pkh}/?cycle=${cycle}&number=50&p=${pageNumber++}`, QueryTypes.GET) as RewardsSplit;
+        const rewards = await rpc.queryTzScan(`/rewards_split/${pkh}/?cycle=${cycle}&number=50&p=${pageNumber++}`, QueryTypes.GET) as RewardsSplit;
 
         while (rewards.delegators_balance.length < rewards.delegators_nb) {
-            const nextPage = await rpc.queryAPI(`/rewards_split/${pkh}/?cycle=${cycle}&number=50&p=${pageNumber++}`, QueryTypes.GET) as RewardsSplit;
+            const nextPage = await rpc.queryTzScan(`/rewards_split/${pkh}/?cycle=${cycle}&number=50&p=${pageNumber++}`, QueryTypes.GET) as RewardsSplit;
             rewards.delegators_balance = [
                 ...rewards.delegators_balance,
                 ...nextPage.delegators_balance
@@ -39,7 +38,7 @@ const self:RewardControllerInterface = {
         return rewards;
     },
     getDelegatorRewardsByCycle: async (delegatorPKH: string, cycle: number) => {
-        const rewards = await rpc.queryAPI(`/delegator_rewards/${delegatorPKH}`, QueryTypes.GET) as DelegatorReward[];
+        const rewards = await rpc.queryTzScan(`/delegator_rewards/${delegatorPKH}`, QueryTypes.GET) as DelegatorReward[];
         
         return rewards[0] ? rewards.filter(r => r.cycle == cycle)[0] : undefined;
     },

@@ -44,11 +44,12 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     const [baking, setBaking] = React.useState(controllerState.baking);
     const [endorsing, setEndorsing] = React.useState(controllerState.endorsing);
     const [accusing, setAccusing] = React.useState(controllerState.accusing);
+    const [rewarding, setRewarder] = React.useState(controllerState.accusing);
 
     const handleAction = () => {
         controllerState.active
             ? controllerFunc.stopController()
-            : controllerFunc.startController(keys, { baking, endorsing, accusing, logger: handleControllerLogs });
+            : controllerFunc.startController(keys, { baking, endorsing, accusing, rewarding, logger: handleControllerLogs });
     };
 
     const handleControllerLogs = (log:LogProps) => {
@@ -88,6 +89,14 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
                     value="Accuser"
                     checked={accusing}
                     onChange={() => handleChange(setAccusing, !accusing)}
+                />
+            </div>
+            <div className={classes.switchRow}>
+                <Typography variant="h6" className={classes.label} children="Rewarder" />
+                <Switch
+                    value="Rewarder"
+                    checked={rewarding}
+                    onChange={() => handleChange(setRewarder, !rewarding)}
                 />
             </div>
         </div>

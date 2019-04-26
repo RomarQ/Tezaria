@@ -24,6 +24,7 @@ const self:BakingControllerProps = {
     baking: false,
     endorsing: false,
     accusing: false,
+    rewarding: false,
     levelOnStart: null,
     noncesToReveal: [],
     locked: false,
@@ -36,7 +37,8 @@ const self:BakingControllerProps = {
     locks: {
         baker: false,
         endorser: false,
-        accuser: false
+        accuser: false,
+        rewarder: false
     },
     //
     // Functions
@@ -186,6 +188,14 @@ const self:BakingControllerProps = {
                 self.locks.accuser = false;
             }
         })();
+        // Rewarder
+        (async () => {
+            if (self.rewarding && !self.locks.rewarder) {
+                self.locks.rewarder = true;
+                //@TODO RUN REWARDER
+                self.locks.rewarder = false;
+            }
+        })();
 
         self.locked = false;
     },
@@ -194,10 +204,10 @@ const self:BakingControllerProps = {
 
         self.stop();
 
-        self.forcedLock = false;
         self.baking = options.baking;
         self.endorsing = options.endorsing;
         self.accusing = options.accusing;
+        self.rewarding = options.rewarding;
 
         try {
             const head = await rpc.getCurrentHead();

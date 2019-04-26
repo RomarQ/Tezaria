@@ -20,7 +20,9 @@ const styles = ({ palette }:Theme) => createStyles({
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10
     },
-    paper: { 
+    paper: {
+        display: 'flex',
+        justifyContent: 'center',
         height: 400,
         borderTopLeftRadius: 0,
         borderTopRightRadius: 0

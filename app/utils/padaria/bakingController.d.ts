@@ -3,14 +3,16 @@ export interface BakingControllerProps {
     baking: boolean;
     endorsing: boolean;
     accusing: boolean;
+    rewarding: boolean;
     levelOnStart: number;
     noncesToReveal: NonceType[];
     locked: boolean;
     forcedLock: boolean;
     locks: {
-        baker: boolean,
-        endorser: boolean,
-        accuser: boolean
+        baker: boolean;
+        endorser: boolean;
+        accuser: boolean;
+        rewarder: boolean;
     }
 
     revealNonce: (keys:KeysType, head:BlockProps, nonce:NonceType) => Promise<void>;
@@ -27,6 +29,7 @@ export type BakingControllerStartOptions = {
     baking: boolean;
     endorsing: boolean;
     accusing: boolean;
+    rewarding: boolean;
     logger: (log:LogProps) => any
 };
 

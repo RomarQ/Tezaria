@@ -14,7 +14,7 @@ type Props = {
 
 const Container: React.FC<Props> = ({ userData }) => {
     const isMounted = React.useRef(true);
-    const [rewards, setRewards] = React.useState(undefined);
+    const [rewards, setRewards] = React.useState(null);
 
     React.useEffect(() => {
         if (!rewards) {

@@ -2,7 +2,6 @@ import rpc, { QueryTypes } from './rpc';
 import { UnsignedOperationProps, UnsignedOperations } from './operations';
 import utils, { Prefix } from './utils';
 import crypto from './crypto';
-import bakingController from './bakingController';
 
 import {
     BakerInterface,
@@ -28,7 +27,7 @@ const self:BakerInterface = {
     //
     getCompletedBakings: async (pkh:string):Promise<CompletedBaking[]> => {
         try {
-            const res = await rpc.queryAPI(`/bakings/${pkh}`, QueryTypes.GET) as CompletedBakingsFromServer[];
+            const res = await rpc.queryTzScan(`/bakings/${pkh}`, QueryTypes.GET) as CompletedBakingsFromServer[];
 
             return res.reduce((prev, cur) => {
                 if(!cur) return;

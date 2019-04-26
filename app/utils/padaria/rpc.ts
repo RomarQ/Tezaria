@@ -20,7 +20,7 @@ export enum QueryTypes {
 };
 
 export const DEFAULT_NODE_ADDRESS = '67.207.68.241';
-export const DEFAULT_API_ADDRESS = 'www.api.zeronet.tzscan.io';
+export const DEFAULT_API_ADDRESS = 'api.zeronet.tzscan.io';
 
 const self:RPCInterface = {
     ready: false,
@@ -28,9 +28,7 @@ const self:RPCInterface = {
     apiAddress: DEFAULT_API_ADDRESS,
     network: "",
     networkEpoch: "",
-    debug: false,
     networkConstants: {},
-    setDebugMode: (mode:boolean) => self.debug = mode,
     load: async (options:LoadOptions) => {
         if (options.nodeAddress)
             self.nodeAddress = options.nodeAddress;
@@ -40,6 +38,7 @@ const self:RPCInterface = {
 
         await self.setNetworkConstants();
         await self.setCurrentNetwork();
+        await utils.verifyNodeCommits();
 
         return self.ready = true;
     },
@@ -68,93 +67,86 @@ const self:RPCInterface = {
     getCurrentBlockHeader: () => (
         self.queryNode('/chains/main/blocks/head/header', QueryTypes.GET)
     ),
-    queryNode: (path, method, args) => (
-        /*
-        *   All paths that contain parameters need to include / before the ?
-        *   (for example: https://address/.../?parameter=xyz)
-        */ 
+    queryNode: (path, method, args) => {
+        const options = {
+            hostname: self.nodeAddress,
+            port: 443,
+            timeout: 60000, // 1min
+            path,
+            method,
+            key: fs.readFileSync('app/certs/server.key'),
+            cert: fs.readFileSync('app/certs/server.crt'),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            requestCert: false,
+            rejectUnauthorized: false
+        } as any;
+
+        options.agent = new https.Agent(options);
+
+        return self.queryRequest(options, args);
+
+    },
+    queryTzScan: (path, method = QueryTypes.GET, args) => {
+        const options = {
+            hostname: self.apiAddress,
+            port: 80,
+            timeout: 60000, // 1min
+            path: `/v3${path}`,
+            method
+        };
+        return self.queryRequest(options, args);
+    },
+    /*
+    *   All paths that contain parameters need to include / before the ?
+    *   (for example: https://address/.../?parameter=xyz)
+    */ 
+    queryRequest: (options, args) => (
         new Promise((resolve, reject) => {
             try {
-                const options = {
-                    hostname: self.nodeAddress,
-                    port: 443,
-                    timeout: 60000, // 1min
-                    path,
-                    method,
-                    key: fs.readFileSync('app/certs/server.key'),
-                    cert: fs.readFileSync('app/certs/server.crt'),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    requestCert: false,
-                    rejectUnauthorized: false
-                } as any;
+                let req;
+                if (options.port === 443)
+                    req = https.request(options, res => {
+                        res.setEncoding('utf8');
+                        let result = '';
+                        
+                        res.on('data', chunk => {
+                            result += chunk;
+                        });
 
-                options.agent = new https.Agent(options);
+                        res.on('end', () => {
+                            res.statusCode === 200 ? resolve(JSON.parse(result)) : reject(res.statusMessage);
+                        });
 
-                const req = https.request(options, res => {
-                    res.setEncoding('utf8');
-                    let result = '';
-                    
-                    res.on('data', chunk => {
-                        result += chunk;
                     });
+                else
+                    req = http.request(options, res => {
+                        res.setEncoding('utf8');
+                        let result = '';
+                        
+                        res.on('data', chunk => {
+                            result += chunk;
+                        });
 
-                    res.on('end', () => {
-                        res.statusCode === 200 ? resolve(JSON.parse(result)) : reject(res.statusMessage);
+                        res.on('end', () => {
+                            res.statusCode === 200 ? resolve(JSON.parse(result)) : reject(res.statusMessage);
+                        });
+
                     });
-
-                });
 
                 req.on('error', e => reject(e.message));
-                
-                if (method === QueryTypes.POST) {
+
+                if (options.method === QueryTypes.POST) {
                     req.write(JSON.stringify(args));
                 }
 
                 req.end();
             }
-            catch(e) { reject(e.message) };
-        })
-    ),
-    queryAPI: (path, method = QueryTypes.GET, args) => (
-        /*
-        *   All paths that contain parameters need to include / before the ?
-        *   (for example: https://address/.../?parameter=xyz)
-        */ 
-        new Promise((resolve, reject) => {
-            try {
-                if (args) { args = JSON.stringify(args); }
-
-                const options = {
-                    hostname: self.apiAddress,
-                    port: 80,
-                    timeout: 60000, // 1min
-                    path: `/v3${path}`,
-                    method : QueryTypes.GET
-                };
-                
-                const req = http.request(options, res => {
-                    res.setEncoding('utf8');
-                    let result = '';
-                    
-                    res.on('data', chunk => {
-                        result += chunk;
-                    });
-
-                    res.on('end', () => {
-                        res.statusCode === 200 ? resolve(JSON.parse(result)) : reject(res.statusMessage);
-                    });
-
-                });
-
-                req.on('error', e => reject(e.message));
-
-                req.end();
+            catch(e) {
+                reject(e.message);
             }
-            catch(e) { reject(e.message) };
         })
-        
     ),
     getCounter: async pkh => (
         Number(await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/counter`, QueryTypes.GET))
@@ -230,9 +222,6 @@ const self:RPCInterface = {
         self.queryNode(`/chains/main/blocks/${blockHash}`, QueryTypes.GET)
     )
 };
-
-export const queryNode = self.queryNode;
-export const queryAPI = self.queryAPI;
 
 export * from './rpc.d';
 export default self;
