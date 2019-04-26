@@ -10,11 +10,40 @@
 ![Screenshot](https://imgur.com/9NpzxM5.gif)
 <!-- ![Screenshot](https://i.imgur.com/M313wSe.gif) -->
 
+</div>
 
-<a href="https://facebook.github.io/react/"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0xMS41IC0xMC4yMzE3NCAyMyAyMC40NjM0OCI+CiAgPHRpdGxlPlJlYWN0IExvZ288L3RpdGxlPgogIDxjaXJjbGUgY3g9IjAiIGN5PSIwIiByPSIyLjA1IiBmaWxsPSIjNjFkYWZiIi8+CiAgPGcgc3Ryb2tlPSIjNjFkYWZiIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiPgogICAgPGVsbGlwc2Ugcng9IjExIiByeT0iNC4yIi8+CiAgICA8ZWxsaXBzZSByeD0iMTEiIHJ5PSI0LjIiIHRyYW5zZm9ybT0icm90YXRlKDYwKSIvPgogICAgPGVsbGlwc2Ugcng9IjExIiByeT0iNC4yIiB0cmFuc2Zvcm09InJvdGF0ZSgxMjApIi8+CiAgPC9nPgo8L3N2Zz4K" width="90px" height="90px"/></a>
-<a href="http://redux.js.org/"><img src="https://redux.js.org/img/redux.svg" width="90px" height="90px"/></a>
-<a href=""><img src="https://docs.hasura.io/1.0/_images/layout/logo-lite.svg" width="90px" height="90px"/>
+## TODO
+* [X] Allow key Import/Creation (Only Compatible with ed25519 for now)
+* [X] White List Proxy ( Made a simple server in Go-lang, not included here )
+* [X] Node Configuration: https://github.com/etomknudsen/tezos-baking/tree/master/tezos-node-cpr
+* [X] Baker Module
+* [X] Endorser Module
+* [X] Accuser Module
+* [X] Rewarder Module
+* [X] Operation System to allow multiple operation batches
+* [X] API to store confirmed payments
+* [ ] UI Logger ( 50% )
+* [ ] Integrate mobile notifications into the logger
+* [ ] Unit tests
+* [ ] CLEAN SPAGHETTI CODE!!!
 
-<a href=""><img src="https://d33wubrfki0l68.cloudfront.net/714cc717dca2f94ab3db9b3260e9752acada13e0/93d35/static/logo-white-71d4c6230c1101080207f89be9f73925.png" height="90px"/>
+
+<div align="center">
+<a href="https://tezos.com">
+    <img src="https://cdn-images-1.medium.com/max/383/1*y8_HZM44X6ngoDhzcNqNHg@2x.png" height="90px"/>
+</a>
+<a href="https://facebook.github.io/react/">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg" width="90px" height="90px"/>
+</a>
+<a href="http://redux.js.org/">
+    <img src="https://redux.js.org/img/redux.svg" width="90px" height="90px"/>
+</a>
+<a href="https://hasura.io">
+    <img src="https://hasura.io/rstatic/dist/eca5e5679b95686566c3c2de6bf2c899.svg" width="90px" height="90px"/>
+</a>
+
+<a href="https://www.howtographql.com/">
+    <img src="https://d33wubrfki0l68.cloudfront.net/ee8e4a26c381ece64f6a8449059b9a120ecff6e0/c72e9/static/howtographql.d1a2e5b4.svg" height="90px"/>
+<a/>
 
 </div>

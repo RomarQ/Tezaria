@@ -22,6 +22,7 @@ export interface UtilsInterface {
     MTEZ:   TezosUnitType;
 
     setDebugMode: (mode:boolean) => void,
+    verifyNodeCommits: () => Promise<CommitState>;
     operationType: (op:{ contents: {kind:string}[] }) => number;
     createProtocolData: (priority:number, powHeader?:string, pow?:string, seed?:string) => string;
     convertUnit: (value:number, to:{char:string, unit:number}, from?:{char:string, unit:number}) => string;
@@ -38,4 +39,14 @@ export interface UtilsInterface {
     b58encode: (payload:Uint8Array, prefix:Uint8Array) => string;
     b58decode: (encoded:string, prefix:Uint8Array) => Uint8Array;
     numberToZarith: (value:number) => string;
+}
+
+export type TezosCommitState = {
+    updated: boolean;
+    currentCommitHash: string;
+    lastCommitHash: string;
+    commitsbehind: number;
+    author: string;
+    date: string;
+    message: string;
 }

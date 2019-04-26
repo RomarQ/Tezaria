@@ -1,6 +1,6 @@
 import bs58check from 'bs58check';
 
-import rpc from './rpc';
+import rpc, { QueryTypes } from './rpc';
 
 import {
     UtilsInterface,
@@ -96,6 +96,34 @@ const self:UtilsInterface = {
     createProtocolData: (priority:number, powHeader = '', pow = '', seed = '') => {
         return `${priority.toString(16).padStart(4,"0")}${powHeader.padEnd(8, "0")}${pow.padEnd(8, "0")}${seed ? "ff"+seed.padEnd(64, "0") : "00"}`;
     },
+    verifyNodeCommits: async () => {
+        const nodeLastCommit = await rpc.queryNode('/monitor/commit_hash', QueryTypes.GET);
+        const options = {
+            hostname: 'gitlab.com',
+            port: 443,
+            path: `/api/v4/projects/tezos%2Ftezos/repository/commits/?ref_name=${rpc.network.toLocaleLowerCase()}&per_page=100`,
+            method: 'GET'
+        };
+        const commits = await rpc.queryRequest(options) as {author_name:string;committed_date:string;id:string;message:string}[];
+
+        if (!Array.isArray(commits)) return;
+
+        let index = 0;
+        for (const commit of commits) {
+            if (commit.id === nodeLastCommit) {
+                return {
+                    updated: index === 0,
+                    currentCommitHash: nodeLastCommit,
+                    lastCommitHash: commit.id,
+                    commitsbehind: index,
+                    author: commit.author_name,
+                    date: commit.committed_date,
+                    message: commit.message
+                }
+            }
+            index++;
+        }
+    },
     convertUnit: (value, to, from = self.uTEZ) => (
         ((value / to.unit) * from.unit).toLocaleString('fullwide', {maximumFractionDigits:3})
     ),
@@ -173,4 +201,5 @@ const self:UtilsInterface = {
     },
 };
 
+export * from './utils.d';
 export default self;

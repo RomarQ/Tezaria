@@ -1,11 +1,12 @@
 import React from 'react';
 import { createStyles, withStyles, Theme, WithStyles } from '@material-ui/core/styles';
-import BakerInfo from '../Baker/BakerInfo';
+import BakerPanel from '../Baker/BakerPanel';
 
 import EndorsingRights from '../../containers/Widgets/Endorsing/EndorsingRights';
 import BakingRights from '../../containers/Widgets/Baking/BakingRights';
 import BakingController from '../../containers/Widgets/BakingController';
 
+import { TezosCommitState } from'../../utils/padaria/utils';
 import { UserDataType } from '../../types';
 
 
@@ -36,14 +37,15 @@ const styles = ({}: Theme) => createStyles({
 type Props = {
     userData: UserDataType;
     bakerInfo: any;
+    nodeInfo: TezosCommitState;
 } & WithStyles<typeof styles>;
 
-const Dashboard: React.FC<Props> = (props) => {
-    const { classes, userData: { keys }, bakerInfo } = props;
+const Dashboard: React.FC<Props> = props => {
+    const { classes, userData: { keys }, bakerInfo, nodeInfo } = props;
     return keys ? (
         <div className={classes.root}>
             <div className={classes.top}>
-                <BakerInfo bakerInfo={bakerInfo} />
+                <BakerPanel bakerInfo={bakerInfo} nodeInfo={nodeInfo} />
                 <BakingController keys={keys} />
             </div>
             <div className={classes.widgets}>
