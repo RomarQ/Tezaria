@@ -8,7 +8,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 import RewardsPerDelegator from './RewardsPerDelegator';
 import utils from '../../utils/padaria/utils';
-import { DelegatorReward } from '../../utils/padaria/rewardController';
+import { DelegatorReward } from '../../utils/padaria/rewarder';
 
 const styles = ({ typography, palette }: Theme) => createStyles({
     root: {

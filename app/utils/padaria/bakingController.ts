@@ -4,6 +4,7 @@ import utils from './utils';
 import baker from './baker';
 import endorser from './endorser';
 import accuser from './accuser';
+import rewarder from './rewarder';
 import crypto from './crypto';
 
 import {
@@ -192,7 +193,7 @@ const self:BakingControllerProps = {
         (async () => {
             if (self.rewarding && !self.locks.rewarder) {
                 self.locks.rewarder = true;
-                //@TODO RUN REWARDER
+                await rewarder.run(keys, head, logger);
                 self.locks.rewarder = false;
             }
         })();

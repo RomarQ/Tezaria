@@ -37,6 +37,7 @@ const App: React.FC<Props> = props => {
             
             rpc.load({
                 nodeAddress: settings.nodeAddress,
+                tzScanAddress: settings.tzScanAddress,
                 apiAddress: settings.apiAddress
             })
             .then(() => {

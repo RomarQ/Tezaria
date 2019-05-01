@@ -5,7 +5,7 @@ import GQLclient from '../graphql-client';
 
 import Component from '../components/Rewards/Rewards';
 import { UserDataType } from '../types';
-import rewardController, { DelegatorReward } from '../utils/padaria/rewardController';
+import rewarder, { DelegatorReward } from '../utils/padaria/rewarder';
 import Splash from './Splash';
 
 type Props = {
@@ -18,7 +18,7 @@ const Container: React.FC<Props> = ({ userData }) => {
 
     React.useEffect(() => {
         if (!rewards) {
-            rewardController.getRewards(userData.keys.pkh, 15).then(res => {
+            rewarder.getRewards(userData.keys.pkh, 15).then(res => {
                 if (isMounted.current)
                     setRewards(res);
             });
@@ -28,7 +28,7 @@ const Container: React.FC<Props> = ({ userData }) => {
 
     const handleRewardsPayment = async (selected:DelegatorReward[], updateRewards:()=>void) => {
         const cycle = selected[0].cycle;
-        const paymentsResponse = await rewardController.sendSelectedRewards(userData.keys, selected);
+        const paymentsResponse = await rewarder.sendSelectedRewards(userData.keys, selected);
         
         console.log(paymentsResponse);
 

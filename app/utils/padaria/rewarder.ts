@@ -6,11 +6,12 @@ import {
     RewardControllerInterface,
     DelegatorReward,
     RewardsSplit
-} from './rewardController.d';
+} from './rewarder.d';
 
 const DEFAULT_FEE_PERCENTAGE = 10;
 
 const self:RewardControllerInterface = {
+    lastRewardedCycle: null,
     feePercentage: DEFAULT_FEE_PERCENTAGE,
 
     getNumberOfDelegatorsByCycle: async (pkh, cycle) => {
@@ -75,8 +76,31 @@ const self:RewardControllerInterface = {
         }));
 
         return await operations.transaction(keys.pkh, destinations, keys);
+    },
+    run: async (keys, head, logger) => {
+        /*
+        *   Get the last cycle that delegators got paid
+        */
+        if (!self.lastRewardedCycle)
+            self.lastRewardedCycle = await rpc.queryAPI(`
+                query {
+                    rewarded_cycles_aggregate {
+                        aggregate {
+                            max {
+                                cycle
+                            }
+                        }
+                    }
+                }
+            `)
+            .then(res => res && res.rewarded_cycles_aggregate)
+            .then(res => res && res.aggregate)
+            .then(res => res && res.max && res.max.cycle);
+
+        
+        console.log(self.lastRewardedCycle);
     }
 };
 
-export * from './rewardController.d';
+export * from './rewarder.d';
 export default self;
