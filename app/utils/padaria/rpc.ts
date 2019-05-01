@@ -191,7 +191,7 @@ const self:RPCInterface = {
         console.log(preappliedOps)
 
         if(
-            preappliedOps.some(({contents}) => contents.some(({metadata: { operation_result } }) => 
+            preappliedOps.some(({contents}) => contents && contents.some(({metadata: { operation_result } }) => 
             operation_result && operation_result.status === "failed"))
         ) {
             throw Error(`[RPC] - Failed to preapply operations.`);
