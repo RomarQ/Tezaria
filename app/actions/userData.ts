@@ -78,6 +78,7 @@ const setBakerSettings = (settings:UserSettingsType) =>
             
             rpc.load({
                 nodeAddress: settings.nodeAddress,
+                tzScanAddress: settings.tzScanAddress,
                 apiAddress: settings.apiAddress
             });
         });

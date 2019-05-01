@@ -17,7 +17,7 @@ import EnhancedTable from '../Table/EnhancedTable';
 import EnhancedTableHead from '../Table/EnhancedTableHead';
 
 import utils from '../../utils/padaria/utils';
-import rewardController, { DelegatorReward } from '../../utils/padaria/rewardController';
+import rewarder, { DelegatorReward } from '../../utils/padaria/rewarder';
 
 const styles = ({palette}:Theme) => createStyles({
     root: {
@@ -116,7 +116,7 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
 
     const updateRewards = () => {
         if (isMounted.current) {
-            rewardController.prepareRewardsToSendByCycle(pkh, cycle).then(rewardsList => {
+            rewarder.prepareRewardsToSendByCycle(pkh, cycle).then(rewardsList => {
                 GQLclient.query({
                     query: gql`
                         query paidRewards($cycle: Int!, $delegate: String!) {

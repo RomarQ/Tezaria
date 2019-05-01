@@ -1,6 +1,7 @@
 import https from 'https';
 import http from 'http';
 import fs from 'fs';
+import { GraphQLClient } from 'graphql-request';
 
 import utils, { Prefix } from './utils';
 import operations, {
@@ -20,12 +21,15 @@ export enum QueryTypes {
 };
 
 export const DEFAULT_NODE_ADDRESS = '67.207.68.241';
-export const DEFAULT_API_ADDRESS = 'api.zeronet.tzscan.io';
+export const DEFAULT_API_ADDRESS = 'http://67.207.68.241:8080/v1alpha1/graphql';
+export const DEFAULT_TZSCAN_API_ADDRESS = 'api.zeronet.tzscan.io';
 
 const self:RPCInterface = {
     ready: false,
     nodeAddress: DEFAULT_NODE_ADDRESS,
+    tzScanAddress: DEFAULT_TZSCAN_API_ADDRESS,
     apiAddress: DEFAULT_API_ADDRESS,
+    apiClient: null,
     network: "",
     networkEpoch: "",
     networkConstants: {},
@@ -33,8 +37,17 @@ const self:RPCInterface = {
         if (options.nodeAddress)
             self.nodeAddress = options.nodeAddress;
         
-        if (options.nodeAddress)
+        if (options.tzScanAddress)
+            self.tzScanAddress = options.tzScanAddress;
+
+        if (options.apiAddress) {
             self.apiAddress = options.apiAddress;
+            self.apiClient = new GraphQLClient(options.apiAddress, {
+                headers: {
+                    "X-Hasura-Admin-Secret": 'myadminsecretkey'
+                }
+            })
+        }
 
         await self.setNetworkConstants();
         await self.setCurrentNetwork();
@@ -90,13 +103,20 @@ const self:RPCInterface = {
     },
     queryTzScan: (path, method = QueryTypes.GET, args) => {
         const options = {
-            hostname: self.apiAddress,
+            hostname: self.tzScanAddress,
             port: 80,
             timeout: 60000, // 1min
             path: `/v3${path}`,
             method
         };
         return self.queryRequest(options, args);
+    },
+    // GraphQL
+    queryAPI: (query, variables) => {
+        if (!self.apiClient)
+            throw "API configuration missing!";
+
+        return variables ? self.apiClient.request(query, variables) : self.apiClient.request(query);
     },
     /*
     *   All paths that contain parameters need to include / before the ?
