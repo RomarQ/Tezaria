@@ -1,9 +1,8 @@
 import { OperationsInterface, UnsignedOperationProps, OperationProps, UnsignedOperations } from './operations';
 
-export interface RPCInterface {
+export interface RPCInterface extends LoadOptions {
     ready: boolean;
-    nodeAddress: string;
-    apiAddress: string;
+    apiClient: any;
     network: string;
     networkEpoch: string;
     networkConstants: NetworkConstants;
@@ -14,6 +13,7 @@ export interface RPCInterface {
     getCurrentBlockHeader: () => Promise<BlockProps>;
     queryNode: (path:string, mothod:QueryType, args?:any) => Promise<any>;
     queryTzScan: (path:string, mothod:QueryType, args?:any) => Promise<any>;
+    queryAPI: (query:string, variables?:Object<any>) => Promise<any>;
     queryRequest: (options:RequestOptions, args?:any) => Promise<any>;
     getBalance: (pkh:string) => Promise<number>;
     simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
@@ -25,7 +25,7 @@ export interface RPCInterface {
     getEndorsementOperations: (blockId:string) => Promise<UnsignedOperationProps[]>;
     getPredecessors: (blockHash:string, length:number) => Promise<string[]>;
     getBlock: (blockHash:string) => Promise<BlockProps>;
-}
+};
 
 type RequestOptions = {
     hostname: string;
@@ -49,6 +49,7 @@ export type QueryType =
 
 export type LoadOptions = {
     nodeAddress: string;
+    tzScanAddress: string;
     apiAddress: string;
 }
 

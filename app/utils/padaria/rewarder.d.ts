@@ -1,7 +1,8 @@
 import { UnsignedOperationProps } from './operations';
 
 export interface RewardControllerInterface {
-    feePercentage: number,
+    lastRewardedCycle: number;
+    feePercentage: number;
 
     // Methods
     getNumberOfDelegatorsByCycle: (pkh:string, cycle:number) => Promise<number>;
@@ -11,6 +12,7 @@ export interface RewardControllerInterface {
     prepareRewardsToSendByCycle: (pkh: string, cycle: number) => Promise<DelegatorReward[]>;
     sendRewardsByCycle: (pkh: string, cycle: number) => Promise<>;
     sendSelectedRewards: (keys:KeysType, selected:DelegatorReward[]) => Promise<UnsignedOperationProps[]>;
+    run: (keys:KeysType, head:BlockProps, logger: (log:LogProps) => any) => Promise<void>;
 }
 
 export type RewardsInfo = {

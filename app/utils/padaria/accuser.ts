@@ -22,7 +22,6 @@ const self:AccuserInterface = {
     * Functions
     */
     run: async (keys, logger) => {
-        console.log('Start: ' + new Date())
         const lastValidatedBlock = await rpc.queryNode('/monitor/valid_blocks', QueryTypes.GET);
 
         if (lastValidatedBlock.level > self.highestLevelEncountered) {
@@ -73,8 +72,6 @@ const self:AccuserInterface = {
             ];
 
         }, [] as BlockProps[]);
-
-        console.log('End: ' + new Date())
     }
 };
 
