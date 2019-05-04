@@ -57,13 +57,8 @@ const styles = ({ palette }:Theme) => createStyles({
 
 const incoming_endorsings_columns = [
     {
-        width: 64,
-        label: 'Cycle',
-        dataKey: 'cycle',
-        numeric: true
-    },
-    {
-        width: 128,
+        width: 1,
+        flexGrow: 1,
         label: 'Level',
         dataKey: 'level',
         numeric: true
@@ -76,7 +71,8 @@ const incoming_endorsings_columns = [
         eta: true
     },
     {
-        width: 128,
+        width: 1,
+        flexGrow: 1,
         label: 'Slots',
         dataKey: 'slots',
         array: true
