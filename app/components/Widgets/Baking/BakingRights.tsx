@@ -57,19 +57,15 @@ const styles = ({ palette }:Theme) => createStyles({
 
 const incoming_bakings_columns = [
     {
-        width: 64,
-        label: 'Cycle',
-        dataKey: 'cycle',
-        numeric: true
-    },
-    {
-        width: 128,
+        width: 1,
+        flexGrow: 1,
         label: 'Level',
         dataKey: 'level',
         numeric: true
     },
     {
-        width: 64,
+        width: 1,
+        flexGrow: 1,
         label: 'Priority',
         dataKey: 'priority',
         numeric: 'true'

@@ -89,7 +89,6 @@ const self:EndorderInterface = {
                 endorsings: endorsingRights
             };
 
-
         } catch(e) { console.error("Not able to get Incoming Endorsings."); }
     },
     run: async (keys, head) => {
