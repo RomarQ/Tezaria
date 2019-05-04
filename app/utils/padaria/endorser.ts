@@ -49,30 +49,47 @@ const self:EndorderInterface = {
 
         } catch(e) { console.error(e); }
     },
-    getIncomingEndorsings: async (pkh:string):Promise<IncomingEndorsings> => {
+    getIncomingEndorsings: async pkh => {
         try {
-            const res = await rpc.queryNode(`/incoming_endorsings/?delegate=${pkh}`, QueryTypes.GET) as IncomingEndorsingsFromServer;
-            const cycle = res.current_cycle;
+            const metadata = await rpc.getCurrentBlockMetadata();
 
-            let endorsings:EndorsingRight[] = [];
+            if (!metadata)
+                return;
+            
+            let endorsingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/endorsing_rights?delegate=${pkh}&cycle=${metadata.level.cycle}`, QueryTypes.GET) as EndorsingRight[];
 
-            endorsings = res.endorsings.reduce((prev, cur, i):any => {
-                if(!cur || cur.length == 0) { return prev; };
+            endorsingRights = endorsingRights.filter(right => !!right.estimated_time);
                 
-                cur.map(obj => {
-                    if(obj.estimated_time && new Date(obj.estimated_time) > new Date()) {
-                        prev.push({ cycle: cycle+i, ...obj });
-                    }
-                });
+            /*
+            *   Decided to remove the custom API call on this process for sake of simplicity for new bakers
 
-                return prev;
-            }, endorsings);
+                // This code will possible be used in future versions, since I plan this tool to be customizable.
+
+                const res = await rpc.queryNode(`/incoming_endorsings/?delegate=${pkh}`, QueryTypes.GET) as IncomingEndorsingsFromServer;
+                const cycle = res.current_cycle;
+
+                let endorsings:EndorsingRight[] = [];
+
+                endorsings = res.endorsings.reduce((prev, cur, i):any => {
+                    if(!cur || cur.length == 0) { return prev; };
+                    
+                    cur.map(obj => {
+                        if(obj.estimated_time && new Date(obj.estimated_time) > new Date()) {
+                            prev.push({ cycle: cycle+i, ...obj });
+                        }
+                    });
+
+                    return prev;
+                }, endorsings);
+            */
 
             return {
                 hasData: true,
-                cycle,
-                endorsings
+                cycle: metadata.level.cycle,
+                endorsings: endorsingRights
             };
+
+
         } catch(e) { console.error("Not able to get Incoming Endorsings."); }
     },
     run: async (keys, head) => {
@@ -80,7 +97,7 @@ const self:EndorderInterface = {
         try {
             if (self.endorsedBlocks.indexOf(head.header.level) < 0) {
                 const endorsingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/endorsing_rights?delegate=${keys.pkh}&level=${level}`, QueryTypes.GET);
-                console.log(endorsingRight)
+
                 if(!Array.isArray(endorsingRight)) {
                     console.error("Not able to get Endorsing Rights :(");
                     return;
