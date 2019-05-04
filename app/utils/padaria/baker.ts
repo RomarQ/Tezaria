@@ -49,27 +49,43 @@ const self:BakerInterface = {
         }
         catch(e) { throw "Not able to get Completed Bakings."; };
     },
-    getIncomingBakings: async (pkh:string):Promise<IncomingBakings> => {
+    getIncomingBakings: async pkh => {
         try {
-            const res = await rpc.queryNode(`/incoming_bakings/?delegate=${pkh}`, QueryTypes.GET) as IncomingBakingsFromServer;
-            const cycle = res.current_cycle;
+            const metadata = await rpc.getCurrentBlockMetadata();
 
-            let bakings = res.bakings.reduce((prev, cur, i):any => {
-                
-                cur.map(obj => {
-                    if(obj.estimated_time && new Date(obj.estimated_time) > new Date()) {
-                        prev.push({ cycle: cycle+i, ...obj });
-                    }
-                })
-
-                return prev;
-            }, [] as BakingRight[]);
+            if (!metadata)
+                return;
             
+            let bakingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${metadata.level.cycle}`, QueryTypes.GET) as BakingRight[];
+
+            bakingRights = bakingRights.filter(right => !!right.estimated_time);
+                
+            /*
+            *   Decided to remove the custom API call on this process for sake of simplicity for new bakers
+
+                // This code will possible be used in future versions, since I plan this tool to be customizable.
+
+                const res = await rpc.queryNode(`/incoming_bakings/?delegate=${pkh}`, QueryTypes.GET) as IncomingBakingsFromServer;
+                const cycle = res.current_cycle;
+
+                let bakings = res.bakings.reduce((prev, cur, i):any => {
+                    
+                    cur.map(obj => {
+                        if(obj.estimated_time && new Date(obj.estimated_time) > new Date()) {
+                            prev.push({ cycle: cycle+i, ...obj });
+                        }
+                    })
+
+                    return prev;
+                }, [] as BakingRight[]);
+            */
+
             return {
                 hasData: true,
-                cycle,
-                bakings
+                cycle: metadata.level.cycle,
+                bakings: bakingRights
             };
+
         } 
         catch(e) { throw "Not able to get Incoming Baking Rights."; };
     },
