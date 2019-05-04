@@ -10,7 +10,9 @@ export interface RPCInterface extends LoadOptions {
     setCurrentNetwork: () => Promise<void>;
     setNetworkConstants: () => Promise<void>;
     getCurrentHead: () => Promise<BlockProps>;
-    getCurrentBlockHeader: () => Promise<BlockProps>;
+    getCurrentCycle: () => Promise<number>;
+    getCurrentBlockHeader: () => Promise<BlockHeaderProps>;
+    getCurrentBlockMetadata: () => Promise<BlockMetadataProps>;
     queryNode: (path:string, mothod:QueryType, args?:any) => Promise<any>;
     queryTzScan: (path:string, mothod:QueryType, args?:any) => Promise<any>;
     queryAPI: (query:string, variables?:Object<any>) => Promise<any>;
@@ -56,49 +58,6 @@ export type LoadOptions = {
 export type TezosUnitType = {
     char: string;
     unit: number;
-}
-
-export type BlockProps = {
-    chain_id: string;
-    hash: string;
-    header: BlockHeaderProps;
-    metadata: {
-        baker: string;
-        balance_updates: Array<{
-            cycle?: number;
-            delegate?: string;
-            change: string;
-            contract?: string;
-            kind: string;
-        }>;
-        consumed_gas: string;
-        deactivated: [];
-        level: {
-            cycle: number;
-            cycle_position: number;
-            expected_commitment: boolean;
-            level: number;
-            level_position: number;
-            voting_period: number;
-            voting_period_position: number;
-        };
-        max_block_header_length: number;
-        max_operation_data_length: number;
-        max_operation_list_length: Array<{ 
-            max_op: number;
-            max_size: number;
-        }>;
-        max_operations_ttl: number;
-        next_protocol: string;
-        nonce_hash: string;
-        protocol: string;
-        test_chain_status: {
-            status: string;
-        };
-        voting_period_kind: string;
-    };
-    operations: UnsignedOperations;
-    protocol?: string;
 }
 
 export type NetworkConstants = {
