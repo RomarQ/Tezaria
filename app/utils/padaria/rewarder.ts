@@ -1,6 +1,7 @@
 import rpc, { QueryTypes } from './rpc';
 import utils from './utils';
 import operations from './operations';
+import storage from '../storage';
 
 import {
     RewardControllerInterface,
@@ -50,7 +51,7 @@ const self:RewardControllerInterface = {
 
         rewards.totalRewards = rewards.blocks_rewards+rewards.endorsements_rewards+rewards.revelation_rewards+rewards.fees;
 
-        return rewards.delegators_balance.map(({ account, balance }, index) => {
+        let preparedRewards = rewards.delegators_balance.map(({ account, balance }, index) => {
             const rewardShare = utils.getRewardShare(balance, rewards.delegate_staking_balance, rewards.totalRewards);
             const rewardFee = utils.getRewardFee(rewardShare, self.feePercentage);
             return {
@@ -64,17 +65,112 @@ const self:RewardControllerInterface = {
                 cycle
             }
         });
-    },
-    sendRewardsByCycle: (pkh: string, cycle: number) => {
-        const rewards = self.prepareRewardsToSendByCycle(pkh, cycle) as any;
-    },
-    sendSelectedRewards: (keys, rewards) => {
-        const destinations = rewards.map(reward => ({
-            destination: reward.delegatorContract,
-            amount: String(reward.rewardShare - Number(operations.feeDefaults.low))
-        }));
 
-        return operations.transaction(keys.pkh, destinations, keys);
+        /*
+        *   Get sent rewards for this cycle if there are any
+        */
+        const sentRewards = (await storage.getSentRewardsByCycle(cycle)).operations;
+
+        if (Array.isArray(sentRewards) && sentRewards.length > 0) {
+            const succeededTransactions = sentRewards.reduce((prev, cur) => {
+                cur.contents.forEach(transaction => {
+                    if (transaction.metadata.operation_result.status === "applied")
+                        prev.push(transaction.destination);
+                });
+                return prev;
+            }, [] as string[]);
+
+            preparedRewards = preparedRewards.map(reward => ({
+                ...reward,
+                paid: succeededTransactions.some(delegator => delegator === reward.delegatorContract)
+            }));
+
+            /*
+            *   Decided to remove the external API on this process for sake of simplicity for new bakers
+
+                // This code will possible be used in future versions, since I plan this tool to be customizable.
+
+                const paidRewards = await rpc.queryAPI(`
+                    query paidRewards($cycle: Int!, $delegate: String!) {
+                        cycle_reward_payment (
+                            where: {
+                                cycle: {_eq: $cycle},
+                                delegate: {_eq: $delegate},
+                                completed: {_eq: true}
+                            }
+                        )
+                        {
+                            delegator
+                        }
+                    }
+                `);
+
+                preparedRewards = preparedRewards.map(reward => ({
+                    ...reward,
+                    paid: paidRewards.cycle_reward_payment.some(({delegator}:any) => delegator === reward.delegatorContract)
+                }));
+            */
+        }
+
+        return preparedRewards;
+    },
+    sendRewardsByCycle: async (keys, cycle) => {
+        const rewards = await self.prepareRewardsToSendByCycle(keys.pkh, cycle);
+
+        self.sendSelectedRewards(keys, rewards, cycle);
+    },
+    sendSelectedRewards: async (keys, rewards, cycle) => {
+        const destinations = [] as any[];
+
+        rewards.forEach(reward => {
+            if (reward.paid) return;
+
+            destinations.push({
+                destination: reward.delegatorContract,
+                amount: String(reward.rewardShare - Number(operations.feeDefaults.low))
+            });
+        });
+
+        const ops = await operations.transaction(keys.pkh, destinations, keys);
+
+        self.lastRewardedCycle = cycle;
+
+        const failedTransactions = ops.reduce((prev, cur) => {
+            cur.contents.forEach(transaction => {
+                if (transaction.metadata.operation_result.status !== "applied")
+                    prev.push(transaction.destination);
+            });
+            return prev;
+        }, [] as string[]);
+
+        /*
+        *   If there is failed transactions, inform baker.
+        */
+        if (failedTransactions.length > 0)
+            console.log('OPS, failed transactions', failedTransactions);
+
+        /*
+        *   Save Succeded transactions on storage
+        */
+        storage.setSentRewardsByCycle(cycle, ops);
+        /*
+        *   Decided to remove the external API on this process for sake of simplicity for new bakers
+
+            // This code will possible be used in future versions, since I plan this tool to be customizable.
+
+            await rpc.queryAPI(`
+                mutation insertRewards($list: [cycle_reward_payment_insert_input!]!) {
+                    insert_cycle_reward_payment (
+                        objects: $list
+                    ) {
+                        affected_rows
+                    }
+                }
+            `,
+            { list: transactionsStatus });
+        */
+
+        console.log(self.lastRewardedCycle, ops);
     },
     nextRewardCycle: async () => {
         let cycle = await rpc.getCurrentCycle();
@@ -94,20 +190,27 @@ const self:RewardControllerInterface = {
         *   Get the last cycle that delegators got paid
         */
         if (!self.lastRewardedCycle)
-            self.lastRewardedCycle = await rpc.queryAPI(`
-                query {
-                    rewarded_cycles_aggregate {
-                        aggregate {
-                            max {
-                                cycle
+            self.lastRewardedCycle = (await storage.getLastRewardedCycle()).cycle;
+            /*
+            *   Decided to remove the external API on this process for sake of simplicity for new bakers
+
+                // This code will possible be used in future versions, since I plan this tool to be customizable.
+
+                self.lastRewardedCycle = await rpc.queryAPI(`
+                    query {
+                        rewarded_cycles_aggregate {
+                            aggregate {
+                                max {
+                                    cycle
+                                }
                             }
                         }
                     }
-                }
-            `)
-            .then(res => res && res.rewarded_cycles_aggregate)
-            .then(res => res && res.aggregate)
-            .then(res => res && res.max && res.max.cycle);
+                `)
+                .then(res => res && res.rewarded_cycles_aggregate)
+                .then(res => res && res.aggregate)
+                .then(res => res && res.max && res.max.cycle);
+            */
         
         if (!self.lastRewardedCycle) return;
 
@@ -118,48 +221,7 @@ const self:RewardControllerInterface = {
         */
         if (!cycle || cycle <= self.lastRewardedCycle) return;
 
-        const rewards = await self.prepareRewardsToSendByCycle(keys.pkh, cycle);
-
-        const operations = await self.sendSelectedRewards(keys, rewards);
-
-        self.lastRewardedCycle = cycle;
-
-        const transactionsStatus = operations.reduce((prev, cur) => {
-            cur.contents.forEach(transaction => {
-                prev.push({
-                    cycle,
-                    delegate: transaction.source,
-                    delegator: transaction.destination,
-                    completed: transaction.metadata.operation_result.status === "applied"
-                });
-            });
-            return prev;
-        }, []);
-
-        const failedTransactions = rewards.filter(reward => 
-            transactionsStatus.indexOf((transaction:any) => transaction.delegator === reward.delegatorContract && transaction.completed) != -1 );
-
-        /*
-        *   If there is failed transactions, inform baker.
-        */
-        if (failedTransactions.length > 0)
-            console.log('OPS, failed transactions', failedTransactions);
-
-        /*
-        *   Add Succeded transactions to baker database
-        */
-        await rpc.queryAPI(`
-            mutation insertRewards($list: [cycle_reward_payment_insert_input!]!) {
-                insert_cycle_reward_payment (
-                    objects: $list
-                ) {
-                    affected_rows
-                }
-            }
-        `,
-        { list: transactionsStatus });
-        
-        console.log(self.lastRewardedCycle);
+        self.sendRewardsByCycle(keys, cycle);
     }
 };
 

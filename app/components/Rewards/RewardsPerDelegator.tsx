@@ -10,9 +10,6 @@ import CheckIcon from '@material-ui/icons/Check';
 import { Typography } from '@material-ui/core';
 import Blockies from 'react-blockies';
 
-import gql from 'graphql-tag';
-import GQLclient from '../../graphql-client';
-
 import EnhancedTable from '../Table/EnhancedTable';
 import EnhancedTableHead from '../Table/EnhancedTableHead';
 
@@ -115,40 +112,10 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
     };
 
     const updateRewards = () => {
-        if (isMounted.current) {
-            rewarder.prepareRewardsToSendByCycle(pkh, cycle).then(rewardsList => {
-                GQLclient.query({
-                    query: gql`
-                        query paidRewards($cycle: Int!, $delegate: String!) {
-                            cycle_reward_payment (
-                                where: {
-                                    cycle: {_eq: $cycle},
-                                    delegate: {_eq: $delegate},
-                                    completed: {_eq: true}
-                                }
-                            )
-                            {
-                                delegator
-                            }
-                        }
-                    `,
-                    variables: {
-                        cycle,
-                        delegate: pkh
-                    },
-                    fetchPolicy: "network-only"
-                })
-                .then(({data}) => {
-                    const cleanRewards = rewardsList.map(reward => ({
-                        ...reward,
-                        paid: data.cycle_reward_payment.some(({delegator}:any) => delegator === reward.delegatorContract)
-                    }));
-
-                    if (isMounted.current) setRewards(cleanRewards);
-                })
-                .catch(error => console.error(error));
-            });
-        }
+        rewarder.prepareRewardsToSendByCycle(pkh, cycle).then(rewards => {
+            if (isMounted.current)
+                setRewards(rewards);
+        });
     };
 
     const handleRewardsPayment = () => {

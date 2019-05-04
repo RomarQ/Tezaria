@@ -1,5 +1,13 @@
 export interface OperationsInterface {
     awaitingLock: AwaitingLock;
+    awaitingOperations: {
+        [source: string]: Array<{
+            source: string;
+            keys: KeysType;
+            operation: OperationProps[];
+        }>;
+    };
+
     contractManagers: ContractManager;
     transactionGasCost: string,
     transactionStorage: string,

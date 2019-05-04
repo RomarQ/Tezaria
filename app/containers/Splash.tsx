@@ -5,8 +5,6 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import Typography from '@material-ui/core/Typography';
 import Chip from '@material-ui/core/Chip';
 
-import app from '../constants/info';
-
 const styles = ({ spacing }: Theme) => createStyles({
   root: {
     minHeight: '100vh',
@@ -32,7 +30,7 @@ type Props = {
 
 const Splash = ({ classes, waitingFor }: Props) => (
   <div className={classes.root}>
-    <Typography variant="h1" >{app.name}</Typography>
+    <Typography variant="h1" >Padaria</Typography>
     <div className={classes.loaderImg}>
       <CircularProgress size={100} thickness={5} className={classes.loader} color="secondary" />
     </div>

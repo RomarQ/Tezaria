@@ -1,4 +1,4 @@
-import rpc, { QueryTypes } from './rpc';
+import rpc from './rpc';
 import crypto from './crypto';
 import utils, { Prefix } from './utils';
 
@@ -57,6 +57,7 @@ const self: OperationsInterface = {
     *   is waiting for an operation to be included
     */
     awaitingLock: {},
+    awaitingOperations: {},
     //
     contractManagers: {},
     transactionGasCost: '10200',
@@ -143,18 +144,14 @@ const self: OperationsInterface = {
 
         const ops = [];
         for (const batch of operations) {
+
             console.log(`START: ${new Date().toJSON()}`)
             const op = await self.sendOperation(source, keys, batch);
             // The result operation hash needs to be a string, otherwise is a error
             if (typeof op.hash !== 'string') {
-                return [];
+                console.error('Operation Failed', op);
+                continue;
             }
-
-            // Need to wait for each operation to be included, 
-            // otherwise the next operation will be rejected because counter will too high
-            self.awaitingLock[source] = true;
-            await self.awaitForOperationToBeIncluded(op.hash, 0);
-            self.awaitingLock[source] = false;
 
             ops.push(op);
         }
@@ -173,7 +170,7 @@ const self: OperationsInterface = {
     awaitForOperationToBeIncluded: async (opHash, prevHeadLevel) => {
         const head = await rpc.getCurrentHead();
         if (prevHeadLevel == head.header.level)
-            return self.awaitForOperationToBeIncluded(opHash, prevHeadLevel);
+            return await self.awaitForOperationToBeIncluded(opHash, prevHeadLevel);
 
         for (const opCollection of head.operations) {
             for (const op of opCollection) {
@@ -182,21 +179,39 @@ const self: OperationsInterface = {
             }
         }
 
-        return self.awaitForOperationToBeIncluded(opHash, head.header.level);
+        return await self.awaitForOperationToBeIncluded(opHash, head.header.level);
     },
-    sendOperation: async (from, keys, operation) => {
-        // Leave if this source is still waiting for an operation to be included
-        if (self.awaitingLock[from]) return;
+    sendOperation: async (source, keys, operation) => {
+        while (true) {
+            // Wait for operation turn
+            if (self.awaitingLock[source]) continue;
+            // Cannot run more than one counter operation from the same source at the same time, 
+            // otherwise the next operation will be rejected because counter will be too high
+            self.awaitingLock[source] = true;
 
-        const {forgedConfirmation, ...verifiedOp} = await self.prepareOperations(from, keys, operation);
-        
-        const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
+            const {forgedConfirmation, ...verifiedOp} = await self.prepareOperations(source, keys, operation);
+            
+            const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
 
-        return await rpc.injectOperation({
-            ...verifiedOp,
-            signature: signed.edsig,
-            signedOperationContents: signed.signedBytes
-        });
+            const injectedOp = await rpc.injectOperation({
+                ...verifiedOp,
+                signature: signed.edsig,
+                signedOperationContents: signed.signedBytes
+            });
+
+            if (typeof injectedOp.hash != 'string') {
+                console.error(injectedOp.hash);
+                self.awaitingLock[source] = false;
+                continue;
+            }
+
+            console.log(injectedOp);
+            // Wait for operation to be included
+            await self.awaitForOperationToBeIncluded(injectedOp.hash, 0);
+
+            self.awaitingLock[source] = false;
+            return injectedOp;
+        }
     },
     prepareOperations: async (from, keys, operations) => {
         const head = await rpc.getCurrentHead();

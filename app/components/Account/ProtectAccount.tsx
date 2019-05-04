@@ -11,7 +11,8 @@ import Blockies from 'react-blockies';
 
 import routes from '../../constants/routes.json';
 import { SetBakerKeysPrototype, ClearUserDataPrototype } from '../../actions/userData';
-import { crypto, storage } from '../../utils/padaria';
+import { crypto } from '../../utils/padaria';
+import storage from '../../utils/storage';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {

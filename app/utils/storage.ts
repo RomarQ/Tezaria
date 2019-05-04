@@ -1,6 +1,7 @@
 import storage from 'electron-json-storage';
 
 import { UserDataType, UserSettingsType } from '../types';
+import { UnsignedOperationProps } from './padaria/operations';
 
 export interface StorageDataProps {
     userData?: UserDataType;
@@ -17,6 +18,10 @@ export interface StorageFuncProps {
     clearBakerNonces: () => Promise<Error | void>;
     getBakerNonces: () => Promise<NonceType[]>;
     setBakerNonces: (nonces:NonceType[]) => Promise<Error | void>;
+    setLastRewardedCycle: (cycle:number) => Promise<{ error?:Error }>;
+    getLastRewardedCycle: () => Promise<{ error?:Error; cycle?:number; }>;
+    setSentRewardsByCycle: (cycle:number, transactionsStatus:any[]) => Promise<{ error?:Error }>;
+    getSentRewardsByCycle: (cycle:number) => Promise<{ error?:Error; operations?:UnsignedOperationProps[]; }>;
 }
 
 const db:StorageFuncProps = {
@@ -62,7 +67,35 @@ const db:StorageFuncProps = {
     }),
     setBakerNonces: (nonces:NonceType[]) => new Promise((resolve, reject) => {
         storage.set('bakerNonces', nonces, (err:Error) => err ? reject(err) : resolve(null));
-    })
+    }),
+    getLastRewardedCycle: () => new Promise((resolve, reject) => {
+        storage.get('lastRewardedCycle', (error:Error, cycle:number) => {
+            error ? reject({ error }) : resolve({ cycle });
+        });
+    }),
+    setLastRewardedCycle: (cycle:number) => new Promise((resolve, reject) => {
+        storage.set('lastRewardedCycle', cycle, (error:Error) => error ? reject({ error }) : resolve({}));
+    }),
+    setSentRewardsByCycle: (cycle, operations) => new Promise(async (resolve, reject) => {
+        if (!cycle || !operations)
+            reject({ error: 'Cycle and Reward operations need to be specified.' });
+        
+        const otherOps = await db.getSentRewardsByCycle(cycle);
+        if (otherOps.operations) {
+            operations = [
+                ...otherOps.operations,
+                ...operations
+            ];
+        }
+
+        storage.set(`reward-operations-${cycle}`, operations, (error:Error) => error ? reject({ error }) : resolve({}));
+    }),
+    getSentRewardsByCycle: cycle => new Promise((resolve, reject) => {
+        if (!cycle)
+            reject({ error: 'Cycle not specified.' });
+
+        storage.get(`reward-operations-${cycle}`, (error:Error, operations:any[]) => error ? reject({ error }) : resolve({ operations }));
+    }),
 }
 
 export default db;

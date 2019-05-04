@@ -13,7 +13,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import path from 'path';
 
-import settings from './constants/info';
+import appInfo from '../package.json';
 
 export default class AppUpdater {
     constructor() {
@@ -86,7 +86,7 @@ app.on('ready', async () => {
         center: true,
         height: 800,
         width: 1280,
-        title: `${settings.name} - ${settings.version}`,
+        title: `${appInfo.productName} - ${appInfo.version}`,
         icon : path.join(__dirname, '..', 'resources/assets/icon.png')
     });
         

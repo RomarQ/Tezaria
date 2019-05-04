@@ -27,43 +27,11 @@ const Container: React.FC<Props> = ({ userData }) => {
     }, []);
 
     const handleRewardsPayment = async (selected:DelegatorReward[], updateRewards:()=>void) => {
-        const cycle = selected[0].cycle;
-        const paymentsResponse = await rewarder.sendSelectedRewards(userData.keys, selected);
+        const paymentsResponse = await rewarder.sendSelectedRewards(userData.keys, selected, selected[0].cycle);
         
         console.log(paymentsResponse);
 
-        GQLclient.mutate({
-            mutation: gql`
-                mutation insertRewards($list: [cycle_reward_payment_insert_input!]!) {
-                    insert_cycle_reward_payment (
-                        objects: $list
-                    ) {
-                        affected_rows
-                    }
-                }
-            `,
-            variables: {
-                list: (
-                    paymentsResponse.reduce((prev, cur) => {
-                        cur.contents.forEach(transaction => {
-                            prev.push({
-                                cycle,
-                                delegate: transaction.source,
-                                delegator: transaction.destination,
-                                completed: transaction.metadata.operation_result.status !== "failed"
-                            });
-                        });
-                        return prev;
-                    }, [])
-                )
-            }
-        })
-        .then((insertReward) => {
-            console.log(insertReward);
-            updateRewards();
-        })
-        .catch((error:Error) => console.error(error));
-
+        updateRewards();
     };
 
     return !rewards ? <Splash /> : (

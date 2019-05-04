@@ -1,4 +1,4 @@
-import storage from './storage';
+import storage from '../storage';
 import rpc, { QueryTypes } from './rpc';
 import utils from './utils';
 import baker from './baker';
