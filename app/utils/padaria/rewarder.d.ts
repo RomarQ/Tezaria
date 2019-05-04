@@ -12,6 +12,7 @@ export interface RewardControllerInterface {
     prepareRewardsToSendByCycle: (pkh: string, cycle: number) => Promise<DelegatorReward[]>;
     sendRewardsByCycle: (pkh: string, cycle: number) => Promise<>;
     sendSelectedRewards: (keys:KeysType, selected:DelegatorReward[]) => Promise<UnsignedOperationProps[]>;
+    nextRewardCycle: () => Promise<number>;
     run: (keys:KeysType, head:BlockProps, logger: (log:LogProps) => any) => Promise<void>;
 }
 

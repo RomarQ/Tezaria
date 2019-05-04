@@ -5,13 +5,15 @@ export type BakingControllerStateProps = {
     baking:     boolean;
     endorsing:  boolean;
     accusing:   boolean;
+    rewarding:  boolean;
 };
 
 const defaultState = {
     active: false,
     baking: false,
     endorsing: false,
-    accusing: false
+    accusing: false,
+    rewarding: false
 }
 
 export default (state: BakingControllerStateProps = defaultState, action: ControllerActions) => {
