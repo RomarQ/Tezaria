@@ -46,7 +46,7 @@ const self:RPCInterface = {
                 headers: {
                     "X-Hasura-Admin-Secret": 'myadminsecretkey'
                 }
-            })
+            });
         }
 
         await self.setNetworkConstants();

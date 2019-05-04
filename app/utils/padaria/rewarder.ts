@@ -86,8 +86,7 @@ const self:RewardControllerInterface = {
         */
         cycle -= (rpc.networkConstants['preserved_cycles']+1);
         
-        // Return the cycle number only if it was never rewarded
-        return cycle > self.lastRewardedCycle ? cycle : undefined;
+        return cycle;
     },
     run: async (keys, head, logger) => {
         console.log('starting rewarder....');
@@ -114,7 +113,10 @@ const self:RewardControllerInterface = {
 
         const cycle = await self.nextRewardCycle();
 
-        if (!cycle) return;
+        /*
+        *   Don't send any rewards if there was rewards send on a cycle ahead
+        */
+        if (!cycle || cycle <= self.lastRewardedCycle) return;
 
         const rewards = await self.prepareRewardsToSendByCycle(keys.pkh, cycle);
 
