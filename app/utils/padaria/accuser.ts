@@ -5,7 +5,6 @@ import bakingController from './bakingController';
 import {
     AccuserInterface
 } from './accuser.d';
-import { BlockProps } from './rpc';
 
 const self:AccuserInterface = {
     /*

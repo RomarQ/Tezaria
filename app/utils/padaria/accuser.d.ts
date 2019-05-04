@@ -1,5 +1,3 @@
-import { BlockProps } from './rpc';
-
 export interface AccuserInterface {
     endorsements: [];
     blocks: BlockProps[];

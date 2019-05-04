@@ -74,11 +74,19 @@ const self:RPCInterface = {
     setNetworkConstants: async () => {
         self.networkConstants = await self.queryNode('/chains/main/blocks/head/context/constants', QueryTypes.GET) as NetworkConstants;
     },
+    getCurrentCycle: async () => {
+        const header = await self.getCurrentBlockMetadata();
+        
+        return header ? header.level.cycle : undefined;
+    },
     getCurrentHead: () => (
         self.queryNode('/chains/main/blocks/head', QueryTypes.GET)
     ),
     getCurrentBlockHeader: () => (
         self.queryNode('/chains/main/blocks/head/header', QueryTypes.GET)
+    ),
+    getCurrentBlockMetadata: () => (
+        self.queryNode('/chains/main/blocks/head/metadata', QueryTypes.GET)
     ),
     queryNode: (path, method, args) => {
         const options = {
