@@ -18,14 +18,14 @@ const defaultState = {
 
 export default (state: BakingControllerStateProps = defaultState, action: ControllerActions) => {
     switch (action.type) {
-      case ControllerActionTypes.START:
-        return {
-          active: action.options.baking || action.options.endorsing || action.options.accusing,
-          ...action.options
-        };
+        case ControllerActionTypes.START:
+            return {
+                active: action.options.baking || action.options.endorsing || action.options.accusing || action.options.rewarding,
+                ...action.options
+            };
         case ControllerActionTypes.STOP:
-        return defaultState;
-      default:
-        return state;
+            return defaultState;
+        default:
+            return state;
     }
 }
