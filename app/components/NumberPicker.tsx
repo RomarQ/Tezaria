@@ -1,7 +1,7 @@
 import React from 'react';
 import { withStyles, Theme, createStyles } from '@material-ui/core/styles';
 import TextField, { TextFieldProps } from '@material-ui/core/TextField';
-import { InputLabelProps } from '@material-ui/core/InputLabel';
+
 const styles = ({ palette }:Theme) => createStyles({
     root: {
         flexDirection: 'row'
