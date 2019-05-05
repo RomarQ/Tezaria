@@ -13,7 +13,7 @@ export interface RewardControllerInterface {
     sendRewardsByCycle: (keys:KeysType, cycle: number) => Promise<void>;
     sendSelectedRewards: (keys:KeysType, selected:DelegatorReward[], cycle:number) => Promise<void>;
     nextRewardCycle: () => Promise<number>;
-    run: (keys:KeysType, head:BlockProps, logger: (log:LogProps) => any) => Promise<void>;
+    run: (keys:KeysType, logger: (log:LogProps) => any) => Promise<void>;
 }
 
 export type RewardsInfo = {

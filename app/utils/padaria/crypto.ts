@@ -5,13 +5,22 @@ import pbkdf2 from 'pbkdf2';
 import rpc from './rpc';
 import utils, { Prefix } from './utils';
 
+import { 
+    CryptoInterface,
+} from './crypto.d';
+
 const DERIVATION_ITERATIONS = 32768;
 
-const crypto = {
-    //
-    subtle: window ? window.crypto.subtle : undefined,
-    //
-    mnemonicToSeed: (mnemonic: string, passphrase: string = "") => {
+const self:CryptoInterface = {
+    /*
+    *   States
+    */
+    keys: null,
+    //subtle: window ? window.crypto.subtle : undefined,
+    /*
+    *   Functions
+    */
+    mnemonicToSeed: (mnemonic, passphrase = "") => {
         if (!bip39.validateMnemonic(mnemonic)) throw new Error('Crypto: Mnemonic is Invalid.');
 
         return bip39.mnemonicToSeed(mnemonic, passphrase).slice(0, 32);
@@ -65,7 +74,7 @@ const crypto = {
         };
     },
     getKeysFromMnemonic: (mnemonic: string, passphrase: string):KeysType => (
-        crypto.seedToKeys(crypto.mnemonicToSeed(mnemonic, passphrase))
+        self.seedToKeys(self.mnemonicToSeed(mnemonic, passphrase))
     ),
     getKeysFromEncSeed: async (esk_encoded:string, password:string):Promise<KeysType> => {
         if (!esk_encoded || !password || !crypto.subtle) return null;
@@ -135,7 +144,7 @@ const crypto = {
                     };
                 // Is the Seed
                 } else if (sk_or_seed.length === 54) {
-                    return crypto.seedToKeys(utils.b58decode(sk_or_seed, Prefix.edsk));
+                    return self.seedToKeys(utils.b58decode(sk_or_seed, Prefix.edsk));
                 }
                 break;
             default:
@@ -171,7 +180,7 @@ const crypto = {
         }
     },
     checkHash: (buffer:Uint8Array) => (
-        crypto.stampCheck(sodium.crypto_generichash(32, buffer)) <= Number(rpc.networkConstants['proof_of_work_threshold'])
+        self.stampCheck(sodium.crypto_generichash(32, buffer)) <= Number(rpc.networkConstants['proof_of_work_threshold'])
     ),
     stampCheck: (hash:Uint8Array) => {
         let value, i = value = 0;
@@ -215,7 +224,7 @@ const crypto = {
                     }
                 }
                 
-                if (crypto.checkHash(hashBuffer)) {
+                if (self.checkHash(hashBuffer)) {
                     const hex = utils.bufferToHex(hashBuffer);
                     resolve({
                         blockbytes: hex.substr(0, hex.length-128), 
@@ -233,4 +242,5 @@ const crypto = {
     },
 }
 
-export default crypto;
+export * from './crypto.d';
+export default self;

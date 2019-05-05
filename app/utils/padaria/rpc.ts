@@ -4,6 +4,7 @@ import fs from 'fs';
 import { GraphQLClient } from 'graphql-request';
 
 import utils, { Prefix } from './utils';
+import bakerController from './bakingController';
 import operations, {
     UnsignedOperationProps,
     UnsignedOperations

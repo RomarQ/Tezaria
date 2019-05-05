@@ -62,6 +62,8 @@ const self: OperationsInterface = {
     contractManagers: {},
     transactionGasCost: '10200',
     transactionStorage: '0',
+    delegationGasCost: '10000',
+    delegationStorage: '0',
     revealGasCost: '10000',
     revealStorage: '0',
     feeDefaults: {
@@ -161,8 +163,8 @@ const self: OperationsInterface = {
         const operation = {
             kind: OperationTypes.delegation.type,
             fee: String(self.feeDefaults.low),
-            gas_limit: 10000,
-            storage_limit: 0,
+            gas_limit: String(self.delegationGasCost),
+            storage_limit: String(self.delegationStorage),
             delegate: keys.pkh
         };
         return self.sendOperation(keys.pkh, keys, [operation]);

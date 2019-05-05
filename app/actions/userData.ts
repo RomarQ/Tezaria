@@ -3,6 +3,8 @@ import { UserDataType } from '../types';
 import storage from '../utils/storage';
 import { UserSettingsType } from '../types';
 import rpc from '../utils/padaria/rpc';
+import crypto from '../utils/padaria/crypto';
+import bakingController from '../utils/padaria/bakingController';
 
 export enum UserDataActionTypes {
     LOAD          = 'LOAD',
@@ -51,6 +53,7 @@ export interface UserDataActionsProps {
 
 const loadUserData = () => (dispatch:Dispatch) => 
     new Promise((resolve, reject) => {
+        crypto.keys = null;
         storage.getUserData()
             .then(userData => {
                 if (!userData.error) {
@@ -63,11 +66,14 @@ const loadUserData = () => (dispatch:Dispatch) =>
 
 const clearUserData = () =>
     (dispatch:Dispatch) => {
+        crypto.keys = null;
         storage.clearUserData();
         dispatch({ type: UserDataActionTypes.CLEAR });
     }
 
 const setBakerKeys = (keys:KeysType) => async (dispatch:Dispatch) => {
+    crypto.keys = keys;
+    await bakingController.load();
     dispatch({ type: UserDataActionTypes.SET_KEYS, keys });
 }
 

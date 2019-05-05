@@ -30,6 +30,7 @@ export default (props:any) => {
                 render={() => (
                     <ProtectAccount
                         keys={userData.keys}
+                        loader={loader}
                         history={history}
                         clearUserData={userDataFunc.clearUserData}
                         setBakerKeys={userDataFunc.setBakerKeys}

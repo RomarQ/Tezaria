@@ -8,12 +8,14 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
+import Chip from '@material-ui/core/Chip';
 
 import NumberPicker from '../NumberPicker';
 
 import { BakingControllerActionsProps } from '../../actions/bakingController';
 import { BakingControllerStateProps } from '../../reducers/bakingController';
 import rewarder from '../../utils/padaria/rewarder';
+import storage from '../../utils/storage';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -37,9 +39,15 @@ const styles = ({ palette }: Theme) => createStyles({
     label: {
         marginLeft: 5
     },
+    numberPicker: {
+        marginTop: 40
+    },
     disabled: {
         background: palette.common.white
-    }
+    },
+    margin: {
+        margin: 10
+    },
 });
 
 type Props = {
@@ -55,10 +63,21 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     const [accusing, setAccusing] = React.useState(controllerState.accusing);
     const [rewarding, setRewarding] = React.useState(controllerState.rewarding);
     const [rewarderStartCycle, setRewarderStartCycle] = React.useState(0);
+    const [minRewardableCycle, setMinRewardableCycle] = React.useState(0);
+    const [maxRewardableCycle, setMaxRewardableCycle] = React.useState(0);
     const [rewarderDialog, setRewarderDialog] = React.useState(false);
 
     React.useEffect(() => {
-        rewarder.nextRewardCycle().then(cycle => isMounted.current ? setRewarderStartCycle(cycle) : null);
+
+        rewarder.nextRewardCycle().then(cycle => {
+            if (isMounted.current) {
+                setMaxRewardableCycle(cycle);
+                setRewarderStartCycle(cycle)
+            }
+        });
+
+        storage.getLastRewardedCycle().then(obj => setMinRewardableCycle(obj.cycle));
+
         return () => {
             isMounted.current = false;
         }
@@ -97,7 +116,7 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     };
 
     const handleRewarderDialogDone = () => {
-        rewarder.lastRewardedCycle = rewarderStartCycle;
+        rewarder.lastRewardedCycle = rewarderStartCycle-1;
         setRewarderDialog(false);
         setRewarding(true);
     };
@@ -141,10 +160,24 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
                 <Dialog open={rewarderDialog} onClose={handleRewarderDialogCancel} aria-labelledby="rewarder-dialog">
                     <DialogTitle id="rewarder-dialog">Rewarder Service</DialogTitle>
                     <DialogContent>
-                        <DialogContentText>
-                            Select a cycle on which you want to start sending rewards automatically. (You can only send rewards manually when this service is not running).
+                        <DialogContentText align='justify'>
+                            Select a cycle to start sending rewards automatically.
+                            (You can only send rewards manually when this service is not running).
                         </DialogContentText>
+                        {'Starting on cycle'}
+                        <Chip
+                            label={rewarderStartCycle}
+                            color="primary"
+                            className={classes.margin}
+                        />
+                        {'will verify and send every reward up to every new cycle (current cycle - ( preserved cycles + 1 ))'}
+                        <Chip
+                            label={`${rewarderStartCycle} ... ${maxRewardableCycle > rewarderStartCycle ? maxRewardableCycle+' ...' : '' } +∞`}
+                            color="primary"
+                            className={classes.margin}
+                        />
                         <NumberPicker
+                            className={classes.numberPicker}
                             id="rewarder-start-at"
                             required
                             label="Start sending rewards on cycle"
@@ -153,11 +186,9 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
                             placeholder="Cycle"
                             fullWidth
                             variant="outlined"
-                            InputLabelProps={{
-                                shrink: true
-                            }}
                             inputProps={{
-                                min: 0
+                                min: minRewardableCycle,
+                                max: maxRewardableCycle
                             }}
                         />
                     </DialogContent>

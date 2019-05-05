@@ -6,10 +6,12 @@ import endorser from './endorser';
 import accuser from './accuser';
 import rewarder from './rewarder';
 import crypto from './crypto';
+import operations from './operations';
 
 import {
     BakingControllerProps,
-    BakingControllerStartOptions
+    BakingControllerStartOptions,
+    DelegateProps
 } from './bakingController.d';
 
 /*
@@ -21,6 +23,8 @@ const self:BakingControllerProps = {
     //
     // States
     //
+    delegate: {},
+
     intervalId: null,
     baking: false,
     endorsing: false,
@@ -44,6 +48,18 @@ const self:BakingControllerProps = {
     //
     // Functions
     //
+    load: async () => {
+        if (!crypto.keys) return;
+
+        self.delegate = await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${crypto.keys.pkh}`, QueryTypes.GET) as DelegateProps;
+
+        if (self.delegate.deactivated) {
+            await operations.registerDelegate(crypto.keys);
+            return false;
+        }
+
+        return true;
+    },
     revealNonce: async (keys, head, nonce) => {
         const operationArgs = {
             "branch": head.hash,
@@ -94,7 +110,7 @@ const self:BakingControllerProps = {
         await storage.setBakerNonces(self.noncesToReveal);
     },
     run: async (keys, logger) => {
-        if (self.locked || self.forcedLock) return;
+        if (self.locked || self.forcedLock || self.delegate.deactivated) return;
         self.locked = true;
 
         const head = await rpc.getCurrentHead();
@@ -193,7 +209,7 @@ const self:BakingControllerProps = {
         (async () => {
             if (self.rewarding && !self.locks.rewarder) {
                 self.locks.rewarder = true;
-                await rewarder.run(keys, head, logger);
+                await rewarder.run(keys, logger);
                 self.locks.rewarder = false;
             }
         })();

@@ -139,6 +139,9 @@ const self:UtilsInterface = {
     getRewardFee: (reward, rewardFee) => (
         Math.floor(reward * (rewardFee/100))
     ),
+    getTotalRolls: (stakingBalance) => (
+        Math.floor(Number(stakingBalance)/Number(rpc.networkConstants['tokens_per_roll']))
+    ),
     parseTEZWithSymbol: value => {
         if (value > self.MTEZ.unit) {
             return self.convertUnitWithSymbol(value, self.MTEZ);

@@ -87,7 +87,7 @@ const self:BakerInterface = {
             };
 
         } 
-        catch(e) { throw "Not able to get Incoming Baking Rights."; };
+        catch(e) { throw e; };
     },
     levelCompleted: () => {
         self.bakedBlocks = [
