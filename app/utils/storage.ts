@@ -73,15 +73,21 @@ const db:StorageFuncProps = {
             error ? reject({ error }) : resolve({ cycle });
         });
     }),
-    setLastRewardedCycle: (cycle:number) => new Promise((resolve, reject) => {
-        storage.set('lastRewardedCycle', cycle, (error:Error) => error ? reject({ error }) : resolve({}));
+    setLastRewardedCycle: (cycle:number) => new Promise(async(resolve, reject) => {
+        const lastCycle = (await db.getLastRewardedCycle()).cycle;
+        if (typeof lastCycle != 'number' || lastCycle < cycle) {
+            storage.set('lastRewardedCycle', cycle, (error:Error) => error ? reject({ error }) : resolve({}));
+        };
+        resolve({});
     }),
     setSentRewardsByCycle: (cycle, operations) => new Promise(async (resolve, reject) => {
         if (!cycle || !operations)
             reject({ error: 'Cycle and Reward operations need to be specified.' });
-        
+
+        await db.setLastRewardedCycle(cycle);
+
         const otherOps = await db.getSentRewardsByCycle(cycle);
-        if (otherOps.operations) {
+        if (Array.isArray(otherOps.operations)) {
             operations = [
                 ...otherOps.operations,
                 ...operations

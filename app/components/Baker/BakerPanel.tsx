@@ -7,7 +7,8 @@ import CheckIcon from '@material-ui/icons/Check';
 import NotCheckIcon from '@material-ui/icons/CloseOutlined';
 import Blockies from 'react-blockies';
 
-import { TezosCommitState } from'../../utils/padaria/utils';
+import utils, { TezosCommitState } from'../../utils/padaria/utils';
+import { DelegateProps } from '../../utils/padaria/bakingController';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
     root: {
@@ -64,9 +65,8 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
 
 type Props = {
     bakerInfo: {
-        balance: string;
         keys: KeysType;
-    };
+    } & DelegateProps;
     nodeInfo: TezosCommitState;
 } & WithStyles<typeof styles>;
 
@@ -95,7 +95,7 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
                         className={classes.blockie}
                     />
                     <Chip
-                        label={bakerInfo.balance}
+                        label={utils.parseTEZWithSymbol(Number(bakerInfo.balance))}
                         color="primary"
                         className={classes.margin}
                     />
@@ -177,6 +177,34 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
                     </div>
                 ) : null
                 }
+                <div className={classes.labelRow}>
+                    <Typography variant="caption" children="Legible as delegate" style={{marginRight: 10}}/>
+                    {bakerInfo.deactivated ? <NotCheckIcon color='secondary' /> : <CheckIcon color='primary' />}
+                </div>
+                <div className={classes.labelRow}>
+                    <Typography variant="caption" children="Stacking Balance" style={{marginRight: 10}}/>
+                    <Chip
+                        label={utils.parseTEZWithSymbol(Number(bakerInfo.staking_balance))}
+                        color="primary"
+                        className={classes.margin}
+                    />
+                </div>
+                <div className={classes.labelRow}>
+                    <Typography variant="caption" children="Delegators" style={{marginRight: 10}}/>
+                    <Chip
+                        label={bakerInfo.delegated_contracts ? bakerInfo.delegated_contracts.length : 0}
+                        color="primary"
+                        className={classes.margin}
+                    />
+                </div>
+                <div className={classes.labelRow}>
+                    <Typography variant="caption" children="Rolls" style={{marginRight: 10}}/>
+                    <Chip
+                        label={utils.getTotalRolls(bakerInfo.staking_balance)}
+                        color="primary"
+                        className={classes.margin}
+                    />
+                </div>
             </div>
         </div>
     );

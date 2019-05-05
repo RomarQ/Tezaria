@@ -115,9 +115,10 @@ const self:RewardControllerInterface = {
         return preparedRewards;
     },
     sendRewardsByCycle: async (keys, cycle) => {
+        console.log('cycle ' + cycle)
         const rewards = await self.prepareRewardsToSendByCycle(keys.pkh, cycle);
 
-        self.sendSelectedRewards(keys, rewards, cycle);
+        await self.sendSelectedRewards(keys, rewards, cycle);
     },
     sendSelectedRewards: async (keys, rewards, cycle) => {
         const destinations = [] as any[];
@@ -184,7 +185,7 @@ const self:RewardControllerInterface = {
         
         return cycle;
     },
-    run: async (keys, head, logger) => {
+    run: async (keys, logger) => {
         console.log('starting rewarder....');
         /*
         *   Get the last cycle that delegators got paid
@@ -211,17 +212,15 @@ const self:RewardControllerInterface = {
                 .then(res => res && res.aggregate)
                 .then(res => res && res.max && res.max.cycle);
             */
-        
-        if (!self.lastRewardedCycle) return;
 
         const cycle = await self.nextRewardCycle();
 
         /*
         *   Don't send any rewards if there was rewards send on a cycle ahead
         */
-        if (!cycle || cycle <= self.lastRewardedCycle) return;
+        if (!cycle || cycle < self.lastRewardedCycle) return;
 
-        self.sendRewardsByCycle(keys, cycle);
+        await self.sendRewardsByCycle(keys, self.lastRewardedCycle + 1);
     }
 };
 

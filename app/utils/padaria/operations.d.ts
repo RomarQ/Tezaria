@@ -11,6 +11,8 @@ export interface OperationsInterface {
     contractManagers: ContractManager;
     transactionGasCost: string,
     transactionStorage: string,
+    delegationGasCost: string,
+    delegationStorage: string,
     revealGasCost: string;
     revealStorage: string;
     feeDefaults: {

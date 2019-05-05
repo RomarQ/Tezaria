@@ -13,6 +13,8 @@ import routes from '../../constants/routes.json';
 import { SetBakerKeysPrototype, ClearUserDataPrototype } from '../../actions/userData';
 import { crypto } from '../../utils/padaria';
 import storage from '../../utils/storage';
+import { LoaderPrototype, LoadTypes } from '../../actions/loader';
+import { History } from 'history';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -74,12 +76,13 @@ const styles = ({ palette }: Theme) => createStyles({
 
 type Props = {
     keys: KeysType;
-    history: any;
+    history: History;
+    loader: LoaderPrototype;
     clearUserData: ClearUserDataPrototype;
     setBakerKeys: SetBakerKeysPrototype;
 };
 
-const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, clearUserData, keys, history, classes, ...props }) => {
+const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, clearUserData, keys, loader, history, classes }) => {
     const [password, setPassword] = React.useState(null);
     const [passwordConfirmation, setPasswordConfirmation] = React.useState(null);
     const [modalError, setModalError] = React.useState(null);
@@ -95,8 +98,10 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
         history.push(routes.DASHBOARD);
     }
 
-    const onEncryptedSubmit = () =>  {
-        setBakerKeys(crypto.decryptSK(keys, password));
+    const onEncryptedSubmit = async () =>  {
+        loader(LoadTypes.USER_DATA);
+        await setBakerKeys(crypto.decryptSK(keys, password));
+        loader(LoadTypes.USER_DATA, true);
         
         history.push(routes.DASHBOARD);
     }

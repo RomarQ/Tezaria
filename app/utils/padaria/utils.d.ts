@@ -30,6 +30,7 @@ export interface UtilsInterface {
     getRewardSharePercentage: (balance:number, staking_balance:number) => number;
     getRewardShare: (balance:number, staking_balance:number, rewards:number) => number;
     getRewardFee: (reward:number, rewardFee:number) => number;
+    getTotalRolls: (stakingBalance:number|string) => number;
     parseTEZWithSymbol: (value:number) => string;
     firstCycleLevel: (level:number) => number;
     lastCycleLevel: (level:number) => number;

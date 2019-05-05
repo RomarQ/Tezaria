@@ -2,8 +2,8 @@ import React from 'react';
 import Wrapper from '../components/Dashboard/Dashboard';
 
 import { UserDataType } from '../types';
-import rpc from '../utils/padaria/rpc';
 import utils from '../utils/padaria/utils';
+import bakingController from '../utils/padaria/bakingController';
 
 type Props = {
     userData: UserDataType;
@@ -11,14 +11,9 @@ type Props = {
 
 const Dashboard: React.FC<Props> = ({ userData }) => {
     const isMounted = React.useRef(true);
-    const [balance, setBalance] = React.useState('0');
     const [tezosCommits, setTezosCommits] = React.useState(null);
 
     React.useEffect(() => {
-        rpc.getBalance(userData.keys.pkh).then(r => {
-            if (isMounted.current)
-                setBalance(utils.parseTEZWithSymbol(r));
-        });
         utils.verifyNodeCommits().then(r => {
             if (isMounted.current)
                 setTezosCommits(r);
@@ -27,8 +22,8 @@ const Dashboard: React.FC<Props> = ({ userData }) => {
     }, []);
 
     const bakerInfo = {
-        balance,
-        keys: userData.keys
+        keys: userData.keys,
+        ...bakingController.delegate
     };
 
     return <Wrapper 
