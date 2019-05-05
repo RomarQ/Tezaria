@@ -46,4 +46,8 @@
     <img src="https://d33wubrfki0l68.cloudfront.net/ee8e4a26c381ece64f6a8449059b9a120ecff6e0/c72e9/static/howtographql.d1a2e5b4.svg" height="90px"/>
 <a/>
 
+<a href="https://github.com/electron-react-boilerplate/electron-react-boilerplate">
+    <img src="https://raw.githubusercontent.com/electron-react-boilerplate/electron-react-boilerplate/next/internals/img/erb-banner.png" width="100%" />
+<a/>
+
 </div>
