@@ -108,7 +108,6 @@ const self:RPCInterface = {
         options.agent = new https.Agent(options);
 
         return self.queryRequest(options, args);
-
     },
     queryTzScan: (path, method = QueryTypes.GET, args) => {
         const options = {
@@ -132,7 +131,7 @@ const self:RPCInterface = {
     *   (for example: https://address/.../?parameter=xyz)
     */ 
     queryRequest: (options, args) => (
-        new Promise((resolve, reject) => {
+        new Promise(resolve => {
             try {
                 let req;
                 if (options.port === 443)
@@ -145,7 +144,7 @@ const self:RPCInterface = {
                         });
 
                         res.on('end', () => {
-                            res.statusCode === 200 ? resolve(JSON.parse(result)) : reject(res.statusMessage);
+                            res.statusCode === 200 && result != '' ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
                         });
 
                     });
@@ -159,12 +158,12 @@ const self:RPCInterface = {
                         });
 
                         res.on('end', () => {
-                            res.statusCode === 200 ? resolve(JSON.parse(result)) : reject(res.statusMessage);
+                            res.statusCode === 200 && result != '' ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
                         });
 
                     });
 
-                req.on('error', e => reject(e.message));
+                req.on('error', e => console.error(e.message));
 
                 if (options.method === QueryTypes.POST) {
                     req.write(JSON.stringify(args));
@@ -173,7 +172,7 @@ const self:RPCInterface = {
                 req.end();
             }
             catch(e) {
-                reject(e.message);
+                console.error(e.message);
             }
         })
     ),
