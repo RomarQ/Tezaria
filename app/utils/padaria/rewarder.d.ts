@@ -2,6 +2,7 @@ import { UnsignedOperationProps } from './operations';
 
 export interface RewardControllerInterface {
     lastRewardedCycle: number;
+    paymentsBatchSize: number;
     feePercentage: number;
 
     // Methods

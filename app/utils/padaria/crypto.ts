@@ -16,7 +16,6 @@ const self:CryptoInterface = {
     *   States
     */
     keys: null,
-    //subtle: window ? window.crypto.subtle : undefined,
     /*
     *   Functions
     */
@@ -231,12 +230,8 @@ const self:CryptoInterface = {
                         att
                     });
                 }
-                else {
-                    if (syncAtt < syncBatchSize)
-                        rec(att, syncAtt);
-                    else
-                        setImmediate(rec, att, 0);
-                }
+                // setImmediate to avoid RangeError: Maximum call stack size exceeded
+                else syncAtt < syncBatchSize ? setImmediate(rec, att, syncAtt) : setImmediate(rec, att, 0);
             })();
         });
     },

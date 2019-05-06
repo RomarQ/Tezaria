@@ -2,6 +2,8 @@ import rpc from './rpc';
 import crypto from './crypto';
 import utils, { Prefix } from './utils';
 
+export const MAX_BATCH_SIZE = 200;
+
 import { OperationsInterface, OperationType, OperationProps } from './operations.d';
 
 export const OperationTypes = {
@@ -113,15 +115,19 @@ const self: OperationsInterface = {
             signedOperationContents: signed.signedBytes
         });
     },
-    transaction: async (source, destinations, keys, fee = self.feeDefaults.low, gasLimit = self.transactionGasCost, storageLimit = self.transactionStorage) => {
+    transaction: async (source, destinations, keys, fee = self.feeDefaults.low, gasLimit = self.transactionGasCost, storageLimit = self.transactionStorage, batchSize = MAX_BATCH_SIZE) => {
+        
+        if (batchSize > MAX_BATCH_SIZE)
+            batchSize = MAX_BATCH_SIZE
+
         const operations = destinations.reduce((prev, cur) => {
-            if (prev[prev.length-1].length === 200) {
+            if (prev[prev.length-1].length === batchSize) {
                 return [
                     ...prev,
                     [
                         {
                             kind: OperationTypes.transaction.type,
-                            fee: String(self.feeDefaults.low),
+                            fee: String(fee),
                             gas_limit: String(gasLimit),
                             storage_limit: String(storageLimit),
                             amount: String(cur.amount),
@@ -133,7 +139,7 @@ const self: OperationsInterface = {
 
             prev[prev.length-1].push({
                 kind: OperationTypes.transaction.type,
-                fee: String(self.feeDefaults.low),
+                fee: String(fee),
                 gas_limit: String(gasLimit),
                 storage_limit: String(storageLimit),
                 amount: String(cur.amount),
@@ -170,6 +176,9 @@ const self: OperationsInterface = {
         return self.sendOperation(keys.pkh, keys, [operation]);
     },
     awaitForOperationToBeIncluded: async (opHash, prevHeadLevel) => {
+        // Wait 2 seconds before checking if the operation was inlcuded
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         const head = await rpc.getCurrentHead();
         if (prevHeadLevel == head.header.level)
             return await self.awaitForOperationToBeIncluded(opHash, prevHeadLevel);

@@ -29,7 +29,7 @@ const startController:StartControllerPrototype = (keys, options) => {
     bakingController.start(keys, options);
 
     return (dispatch:Dispatch) => {
-      dispatch({ type: ControllerActionTypes.START, options });
+        dispatch({ type: ControllerActionTypes.START, options });
     }
 }
 
@@ -37,8 +37,8 @@ const stopController:StartControllerPrototype = () => {
     bakingController.stop();
 
     return (dispatch:Dispatch) => {
-      dispatch({ type: ControllerActionTypes.STOP });
+        dispatch({ type: ControllerActionTypes.STOP });
     }
 }
 
-export default { startController, stopController } as BakingControllerActionsProps;
+export default { startController, stopController };

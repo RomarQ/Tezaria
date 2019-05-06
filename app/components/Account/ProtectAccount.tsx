@@ -85,29 +85,38 @@ type Props = {
 const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, clearUserData, keys, loader, history, classes }) => {
     const [password, setPassword] = React.useState(null);
     const [passwordConfirmation, setPasswordConfirmation] = React.useState(null);
-    const [modalError, setModalError] = React.useState(null);
+    const [modalError, setModalError] = React.useState('');
 
-    const onDecryptedSubmit = () =>  {
+    const onDecryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
+        e.preventDefault();
+
         if (!password && password !== passwordConfirmation) {
             setModalError("Passwords are not equal...");
             return;
         }
 
-        storage.setBakerKeys(crypto.encryptSK(keys, password));
-        
-        history.push(routes.DASHBOARD);
+        (await storage.setBakerKeys(crypto.encryptSK(keys, password))).error
+            ? console.error('Failed to store encrypted key on disk!')
+            : history.push(routes.DASHBOARD);
     }
 
-    const onEncryptedSubmit = async () =>  {
+    const onEncryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
+        e.preventDefault();
+
         loader(LoadTypes.USER_DATA);
-        await setBakerKeys(crypto.decryptSK(keys, password));
+        try {
+            await setBakerKeys(crypto.decryptSK(keys, password));
+            history.push(routes.DASHBOARD);
+        }
+        catch(e) {
+            setModalError(e.message);
+        }
+
         loader(LoadTypes.USER_DATA, true);
-        
-        history.push(routes.DASHBOARD);
     }
 
-    const onDeleteWallet = () => {
-        clearUserData();
+    const onDeleteWallet = async () => {
+        await clearUserData();
         history.push(routes.HOME);
     }
     
@@ -127,7 +136,7 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
                     />
                 </div>
                 <form className={classes.form} onSubmit={keys.encrypted ? onEncryptedSubmit : onDecryptedSubmit }>
-                    {modalError ? <p>{modalError}</p> : undefined}
+                    {modalError ? <p>{modalError}</p> : null}
                     <TextField
                         style={{ marginBottom: 10 }}
                         id="password"
@@ -158,7 +167,7 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
                         />
                     )}
                     <div className={classes.buttons}>
-                        <Button variant="contained" className={classes.button} color="primary" type="submit" >
+                        <Button type="submit" variant="contained" className={classes.button} color="primary">
                             {keys.encrypted ? (
                                 <React.Fragment>
                                     <LockOpen />
@@ -171,7 +180,7 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
                                 </React.Fragment>
                             )}
                         </Button>
-                        <Button variant="contained" className={classes.button} color="secondary" onClick={onDeleteWallet}>
+                        <Button type="button" variant="contained" className={classes.button} color="secondary" onClick={onDeleteWallet}>
                             <Delete />
                             {"Delete Wallet"}
                         </Button>

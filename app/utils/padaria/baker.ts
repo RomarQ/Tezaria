@@ -169,7 +169,7 @@ const self:BakerInterface = {
         if(!pendingOperations || !pendingOperations.applied) return;
         
         const addedOps = [] as string[];
-        pendingOperations.applied.map((op:UnsignedOperationProps) => {
+        pendingOperations.applied.forEach((op:UnsignedOperationProps) => {
             if (addedOps.indexOf(op.hash) === -1) {
                 if(op.branch !== head.hash) return;
 
@@ -198,22 +198,21 @@ const self:BakerInterface = {
             operations: operations
         };
 
-        if(operationArgs.nonceHash) header.protocol_data["seed_nonce_hash"] = operationArgs.nonceHash;
+        if(operationArgs.nonceHash)
+            header.protocol_data["seed_nonce_hash"] = operationArgs.nonceHash;
 
         let res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header)
-        .catch(error => {
-            console.log(error)
-            // Hackish fix for id: "error: baking.timestamp_too_early"
-            return rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp+20}`, QueryTypes.POST, header)
-        });
+            .catch(error => {
+                console.log(error)
+                // Hackish fix for id: "error: baking.timestamp_too_early"
+                return rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp+20}`, QueryTypes.POST, header)
+            });
 
         if(!res) {
             console.log("Preapply failed, sending empty operations now.");
             header.operations = [[],[],[],[]];
             res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header);
         };
-
-        console.log('res', res);
 
         console.log("!Starting POW...", res);
 
@@ -223,17 +222,19 @@ const self:BakerInterface = {
 
         // Cannot have hash field, needs to be removed
         ops = ops.reduce((prev:any, cur:any) => {
-            prev.push(
-                // Hash field is not allowed here, needs to be removed 
+            // Hash field is not allowed here, needs to be removed
+            return [
+                ...prev,
                 cur.applied.reduce((prev2:any, cur2:any) => {
-                    prev2.push({
-                        data: cur2.data,
-                        branch: cur2.branch
-                    })
-                    return prev2;
+                    return [
+                        ...prev2,
+                        {
+                            data: cur2.data,
+                            branch: cur2.branch
+                        }
+                    ];
                 }, [])
-            );
-            return prev;
+            ]
         }, []);
 
         console.log(shell_header, ops)
@@ -243,7 +244,7 @@ const self:BakerInterface = {
         
         const start = Date.now();
 
-        const pow = await crypto.POW(forged, priority, operationArgs.seedHex) as any;
+        const pow = await crypto.POW(forged, priority, operationArgs.seedHex);
 
         const secs = ((Date.now() - start) / 1000);
 

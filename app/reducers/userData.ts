@@ -8,21 +8,26 @@ const defaultState = {
         nodeAddress: rpc.nodeAddress,
         tzScanAdress: rpc.tzScanAddress,
         apiAddress: rpc.apiAddress,
-        delegatorFee: rewarder.feePercentage
+        delegatorFee: rewarder.feePercentage,
+        rewardsBatchSize: rewarder.paymentsBatchSize
     }
 }
 
 export default (state: UserDataType = defaultState, action: UserDataActions) => {
     switch (action.type) {
         case UserDataActionTypes.LOAD:
-            if(!action.userData.settings.nodeAddress)
-            {
-                action.userData.settings = defaultState.settings
-            }
+
+            // Repair undefined settings
+            Object.keys(defaultState.settings).forEach(key => {
+                if (!action.userData.settings[key])
+                    action.userData.settings[key] = defaultState.settings[key];
+            });
+
             return {
                 ready: (!!action.userData.keys && Object.keys(action.userData.keys).length > 0),
                 ...action.userData
             };
+            
         case UserDataActionTypes.UPDATED:
             return state;
         case UserDataActionTypes.CLEAR:
@@ -39,10 +44,11 @@ export default (state: UserDataType = defaultState, action: UserDataActions) => 
                 encrypted: false
             };
         case UserDataActionTypes.SET_SETTINGS:
-            rpc.nodeAddress = action.settings.nodeAddress;
-            rpc.tzScanAddress = action.settings.tzScanAddress;
-            rpc.apiAddress = action.settings.apiAddress;
-            rewarder.feePercentage = action.settings.delegatorFee;
+            action.settings.nodeAddress ? rpc.nodeAddress = action.settings.nodeAddress : null;
+            action.settings.tzScanAddress ? rpc.tzScanAddress = action.settings.tzScanAddress : null;
+            action.settings.apiAddress ? rpc.apiAddress = action.settings.apiAddress : null;
+            action.settings.delegatorFee ? rewarder.feePercentage = action.settings.delegatorFee : null;
+            action.settings.rewardsBatchSize ? rewarder.paymentsBatchSize = action.settings.rewardsBatchSize : null;
 
             return {
                 ...state,

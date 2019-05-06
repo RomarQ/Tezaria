@@ -40,9 +40,9 @@ interface SetSettingsAction {
 export type UserDataActions = LoadAction | UpdatedAction | ClearAction | SetKeysAction | SetSettingsAction;
 
 export type LoadUserDataPrototype = () => Promise<UserDataType>;
-export type ClearUserDataPrototype = () => void;
-export type SetBakerKeysPrototype = (keys:KeysType) => void;
-export type SetBakerSettingsPrototype = (settings:UserSettingsType) => void;
+export type ClearUserDataPrototype = () => Promise<void>;
+export type SetBakerKeysPrototype = (keys:KeysType) => Promise<void>;
+export type SetBakerSettingsPrototype = (settings:UserSettingsType) => Promise<void>;
 
 export interface UserDataActionsProps {
     loadUserData: LoadUserDataPrototype;
@@ -64,12 +64,11 @@ const loadUserData = () => (dispatch:Dispatch) =>
             });
     });
 
-const clearUserData = () =>
-    (dispatch:Dispatch) => {
-        crypto.keys = null;
-        storage.clearUserData();
-        dispatch({ type: UserDataActionTypes.CLEAR });
-    }
+const clearUserData = () => async (dispatch:Dispatch) => {
+    crypto.keys = null;
+    await storage.clearUserData();
+    dispatch({ type: UserDataActionTypes.CLEAR });
+}
 
 const setBakerKeys = (keys:KeysType) => async (dispatch:Dispatch) => {
     crypto.keys = keys;
@@ -78,11 +77,11 @@ const setBakerKeys = (keys:KeysType) => async (dispatch:Dispatch) => {
 }
 
 const setBakerSettings = (settings:UserSettingsType) =>
-    (dispatch:Dispatch) => 
-        storage.setBakerSettings(settings).then(() => {
+    async (dispatch:Dispatch) => 
+        await storage.setBakerSettings(settings).then(async() => {
             dispatch({ type: UserDataActionTypes.SET_SETTINGS, settings });
             
-            rpc.load({
+            await rpc.load({
                 nodeAddress: settings.nodeAddress,
                 tzScanAddress: settings.tzScanAddress,
                 apiAddress: settings.apiAddress

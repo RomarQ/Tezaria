@@ -76,12 +76,30 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
             }
         });
 
-        storage.getLastRewardedCycle().then(obj => setMinRewardableCycle(obj.cycle));
+        storage.getLastRewardedCycle().then(obj => {
+            if (isMounted.current)
+                setMinRewardableCycle(obj.cycle)
+        });
 
         return () => {
             isMounted.current = false;
         }
     }, []);
+
+    // Only re-run the effect if states changes
+    React.useEffect(() => {
+
+        baking || endorsing || accusing || rewarding
+        ? controllerFunc.startController(keys, { 
+            baking,
+            endorsing,
+            accusing,
+            rewarding,
+            logger: handleControllerLogs 
+        })
+        : controllerFunc.stopController()
+
+    }, [baking, endorsing, accusing, rewarding]);
 
     const handleAction = () => {
         controllerState.active
@@ -100,9 +118,7 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     };
 
     const handleChange = (setter:Function, newValue:boolean) => {
-        if(!controllerState.active) {
-            setter(newValue);
-        }
+        setter(newValue);
     };
     
     const handleRewarderChange = () => {
@@ -123,9 +139,6 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     
     return (
         <div className={classes.root}>
-            <Button onClick={handleAction} variant="outlined" color="secondary" className={classes.button}>
-                {controllerState.active ? "Stop Baking" : "Start Baking"}
-            </Button>
             <div className={classes.switchRow}>
                 <Typography variant="h6" className={classes.label} children="Baker" />
                 <Switch
