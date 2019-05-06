@@ -14,7 +14,7 @@ import { crypto } from '../../utils/padaria';
 
 import routes from '../../constants/routes.json';
 import { SetBakerKeysPrototype } from '../../actions/userData'; 
-import { LoaderPrototype } from '../../actions/loader';
+import { LoaderPrototype, LoadTypes } from '../../actions/loader';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -83,17 +83,14 @@ const ImportAccountForm: React.FC<Props> = (props) => {
         // Private Key Method
         async (secret:string, passphrase?:string) => {
             try {
-                const keys = await (
-                    passphrase 
-                        ? crypto.getKeysFromEncSeed(secret, passphrase) 
-                        : crypto.getKeysFromDecSecret(secret)
-                );
+                const keys = await (passphrase ? crypto.getKeysFromEncSeed(secret, passphrase) : crypto.getKeysFromDecSecret(secret));
                 
-                setBakerKeys(keys);
+                loader(LoadTypes.USER_DATA);
+                await setBakerKeys(keys);
+                loader(LoadTypes.USER_DATA);
 
-                history.push(routes.PROTECT_ACCOUNT)
-
-                console.log(keys);
+                history.push(routes.PROTECT_ACCOUNT);
+                
             } catch(e) {
                 console.log(e);
             }

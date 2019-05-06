@@ -1,6 +1,7 @@
 import rpc, { QueryTypes } from './rpc';
 import utils from './utils';
-import operations from './operations';
+import operations, { MAX_BATCH_SIZE } from './operations';
+import bakingController from './bakingController';
 import storage from '../storage';
 
 import {
@@ -13,6 +14,8 @@ const DEFAULT_FEE_PERCENTAGE = 10;
 
 const self:RewardControllerInterface = {
     lastRewardedCycle: null,
+
+    paymentsBatchSize: MAX_BATCH_SIZE,
     feePercentage: DEFAULT_FEE_PERCENTAGE,
 
     getNumberOfDelegatorsByCycle: async (pkh, cycle) => {
@@ -132,28 +135,51 @@ const self:RewardControllerInterface = {
             });
         });
 
-        const ops = await operations.transaction(keys.pkh, destinations, keys);
+        if (destinations.length === 0) {
+            await storage.setLastRewardedCycle(cycle);
+            self.lastRewardedCycle = cycle;
+            return;
+        }
+
+        for (let i = 0; i < destinations.length; i+=self.paymentsBatchSize) {
+            // Get a slice of the total destinations
+            const batch = destinations.slice(i, Math.min(destinations.length, i+self.paymentsBatchSize));
+            // Send one batch of the rewards
+            const ops = await operations.transaction(keys.pkh, batch, keys, undefined, undefined, undefined, self.paymentsBatchSize);
+
+            console.log(self.lastRewardedCycle, ops);
+            /*
+            *   Save transactions on storage
+            */
+            await storage.setSentRewardsByCycle(cycle, ops);
+
+            /*
+            *   Get failed transactions if any
+            */
+            const failedTransactions = ops.reduce((prev, cur) => {
+                cur.contents.forEach(transaction => {
+                    if (transaction.metadata.operation_result.status !== "applied")
+                        prev.push(transaction.destination);
+                });
+                return prev;
+            }, [] as string[]);
+    
+            /*
+            *   If there is failed transactions, inform baker.
+            */
+            if (failedTransactions.length > 0)
+                console.log('OPS, failed transactions', failedTransactions);
+
+            /*
+            *   Stop rewarding if baker stopped the rewarder module
+            *   (Rewarder should never be terminated during a transaction)
+            *   This ensures that data corruption will not occur if baker stops the rewarder during rewarding process
+            */
+            if (!bakingController.rewarding)
+                break;
+        }
 
         self.lastRewardedCycle = cycle;
-
-        const failedTransactions = ops.reduce((prev, cur) => {
-            cur.contents.forEach(transaction => {
-                if (transaction.metadata.operation_result.status !== "applied")
-                    prev.push(transaction.destination);
-            });
-            return prev;
-        }, [] as string[]);
-
-        /*
-        *   If there is failed transactions, inform baker.
-        */
-        if (failedTransactions.length > 0)
-            console.log('OPS, failed transactions', failedTransactions);
-
-        /*
-        *   Save Succeded transactions on storage
-        */
-        storage.setSentRewardsByCycle(cycle, ops);
         /*
         *   Decided to remove the external API on this process for sake of simplicity for new bakers
 
@@ -170,8 +196,6 @@ const self:RewardControllerInterface = {
             `,
             { list: transactionsStatus });
         */
-
-        console.log(self.lastRewardedCycle, ops);
     },
     nextRewardCycle: async () => {
         let cycle = await rpc.getCurrentCycle();
@@ -220,7 +244,7 @@ const self:RewardControllerInterface = {
         */
         if (!cycle || cycle < self.lastRewardedCycle) return;
 
-        await self.sendRewardsByCycle(keys, self.lastRewardedCycle + 1);
+        await self.sendRewardsByCycle(keys, self.lastRewardedCycle+1);
     }
 };
 

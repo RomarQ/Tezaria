@@ -3,6 +3,7 @@ export type UserSettingsType = {
     tzScanAddress?: string;
     apiAddress?: string;
     delegatorFee?: number;
+    rewardsBatchSize?: number;
 }
 
 export type UserDataType = {

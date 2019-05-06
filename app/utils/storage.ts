@@ -12,7 +12,7 @@ export interface StorageFuncProps {
     getAll: () => Promise<Error | StorageDataProps>;
     setUserData: (obj:UserDataType) => Promise<Error | void>;
     getUserData: () => Promise<{ error?:Error, keys?:KeysType, settings?:UserSettingsType }>;
-    clearUserData: () => void;
+    clearUserData: () => Promise<Error[]>;
     setBakerKeys: (keys:KeysType) => Promise<{ error?:Error }>;
     setBakerSettings: (settings:UserSettingsType) => Promise<{ error?:Error }>;
     clearBakerNonces: () => Promise<Error | void>;
@@ -44,12 +44,27 @@ const db:StorageFuncProps = {
 
         return { keys: keys.data , settings: settings.data };
     },
-    clearUserData: () => {
-        storage.remove('keys');
-        storage.remove('settings');
-    },
+    clearUserData: () => new Promise(resolve => {
+        let completed = 0;
+        let results = [] as Array<Error>;
+
+        storage.remove('keys', (error:Error) => {
+            completed++;
+            if (error) results.push(error);
+
+            if (completed === 2)
+                resolve(results);
+        });
+        storage.remove('settings', (error:Error) => {
+            completed++;
+            if (error) results.push(error);
+
+            if (completed === 2)
+                resolve(results);
+        });
+    }),
     setBakerKeys: (keys:KeysType) => new Promise((resolve, reject) => {
-        storage.set('keys', keys, (error:Error) => error ? reject({ error }) : resolve({}));
+        storage.set('keys', keys, (error:Error) => error ? resolve({ error }) : resolve({}));
     }),
     setBakerSettings: (settings:UserSettingsType) => new Promise((resolve, reject) => {
         storage.set('settings', settings, (error:Error) => error ? reject({ error }) : resolve({}));

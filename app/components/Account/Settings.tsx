@@ -8,6 +8,7 @@ import RedoIcon from '@material-ui/icons/Redo';
 import NumberPicker from '../NumberPicker';
 import { UserDataType } from '../../types';
 import { SetBakerSettingsPrototype } from '../../actions/userData';
+import { MAX_BATCH_SIZE } from '../../utils/padaria/operations';
 
 const styles = ({ palette, spacing }:Theme) => createStyles({
     root: {
@@ -132,6 +133,23 @@ const Component: React.SFC<Props> = props => {
                     inputProps={{
                         min: 0,
                         max: 100
+                    }}
+                />
+                <NumberPicker
+                    id="rewardsBatchSize"
+                    required
+                    label="Rewards Batch Size"
+                    onChange={handleChange}
+                    value={settings.rewardsBatchSize}
+                    placeholder="Rewards Batch Size"
+                    fullWidth
+                    variant="outlined"
+                    InputLabelProps={{
+                        shrink: true
+                    }}
+                    inputProps={{
+                        min: 1,
+                        max: MAX_BATCH_SIZE
                     }}
                 />
                 <div className={classes.buttons}>

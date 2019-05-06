@@ -21,7 +21,7 @@ export interface OperationsInterface {
         high: string;
     };
     // Methods
-    transaction: (source:string, destinations:TransactionDestination[], keys:KeysType, fee?:string, gasLimit?:string, storageLimit?:string) => Promise<UnsignedOperationProps[]>;
+    transaction: (source:string, destinations:TransactionDestination[], keys:KeysType, fee?:string, gasLimit?:string, storageLimit?:string, batchSize?:number) => Promise<UnsignedOperationProps[]>;
     doubleBakingEvidence: (keys:KeysType, evidences:BlockHeaderProps[]) => Promise<UnsignedOperationProps>;
     doubleEndorsementEvidence: (keys:KeysType, evidences:EndorsementOperationProps[]) => Promise<UnsignedOperationProps>;
     registerDelegate: (keys:KeysType) => Promise<UnsignedOperationProps>;

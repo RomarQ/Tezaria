@@ -241,6 +241,12 @@ const self:BakingControllerProps = {
         return true;
     },
     stop: () => {
+
+        self.baking = false;
+        self.endorsing = false;
+        self.accusing = false;
+        self.rewarding = false;
+
         if(self.intervalId) {
             clearInterval(self.intervalId);
             self.intervalId = null;

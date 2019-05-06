@@ -144,7 +144,12 @@ const self:RPCInterface = {
                         });
 
                         res.on('end', () => {
-                            res.statusCode === 200 && result != '' ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
+                            try {
+                                res.statusCode === 200 ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
+                            }
+                            catch(e) {
+                                console.error('Invalid JSON', result);
+                            }
                         });
 
                     });
@@ -158,7 +163,12 @@ const self:RPCInterface = {
                         });
 
                         res.on('end', () => {
-                            res.statusCode === 200 && result != '' ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
+                            try {
+                                res.statusCode === 200 ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
+                            }
+                            catch(e) {
+                                console.error('Invalid JSON', result);
+                            }
                         });
 
                     });

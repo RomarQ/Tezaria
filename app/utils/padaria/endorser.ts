@@ -122,7 +122,7 @@ const self:EndorderInterface = {
     endorse: async (keys, head, slots) => {
         const operation = {
             branch: head.hash,
-            contents : [
+            contents: [
                 {          
                     kind : OperationTypes.endorsement.type,
                     level : head.header.level,
