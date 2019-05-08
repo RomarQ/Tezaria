@@ -16,14 +16,9 @@
 		"node": true
 	},
 	"rules": {
-		"@typescript-eslint/explicit-function-return-type": [
-			"error",
-			{
-				"allowTypedFunctionExpressions": true,
-				"allowExpressions": true
-			}
-		],
+		"@typescript-eslint/explicit-function-return-type": "off",
 		"no-tabs": 0,
+		"no-multi-spaces": 0,
 		"react/prop-types": "off",
 		"arrow-parens": ["off"],
 		"compat/compat": "error",
