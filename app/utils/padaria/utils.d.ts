@@ -1,12 +1,10 @@
-import { OperationProps } from './rpc';
-
-export type WaterMarkType = {
+export interface WaterMarkType {
     blockHeader: Uint8Array;
     endorsement: Uint8Array;
     genericOperation: Uint8Array;
 }
 
-export type TezosUnitType = {
+export interface TezosUnitProps {
     char: string;
     unit: number;
 }
@@ -22,11 +20,11 @@ export interface UtilsInterface {
     MTEZ:   TezosUnitType;
 
     setDebugMode: (mode:boolean) => void,
-    verifyNodeCommits: () => Promise<CommitState>;
+    verifyNodeCommits: () => Promise<TezosCommitProps>;
     operationType: (op:{ contents: {kind:string}[] }) => number;
     createProtocolData: (priority:number, powHeader?:string, pow?:string, seed?:string) => string;
-    convertUnit: (value:number, to:{char:string, unit:number}, from?:{char:string, unit:number}) => string;
-    convertUnitWithSymbol: (value:number, to:{char:string, unit:number}, from?:{char:string, unit:number}) => string;
+    convertUnit: (value:number, to:TezosUnitProps, from?:TezosUnitProps) => string;
+    convertUnitWithSymbol: (value:number, to:TezosUnitProps, from?:TezosUnitProps) => string;
     getRewardSharePercentage: (balance:number, staking_balance:number) => number;
     getRewardShare: (balance:number, staking_balance:number, rewards:number) => number;
     getRewardFee: (reward:number, rewardFee:number) => number;
@@ -42,7 +40,7 @@ export interface UtilsInterface {
     numberToZarith: (value:number) => string;
 }
 
-export type TezosCommitState = {
+export interface TezosCommitProps {
     updated: boolean;
     currentCommitHash: string;
     lastCommitHash: string;

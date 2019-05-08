@@ -1,33 +1,45 @@
 import React from 'react';
 import Wrapper from '../components/Dashboard/Dashboard';
 
-import { UserDataType } from '../types';
 import utils from '../utils/padaria/utils';
 import bakingController from '../utils/padaria/bakingController';
 
 type Props = {
-    userData: UserDataType;
+    userData: UserDataProps;
 };
 
 const Dashboard: React.FC<Props> = ({ userData }) => {
     const isMounted = React.useRef(true);
     const [tezosCommits, setTezosCommits] = React.useState(null);
+    const [bakerInfo, setBakerInfo] = React.useState(userData);
 
     React.useEffect(() => {
-        utils.verifyNodeCommits().then(r => {
-            if (isMounted.current)
-                setTezosCommits(r);
-        });
-        return () => { isMounted.current = false; };
+        updateInfo();
+
+        // Update every 10 minutes;
+        const intervalId = setInterval(updateInfo, 600000);
+
+        return () => {
+            clearInterval(intervalId); 
+            isMounted.current = false;
+        };
     }, []);
 
-    const bakerInfo = {
-        keys: userData.keys,
-        ...bakingController.delegate
-    };
+    const updateInfo = () => {
+        utils.verifyNodeCommits().then(commitState => {
+            if (isMounted.current && commitState)
+                setTezosCommits(commitState);
+        });
+        bakingController.load().then(delegate => {
+            if (isMounted.current && delegate)
+                setBakerInfo({
+                    ...userData,
+                    ...delegate
+                });
+        });
+    }
 
-    return <Wrapper 
-        userData={userData}
+    return <Wrapper
         bakerInfo={bakerInfo}
         nodeInfo={tezosCommits}
     />

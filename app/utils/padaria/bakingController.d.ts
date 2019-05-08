@@ -17,27 +17,27 @@ export interface BakingControllerProps {
         rewarder: boolean;
     }
 
-    load: () => Promise<boolean>;
+    load: () => Promise<DelegateProps>;
     revealNonce: (keys:KeysType, head:BlockProps, nonce:NonceType) => Promise<void>;
     revealNonces: (keys:KeysType, head:BlockProps) => void;
     loadNoncesFromStorage: () => void;
     addNonce: (nonce:NonceType) => void;
-    run: (keys:KeysType, logger: (log:LogProps) => any) => void;
+    run: (keys:KeysType, logger: (log:LogProps) => void) => void;
     start: (keys: KeysType, options: BakingControllerStartOptions) => Promise<boolean>;
     stop: () => void;
     checkHashPower: () => Promise<number>;
 }
 
-declare type DelegateProps = {
+declare interface DelegateProps {
     // From Request
     balance?: number | string;
     frozen_balance?: number | string;
-    frozen_balance_by_cycle?: Array<{
+    frozen_balance_by_cycle?: {
         cycle: number;
         deposit: number | string;
         fees: number | string;
         rewards: number | string;
-    }>;
+    }[];
     staking_balance?: number | string;
     delegated_contracts?: string[];
     delegated_balance?: number | string;
@@ -45,13 +45,13 @@ declare type DelegateProps = {
     grace_period?: number;
 }
 
-export type BakingControllerStartOptions = {
+export interface BakingControllerStartOptions {
     baking: boolean;
     endorsing: boolean;
     accusing: boolean;
     rewarding: boolean;
-    logger: (log:LogProps) => any
-};
+    logger: (log:LogProps) => void;
+}
 
 export type BakingControllerState = {
     active?: boolean;

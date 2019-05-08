@@ -4,7 +4,7 @@ import fs from 'fs';
 import { GraphQLClient } from 'graphql-request';
 
 import utils, { Prefix } from './utils';
-import bakerController from './bakingController';
+
 import operations, {
     UnsignedOperationProps,
     UnsignedOperations
@@ -149,6 +149,7 @@ const self:RPCInterface = {
                             }
                             catch(e) {
                                 console.error('Invalid JSON', result);
+                                resolve();
                             }
                         });
 
@@ -168,12 +169,16 @@ const self:RPCInterface = {
                             }
                             catch(e) {
                                 console.error('Invalid JSON', result);
+                                resolve();
                             }
                         });
 
                     });
 
-                req.on('error', e => console.error(e.message));
+                req.on('error', e => {
+                    console.error(e.message);
+                    resolve();
+                });
 
                 if (options.method === QueryTypes.POST) {
                     req.write(JSON.stringify(args));
@@ -183,6 +188,7 @@ const self:RPCInterface = {
             }
             catch(e) {
                 console.error(e.message);
+                resolve();
             }
         })
     ),

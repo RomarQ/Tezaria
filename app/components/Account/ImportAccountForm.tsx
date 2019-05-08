@@ -87,7 +87,7 @@ const ImportAccountForm: React.FC<Props> = (props) => {
                 
                 loader(LoadTypes.USER_DATA);
                 await setBakerKeys(keys);
-                loader(LoadTypes.USER_DATA);
+                loader(LoadTypes.USER_DATA, true);
 
                 history.push(routes.PROTECT_ACCOUNT);
                 

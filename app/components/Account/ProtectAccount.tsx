@@ -1,4 +1,5 @@
 import React from 'react';
+import { History } from 'history';
 import { createStyles, withStyles, Theme, WithStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
@@ -14,7 +15,6 @@ import { SetBakerKeysPrototype, ClearUserDataPrototype } from '../../actions/use
 import { crypto } from '../../utils/padaria';
 import storage from '../../utils/storage';
 import { LoaderPrototype, LoadTypes } from '../../actions/loader';
-import { History } from 'history';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -82,26 +82,18 @@ type Props = {
     setBakerKeys: SetBakerKeysPrototype;
 };
 
-const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, clearUserData, keys, loader, history, classes }) => {
+const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, clearUserData, keys, loader, history, classes }) => {
+    const isMounted = React.useRef(true);
     const [password, setPassword] = React.useState(null);
     const [passwordConfirmation, setPasswordConfirmation] = React.useState(null);
     const [modalError, setModalError] = React.useState('');
+    const [encrypting, setEncrypting] = React.useState(false);
+
+    React.useEffect(() => () => isMounted.current = false, []);
 
     const onDecryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
         e.preventDefault();
-
-        if (!password && password !== passwordConfirmation) {
-            setModalError("Passwords are not equal...");
-            return;
-        }
-
-        (await storage.setBakerKeys(crypto.encryptSK(keys, password))).error
-            ? console.error('Failed to store encrypted key on disk!')
-            : history.push(routes.DASHBOARD);
-    }
-
-    const onEncryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
-        e.preventDefault();
+        setEncrypting(true);
 
         loader(LoadTypes.USER_DATA);
         try {
@@ -109,10 +101,25 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
             history.push(routes.DASHBOARD);
         }
         catch(e) {
-            setModalError(e.message);
+            if (isMounted.current)
+                setModalError(e.message);
         }
 
+        setEncrypting(false);
         loader(LoadTypes.USER_DATA, true);
+    }
+
+    const onEncryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
+        e.preventDefault();
+        
+        if (!password && password !== passwordConfirmation) {
+            setModalError("Passwords are not equal...");
+            return;
+        }
+
+        (await storage.setBakerKeys(crypto.encryptSK(keys, password))).error
+            ? console.error('Failed to store encrypted key on disk, key was not stored!')
+            : history.push(routes.DASHBOARD);
     }
 
     const onDeleteWallet = async () => {
@@ -135,7 +142,7 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
                         variant="outlined"
                     />
                 </div>
-                <form className={classes.form} onSubmit={keys.encrypted ? onEncryptedSubmit : onDecryptedSubmit }>
+                <form className={classes.form} onSubmit={keys.encrypted ? onDecryptedSubmit : onEncryptedSubmit }>
                     {modalError ? <p>{modalError}</p> : null}
                     <TextField
                         style={{ marginBottom: 10 }}
@@ -151,7 +158,7 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
                             shrink: true
                         }}
                     />
-                    {keys.encrypted ? undefined : (
+                    {keys.encrypted || encrypting ? null : (
                         <TextField
                             id="passwordConfirmation"
                             required

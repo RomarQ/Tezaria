@@ -1,12 +1,17 @@
 import React from 'react';
-import { withStyles, Theme, createStyles, WithStyles } from '@material-ui/core/styles';
+import {
+    withStyles,
+    Theme,
+    createStyles,
+    WithStyles
+} from '@material-ui/core/styles';
+
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import Button from '@material-ui/core/Button';
 import SaveIcon from '@material-ui/icons/SaveOutlined';
 import RedoIcon from '@material-ui/icons/Redo';
 import NumberPicker from '../NumberPicker';
-import { UserDataType } from '../../types';
 import { SetBakerSettingsPrototype } from '../../actions/userData';
 import { MAX_BATCH_SIZE } from '../../utils/padaria/operations';
 
@@ -44,13 +49,13 @@ const styles = ({ palette, spacing }:Theme) => createStyles({
 });
 
 interface Props extends WithStyles<typeof styles> {
-    userData: UserDataType;
+    userData: UserDataProps;
     setBakerSettings: SetBakerSettingsPrototype;
 }
 
-const Component: React.SFC<Props> = props => {
-    const [settings, setSettings] = React.useState(props.userData.settings);
-    const { classes, setBakerSettings, userData: { settings:currentSettings } } = props;
+const Component: React.FC<Props> = ({ userData: { settings: currentSettings }, ...props }) => {
+    const [settings, setSettings] = React.useState(currentSettings);
+    const { classes, setBakerSettings  } = props;
 
     const handleChange = (e:React.ChangeEvent<HTMLInputElement>) => {
         e.preventDefault();
@@ -59,13 +64,13 @@ const Component: React.SFC<Props> = props => {
             ...settings,
             [e.target.id]: e.target.value
         });
-    }
+    };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         setBakerSettings(settings);
-    }
+    };
 
     return (
         <div className={classes.root}>
@@ -159,7 +164,7 @@ const Component: React.SFC<Props> = props => {
                         variant="outlined"
                         type="submit"
                     >
-                        <SaveIcon className={classes.buttonIcon}/> {"Save Changes"}
+                        <SaveIcon className={classes.buttonIcon}/> {'Save Changes'}
                     </Button>
 
                     <Button
@@ -169,12 +174,12 @@ const Component: React.SFC<Props> = props => {
                         color="secondary"
                         variant="outlined"
                     >
-                        <RedoIcon className={classes.buttonIcon}/> {"Reset Changes"}
+                        <RedoIcon className={classes.buttonIcon}/> {'Reset Changes'}
                     </Button>
                 </div>
             </form>
         </div>
     );
-}
+};
 
 export default withStyles(styles)(Component);

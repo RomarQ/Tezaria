@@ -1,5 +1,4 @@
 import { UserDataActionTypes, UserDataActions } from '../actions/userData';
-import { UserDataType } from '../types';
 import { rpc, rewarder } from '../utils/padaria';
 
 const defaultState = {
@@ -13,7 +12,7 @@ const defaultState = {
     }
 }
 
-export default (state: UserDataType = defaultState, action: UserDataActions) => {
+export default (state: UserDataProps = defaultState, action: UserDataActions) => {
     switch (action.type) {
         case UserDataActionTypes.LOAD:
 

@@ -1,16 +1,15 @@
 import storage from 'electron-json-storage';
 
-import { UserDataType, UserSettingsType } from '../types';
 import { UnsignedOperationProps } from './padaria/operations';
 
 export interface StorageDataProps {
-    userData?: UserDataType;
+    userData?: UserDataProps;
     bakerNonces?: NonceType[];
 }
 
 export interface StorageFuncProps {
     getAll: () => Promise<Error | StorageDataProps>;
-    setUserData: (obj:UserDataType) => Promise<Error | void>;
+    setUserData: (obj:UserDataProps) => Promise<Error | void>;
     getUserData: () => Promise<{ error?:Error, keys?:KeysType, settings?:UserSettingsType }>;
     clearUserData: () => Promise<Error[]>;
     setBakerKeys: (keys:KeysType) => Promise<{ error?:Error }>;
@@ -29,7 +28,7 @@ const db:StorageFuncProps = {
     getAll: () => new Promise((resolve, reject)  => {
         storage.getAll((err:Error, data:StorageDataProps) => err ? reject(err) : resolve(data));
     }),
-    setUserData: (obj:UserDataType) => new Promise((resolve, reject) => {
+    setUserData: (obj:UserDataProps) => new Promise((resolve, reject) => {
         storage.set('userData', obj, (err:Error) => err ? reject(err) : resolve(null));
     }),
     getUserData: async () => {

@@ -1,92 +1,105 @@
 import { Dispatch } from 'redux';
-import { UserDataType } from '../types';
 import storage from '../utils/storage';
-import { UserSettingsType } from '../types';
 import rpc from '../utils/padaria/rpc';
 import crypto from '../utils/padaria/crypto';
 import bakingController from '../utils/padaria/bakingController';
 
 export enum UserDataActionTypes {
-    LOAD          = 'LOAD',
-    UPDATED       = 'UPDATED',
-    CLEAR         = 'CLEAR',
-    SET_KEYS      = 'SET_KEYS',
-    SET_SETTINGS  = 'SET_SETTINGS'
+	LOAD = 'LOAD',
+	UPDATED = 'UPDATED',
+	CLEAR = 'CLEAR',
+	SET_KEYS = 'SET_KEYS',
+	SET_SETTINGS = 'SET_SETTINGS'
 }
 
 interface LoadAction {
-    type: UserDataActionTypes.LOAD;
-    userData: UserDataType;
+	type: UserDataActionTypes.LOAD;
+	userData: UserDataProps;
 }
 
 interface UpdatedAction {
-    type: UserDataActionTypes.UPDATED;
+	type: UserDataActionTypes.UPDATED;
 }
 
 interface ClearAction {
-    type: UserDataActionTypes.CLEAR;
+	type: UserDataActionTypes.CLEAR;
 }
 
 interface SetKeysAction {
-    type: UserDataActionTypes.SET_KEYS;
-    keys: KeysType;
+	type: UserDataActionTypes.SET_KEYS;
+	keys: KeysType;
 }
 
 interface SetSettingsAction {
-    type: UserDataActionTypes.SET_SETTINGS;
-    settings: UserSettingsType;
+	type: UserDataActionTypes.SET_SETTINGS;
+	settings: UserSettingsType;
 }
 
-export type UserDataActions = LoadAction | UpdatedAction | ClearAction | SetKeysAction | SetSettingsAction;
+export type UserDataActions =
+	| LoadAction
+	| UpdatedAction
+	| ClearAction
+	| SetKeysAction
+	| SetSettingsAction;
 
-export type LoadUserDataPrototype = () => Promise<UserDataType>;
+export type LoadUserDataPrototype = () => Promise<UserDataProps>;
 export type ClearUserDataPrototype = () => Promise<void>;
-export type SetBakerKeysPrototype = (keys:KeysType) => Promise<void>;
-export type SetBakerSettingsPrototype = (settings:UserSettingsType) => Promise<void>;
+export type SetBakerKeysPrototype = (keys: KeysType) => Promise<void>;
+export type SetBakerSettingsPrototype = (
+	settings: UserSettingsType
+) => Promise<void>;
 
 export interface UserDataActionsProps {
-    loadUserData: LoadUserDataPrototype;
-    clearUserData: ClearUserDataPrototype;
-    setBakerKeys: SetBakerKeysPrototype;
-    setBakerSettings: SetBakerKeysPrototype;
+	loadUserData: LoadUserDataPrototype;
+	clearUserData: ClearUserDataPrototype;
+	setBakerKeys: SetBakerKeysPrototype;
+	setBakerSettings: SetBakerSettingsPrototype;
+}
+
+const loadUserData = () => (dispatch: Dispatch) => (
+	new Promise((resolve, reject) => {
+		crypto.keys = null;
+		storage
+			.getUserData()
+			.then(userData => {
+				if (!userData.error) {
+					dispatch({ type: UserDataActionTypes.LOAD, userData });
+					resolve(userData);
+				}
+
+				return reject(userData.error);
+			})
+			.catch(e => reject(e));
+    })
+);
+
+const clearUserData = () => async (dispatch: Dispatch) => {
+	crypto.keys = null;
+	await storage.clearUserData();
+	dispatch({ type: UserDataActionTypes.CLEAR });
 };
 
-const loadUserData = () => (dispatch:Dispatch) => 
-    new Promise((resolve, reject) => {
-        crypto.keys = null;
-        storage.getUserData()
-            .then(userData => {
-                if (!userData.error) {
-                    dispatch({ type: UserDataActionTypes.LOAD, userData });
-                    resolve(userData);
-                }
-                else reject(userData.error);
-            });
-    });
+const setBakerKeys = (keys: KeysType) => async (dispatch: Dispatch) => {
+	crypto.keys = keys;
+	dispatch({ type: UserDataActionTypes.SET_KEYS, keys });
+	await bakingController.load();
+};
 
-const clearUserData = () => async (dispatch:Dispatch) => {
-    crypto.keys = null;
-    await storage.clearUserData();
-    dispatch({ type: UserDataActionTypes.CLEAR });
-}
+const setBakerSettings = (settings: UserSettingsType) => (dispatch: Dispatch) => (
+	storage.setBakerSettings(settings).then(() => {
+		dispatch({ type: UserDataActionTypes.SET_SETTINGS, settings });
 
-const setBakerKeys = (keys:KeysType) => async (dispatch:Dispatch) => {
-    crypto.keys = keys;
-    await bakingController.load();
-    dispatch({ type: UserDataActionTypes.SET_KEYS, keys });
-}
+		return rpc.load({
+			nodeAddress: settings.nodeAddress,
+			tzScanAddress: settings.tzScanAddress,
+			apiAddress: settings.apiAddress
+		});
+    })
+);
 
-const setBakerSettings = (settings:UserSettingsType) =>
-    async (dispatch:Dispatch) => 
-        await storage.setBakerSettings(settings).then(async() => {
-            dispatch({ type: UserDataActionTypes.SET_SETTINGS, settings });
-            
-            await rpc.load({
-                nodeAddress: settings.nodeAddress,
-                tzScanAddress: settings.tzScanAddress,
-                apiAddress: settings.apiAddress
-            });
-        });
-
-
-export default { loadUserData, clearUserData, setBakerKeys, setBakerSettings };
+export default {
+	loadUserData,
+	clearUserData,
+	setBakerKeys,
+	setBakerSettings
+};
