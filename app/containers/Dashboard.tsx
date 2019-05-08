@@ -1,7 +1,6 @@
 import React from 'react';
 import Wrapper from '../components/Dashboard/Dashboard';
 
-import { UserDataType } from '../types';
 import utils from '../utils/padaria/utils';
 import bakingController from '../utils/padaria/bakingController';
 

@@ -77,7 +77,6 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
     const handlePopoverOpen = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         setAnchorEl(event.currentTarget);
         setOpen(event.currentTarget.id);
-        console.log(event.currentTarget.id)
     };
 
     const handlePopoverClose = () => {
@@ -95,7 +94,7 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
                         className={classes.blockie}
                     />
                     <Chip
-                        label={utils.parseTEZWithSymbol(Number(bakerInfo.balance))}
+                        label={bakerInfo.balance ? utils.parseTEZWithSymbol(Number(bakerInfo.balance)) : '...'}
                         color="primary"
                         className={classes.margin}
                     />
@@ -179,12 +178,13 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
                 }
                 <div className={classes.labelRow}>
                     <Typography variant="caption" children="Legible as delegate" style={{marginRight: 10}}/>
-                    {bakerInfo.deactivated ? <NotCheckIcon color='secondary' /> : <CheckIcon color='primary' />}
+                    {bakerInfo.deactivated || typeof bakerInfo.deactivated == 'undefined'
+                        ? <NotCheckIcon color='secondary' /> : <CheckIcon color='primary' />}
                 </div>
                 <div className={classes.labelRow}>
                     <Typography variant="caption" children="Stacking Balance" style={{marginRight: 10}}/>
                     <Chip
-                        label={utils.parseTEZWithSymbol(Number(bakerInfo.staking_balance))}
+                        label={bakerInfo.staking_balance ? utils.parseTEZWithSymbol(Number(bakerInfo.staking_balance)) : '...'}
                         color="primary"
                         className={classes.margin}
                     />
@@ -200,7 +200,7 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
                 <div className={classes.labelRow}>
                     <Typography variant="caption" children="Rolls" style={{marginRight: 10}}/>
                     <Chip
-                        label={utils.getTotalRolls(bakerInfo.staking_balance)}
+                        label={bakerInfo.staking_balance ? utils.getTotalRolls(bakerInfo.staking_balance) : '...'}
                         color="primary"
                         className={classes.margin}
                     />

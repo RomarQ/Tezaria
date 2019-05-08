@@ -1,5 +1,4 @@
 import { UserDataActionTypes, UserDataActions } from '../actions/userData';
-import { UserDataType } from '../types';
 import { rpc, rewarder } from '../utils/padaria';
 
 const defaultState = {

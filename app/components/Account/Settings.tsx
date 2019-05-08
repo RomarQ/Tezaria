@@ -6,7 +6,6 @@ import Button from '@material-ui/core/Button';
 import SaveIcon from '@material-ui/icons/SaveOutlined';
 import RedoIcon from '@material-ui/icons/Redo';
 import NumberPicker from '../NumberPicker';
-import { UserDataType } from '../../types';
 import { SetBakerSettingsPrototype } from '../../actions/userData';
 import { MAX_BATCH_SIZE } from '../../utils/padaria/operations';
 

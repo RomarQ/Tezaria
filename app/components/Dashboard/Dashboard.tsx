@@ -7,7 +7,6 @@ import BakingRights from '../../containers/Widgets/Baking/BakingRights';
 import BakingController from '../../containers/Widgets/BakingController';
 
 import { TezosCommitState } from'../../utils/padaria/utils';
-import { UserDataType } from '../../types';
 
 
 const styles = ({}: Theme) => createStyles({

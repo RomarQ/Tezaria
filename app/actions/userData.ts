@@ -1,7 +1,5 @@
 import { Dispatch } from 'redux';
-import { UserDataType } from '../types';
 import storage from '../utils/storage';
-import { UserSettingsType } from '../types';
 import rpc from '../utils/padaria/rpc';
 import crypto from '../utils/padaria/crypto';
 import bakingController from '../utils/padaria/bakingController';
@@ -72,8 +70,8 @@ const clearUserData = () => async (dispatch:Dispatch) => {
 
 const setBakerKeys = (keys:KeysType) => async (dispatch:Dispatch) => {
     crypto.keys = keys;
-    await bakingController.load();
     dispatch({ type: UserDataActionTypes.SET_KEYS, keys });
+    await bakingController.load();
 }
 
 const setBakerSettings = (settings:UserSettingsType) =>

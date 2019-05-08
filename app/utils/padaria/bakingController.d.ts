@@ -17,7 +17,7 @@ export interface BakingControllerProps {
         rewarder: boolean;
     }
 
-    load: () => Promise<boolean>;
+    load: () => Promise<void>;
     revealNonce: (keys:KeysType, head:BlockProps, nonce:NonceType) => Promise<void>;
     revealNonces: (keys:KeysType, head:BlockProps) => void;
     loadNoncesFromStorage: () => void;
@@ -28,24 +28,24 @@ export interface BakingControllerProps {
     checkHashPower: () => Promise<number>;
 }
 
-declare type DelegateProps = {
+declare interface DelegateProps {
     // From Request
     balance?: number | string;
     frozen_balance?: number | string;
-    frozen_balance_by_cycle?: Array<{
+    frozen_balance_by_cycle?: {
         cycle: number;
         deposit: number | string;
         fees: number | string;
         rewards: number | string;
-    }>;
+    }[];
     staking_balance?: number | string;
     delegated_contracts?: string[];
     delegated_balance?: number | string;
     deactivated?: boolean;
     grace_period?: number;
-}
+};
 
-export type BakingControllerStartOptions = {
+export interface BakingControllerStartOptions {
     baking: boolean;
     endorsing: boolean;
     accusing: boolean;

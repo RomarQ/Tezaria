@@ -241,7 +241,7 @@ const self: OperationsInterface = {
                 {
                     kind: OperationTypes.reveal.type,
                     fee: String(self.feeDefaults.low),
-                    counter: String(++counter),
+                    counter: String(counter++),
                     public_key: keys.pk,
                     gas_limit: String(self.revealGasCost),
                     storage_limit: String(self.revealStorage)
@@ -257,7 +257,7 @@ const self: OperationsInterface = {
             if (self.operationRequiresCounter(cur.kind)) {
                 if (!cur.gas_limit) cur.gas_limit = String(0);
                 if (!cur.storage_limit) cur.storage_limit = String(0);
-                cur.counter = String(++counter);
+                cur.counter = String(counter++);
             }
             prev.push(cur);
             return prev;
@@ -301,9 +301,9 @@ const self: OperationsInterface = {
                 
                 let cleanedDestination = '';
                 if (operation.destination.toLowerCase().startsWith('kt')) {
-                  cleanedDestination = '01' + utils.bufferToHex(utils.b58decode(operation.destination, Prefix.kt)) + '00';
+                    cleanedDestination = '01' + utils.bufferToHex(utils.b58decode(operation.destination, Prefix.kt)) + '00';
                 } else {
-                  cleanedDestination = utils.bufferToHex(utils.b58decode(operation.destination, Prefix.tz1));
+                    cleanedDestination = utils.bufferToHex(utils.b58decode(operation.destination, Prefix.tz1));
                 }
                 
                 if(cleanedDestination.length % 44 > 0)
@@ -312,7 +312,9 @@ const self: OperationsInterface = {
                 forgeResult += `${cleanedDestination}00`;
                 break;
             case 9: break;
-            case 10: break;
+            case 10:
+                forgeResult += `ff00${utils.bufferToHex(utils.b58decode(operation.delegate, Prefix.tz1))}`;
+                break;
         }
         return forgeResult;
     },

@@ -1,4 +1,5 @@
 import React from 'react';
+import { History } from 'history';
 import { createStyles, withStyles, Theme, WithStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
@@ -14,7 +15,6 @@ import { SetBakerKeysPrototype, ClearUserDataPrototype } from '../../actions/use
 import { crypto } from '../../utils/padaria';
 import storage from '../../utils/storage';
 import { LoaderPrototype, LoadTypes } from '../../actions/loader';
-import { History } from 'history';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -82,10 +82,13 @@ type Props = {
     setBakerKeys: SetBakerKeysPrototype;
 };
 
-const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, clearUserData, keys, loader, history, classes }) => {
+const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, clearUserData, keys, loader, history, classes }) => {
+    const isMounted = React.useRef(true);
     const [password, setPassword] = React.useState(null);
     const [passwordConfirmation, setPasswordConfirmation] = React.useState(null);
     const [modalError, setModalError] = React.useState('');
+
+    React.useEffect(() => () => isMounted.current = false, []);
 
     const onDecryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
         e.preventDefault();
@@ -109,7 +112,8 @@ const Component: React.SFC<Props & WithStyles<typeof styles>> = ({ setBakerKeys,
             history.push(routes.DASHBOARD);
         }
         catch(e) {
-            setModalError(e.message);
+            if (isMounted.current)
+                setModalError(e.message);
         }
 
         loader(LoadTypes.USER_DATA, true);

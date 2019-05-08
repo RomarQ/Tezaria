@@ -1,10 +1,6 @@
 import React from 'react';
-import gql from 'graphql-tag';
-
-import GQLclient from '../graphql-client';
 
 import Component from '../components/Rewards/Rewards';
-import { UserDataType } from '../types';
 import rewarder, { DelegatorReward } from '../utils/padaria/rewarder';
 import Splash from './Splash';
 

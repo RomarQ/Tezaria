@@ -1,6 +1,5 @@
 import storage from 'electron-json-storage';
 
-import { UserDataType, UserSettingsType } from '../types';
 import { UnsignedOperationProps } from './padaria/operations';
 
 export interface StorageDataProps {

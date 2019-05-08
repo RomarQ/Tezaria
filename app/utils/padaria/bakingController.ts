@@ -51,14 +51,16 @@ const self:BakingControllerProps = {
     load: async () => {
         if (!crypto.keys) return;
 
-        self.delegate = await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${crypto.keys.pkh}`, QueryTypes.GET) as DelegateProps;
+        await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${crypto.keys.pkh}`, QueryTypes.GET)
+            .then(res => {
+                if (!Array.isArray(res))
+                    self.delegate = res;
+            });
 
-        if (self.delegate.deactivated) {
+
+        if (self.delegate.deactivated || typeof self.delegate.deactivated == 'undefined') {
             await operations.registerDelegate(crypto.keys);
-            return false;
         }
-
-        return true;
     },
     revealNonce: async (keys, head, nonce) => {
         const operationArgs = {
