@@ -17,6 +17,9 @@
 	},
 	"rules": {
 		"@typescript-eslint/explicit-function-return-type": "off",
+		"@typescript-eslint/camelcase": "off",
+		"react/jsx-no-duplicate-props": "off",
+		"react/display-name": "off",
 		"no-tabs": 0,
 		"no-multi-spaces": 0,
 		"react/prop-types": "off",

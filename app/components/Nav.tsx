@@ -1,4 +1,5 @@
 import React from 'react';
+import { History } from 'history';
 import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
@@ -13,8 +14,10 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import ButtonLink from './ButtonLink';
 
 import { LoaderPrototype, LoadTypes } from '../actions/loader';
+import { UserDataActionsProps } from '../actions/userData';
 
 import routes from '../constants/routes.json';
+
 
 const styles = ({ spacing }: Theme) => createStyles({
     root: {
@@ -35,9 +38,9 @@ const styles = ({ spacing }: Theme) => createStyles({
 });
 
 type Props = {
-    userDataFunc: any;
+    userDataFunc: UserDataActionsProps;
     loader: LoaderPrototype;
-    history: any;
+    history: History;
 } & WithStyles<typeof styles>;
 
 const Component: React.FC<Props> = props => {

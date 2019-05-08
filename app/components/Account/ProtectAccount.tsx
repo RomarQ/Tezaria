@@ -87,24 +87,13 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, 
     const [password, setPassword] = React.useState(null);
     const [passwordConfirmation, setPasswordConfirmation] = React.useState(null);
     const [modalError, setModalError] = React.useState('');
+    const [encrypting, setEncrypting] = React.useState(false);
 
     React.useEffect(() => () => isMounted.current = false, []);
 
     const onDecryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
         e.preventDefault();
-
-        if (!password && password !== passwordConfirmation) {
-            setModalError("Passwords are not equal...");
-            return;
-        }
-
-        (await storage.setBakerKeys(crypto.encryptSK(keys, password))).error
-            ? console.error('Failed to store encrypted key on disk!')
-            : history.push(routes.DASHBOARD);
-    }
-
-    const onEncryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
-        e.preventDefault();
+        setEncrypting(true);
 
         loader(LoadTypes.USER_DATA);
         try {
@@ -116,7 +105,21 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, 
                 setModalError(e.message);
         }
 
+        setEncrypting(false);
         loader(LoadTypes.USER_DATA, true);
+    }
+
+    const onEncryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
+        e.preventDefault();
+        
+        if (!password && password !== passwordConfirmation) {
+            setModalError("Passwords are not equal...");
+            return;
+        }
+
+        (await storage.setBakerKeys(crypto.encryptSK(keys, password))).error
+            ? console.error('Failed to store encrypted key on disk, key was not stored!')
+            : history.push(routes.DASHBOARD);
     }
 
     const onDeleteWallet = async () => {
@@ -139,7 +142,7 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, 
                         variant="outlined"
                     />
                 </div>
-                <form className={classes.form} onSubmit={keys.encrypted ? onEncryptedSubmit : onDecryptedSubmit }>
+                <form className={classes.form} onSubmit={keys.encrypted ? onDecryptedSubmit : onEncryptedSubmit }>
                     {modalError ? <p>{modalError}</p> : null}
                     <TextField
                         style={{ marginBottom: 10 }}
@@ -155,7 +158,7 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, 
                             shrink: true
                         }}
                     />
-                    {keys.encrypted ? undefined : (
+                    {keys.encrypted || encrypting ? null : (
                         <TextField
                             id="passwordConfirmation"
                             required

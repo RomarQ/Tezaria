@@ -104,13 +104,19 @@ const self:UtilsInterface = {
             path: `/api/v4/projects/tezos%2Ftezos/repository/commits/?ref_name=${rpc.network.toLocaleLowerCase()}&per_page=100`,
             method: 'GET'
         };
-        const commits = await rpc.queryRequest(options) as {author_name:string;committed_date:string;id:string;message:string}[];
+        const commits = await rpc.queryRequest(options) as {
+            id:string;
+            author_name:string;
+            committed_date:string;
+            parent_ids: string[];
+            message:string
+        }[];
 
         if (!Array.isArray(commits)) return;
 
         let index = 0;
         for (const commit of commits) {
-            if (commit.id === nodeLastCommit) {
+            if (commit.id === nodeLastCommit || commit.parent_ids.some(id => id === nodeLastCommit)) {
                 return {
                     updated: index === 0,
                     currentCommitHash: nodeLastCommit,
@@ -127,7 +133,7 @@ const self:UtilsInterface = {
     convertUnit: (value, to, from = self.uTEZ) => (
         ((value / to.unit) * from.unit).toLocaleString('fullwide', {maximumFractionDigits:3})
     ),
-    convertUnitWithSymbol: (value:number, to:{char:string, unit:number}, from:{char:string, unit:number} = self.uTEZ) => (
+    convertUnitWithSymbol: (value, to, from = self.uTEZ) => (
         `${self.convertUnit(value, to, from)} ${to.char}`
     ),
     getRewardSharePercentage: (balance, staking_balance) => (

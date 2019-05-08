@@ -14,7 +14,7 @@ export enum UserDataActionTypes {
 
 interface LoadAction {
 	type: UserDataActionTypes.LOAD;
-	userData: UserDataType;
+	userData: UserDataProps;
 }
 
 interface UpdatedAction {
@@ -42,7 +42,7 @@ export type UserDataActions =
 	| SetKeysAction
 	| SetSettingsAction;
 
-export type LoadUserDataPrototype = () => Promise<UserDataType>;
+export type LoadUserDataPrototype = () => Promise<UserDataProps>;
 export type ClearUserDataPrototype = () => Promise<void>;
 export type SetBakerKeysPrototype = (keys: KeysType) => Promise<void>;
 export type SetBakerSettingsPrototype = (
@@ -53,10 +53,10 @@ export interface UserDataActionsProps {
 	loadUserData: LoadUserDataPrototype;
 	clearUserData: ClearUserDataPrototype;
 	setBakerKeys: SetBakerKeysPrototype;
-	setBakerSettings: SetBakerKeysPrototype;
+	setBakerSettings: SetBakerSettingsPrototype;
 }
 
-const loadUserData = () => (dispatch: Dispatch) =>
+const loadUserData = () => (dispatch: Dispatch) => (
 	new Promise((resolve, reject) => {
 		crypto.keys = null;
 		storage
@@ -70,7 +70,8 @@ const loadUserData = () => (dispatch: Dispatch) =>
 				return reject(userData.error);
 			})
 			.catch(e => reject(e));
-	});
+    })
+);
 
 const clearUserData = () => async (dispatch: Dispatch) => {
 	crypto.keys = null;
@@ -84,7 +85,7 @@ const setBakerKeys = (keys: KeysType) => async (dispatch: Dispatch) => {
 	await bakingController.load();
 };
 
-const setBakerSettings = (settings: UserSettingsType) => (dispatch: Dispatch) =>
+const setBakerSettings = (settings: UserSettingsType) => (dispatch: Dispatch) => (
 	storage.setBakerSettings(settings).then(() => {
 		dispatch({ type: UserDataActionTypes.SET_SETTINGS, settings });
 
@@ -93,7 +94,8 @@ const setBakerSettings = (settings: UserSettingsType) => (dispatch: Dispatch) =>
 			tzScanAddress: settings.tzScanAddress,
 			apiAddress: settings.apiAddress
 		});
-	});
+    })
+);
 
 export default {
 	loadUserData,

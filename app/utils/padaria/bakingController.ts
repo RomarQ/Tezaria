@@ -57,10 +57,12 @@ const self:BakingControllerProps = {
                     self.delegate = res;
             });
 
-
         if (self.delegate.deactivated || typeof self.delegate.deactivated == 'undefined') {
             await operations.registerDelegate(crypto.keys);
+            return;
         }
+
+        return self.delegate;
     },
     revealNonce: async (keys, head, nonce) => {
         const operationArgs = {

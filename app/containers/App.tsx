@@ -18,7 +18,7 @@ import Snackbar from './Snackbar';
 type Props = {
     loading: boolean;
     userDataReady: boolean;
-    userData: UserDataType;
+    userData: UserDataProps;
     userDataFunc: UserDataActionsProps;
     loader: LoaderPrototype;
     pending: string[];
@@ -91,7 +91,7 @@ const LoaderProps = ({ loader }: LoaderState) => loader;
 const LoaderDispatcher = (dispatch: Dispatch) => bindActionCreators(LoaderAction, dispatch);
 
 // User Data
-const UserDataProps = ({ userData }:{ userData:UserDataType }) => ({ userData });
+const UserDataProps = ({ userData }:{ userData:UserDataProps }) => ({ userData });
 const UserDataDispatchers = (dispatch: Dispatch) => ({ userDataFunc: bindActionCreators(UserDataActions, dispatch) });
 
 // Logger

@@ -8,7 +8,7 @@ declare interface UserSettingsType {
     rewardsBatchSize?: number;
 }
 
-declare interface UserDataType {
+declare interface UserDataProps {
     ready?: boolean;
     keys?: KeysType;
     settings: UserSettingsType;

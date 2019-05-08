@@ -7,7 +7,7 @@ import CheckIcon from '@material-ui/icons/Check';
 import NotCheckIcon from '@material-ui/icons/CloseOutlined';
 import Blockies from 'react-blockies';
 
-import utils, { TezosCommitState } from'../../utils/padaria/utils';
+import utils, { TezosCommitProps } from'../../utils/padaria/utils';
 import { DelegateProps } from '../../utils/padaria/bakingController';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
@@ -64,10 +64,8 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
 });
 
 type Props = {
-    bakerInfo: {
-        keys: KeysType;
-    } & DelegateProps;
-    nodeInfo: TezosCommitState;
+    bakerInfo: DelegateProps & UserDataProps;
+    nodeInfo: TezosCommitProps;
 } & WithStyles<typeof styles>;
 
 const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
@@ -83,6 +81,8 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
         setAnchorEl(null);
         setOpen(null);
     }
+
+    console.log(nodeInfo)
 
     return (
         <div className={classes.root}>
