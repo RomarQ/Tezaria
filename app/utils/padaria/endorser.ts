@@ -124,8 +124,9 @@ const self:EndorderInterface = {
             branch: head.hash,
             contents: [
                 {          
-                    kind : OperationTypes.endorsement.type,
-                    level : head.header.level,
+                    kind: OperationTypes.endorsement.type,
+                    level: head.header.level,
+                    slot: slots[0]
                 }
             ]
         };
