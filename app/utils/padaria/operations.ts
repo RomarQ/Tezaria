@@ -241,7 +241,7 @@ const self: OperationsInterface = {
                 {
                     kind: OperationTypes.reveal.type,
                     fee: String(self.feeDefaults.low),
-                    counter: String(counter++),
+                    counter: String(++counter),
                     public_key: keys.pk,
                     gas_limit: String(self.revealGasCost),
                     storage_limit: String(self.revealStorage)
@@ -257,7 +257,7 @@ const self: OperationsInterface = {
             if (self.operationRequiresCounter(cur.kind)) {
                 if (!cur.gas_limit) cur.gas_limit = String(0);
                 if (!cur.storage_limit) cur.storage_limit = String(0);
-                cur.counter = String(counter++);
+                cur.counter = String(++counter);
             }
             prev.push(cur);
             return prev;

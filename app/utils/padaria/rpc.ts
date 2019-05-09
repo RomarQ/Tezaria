@@ -148,7 +148,7 @@ const self:RPCInterface = {
                                 res.statusCode === 200 ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
                             }
                             catch(e) {
-                                console.error('Invalid JSON', result);
+                                console.error('Invalid JSON response: ', options, result);
                                 resolve();
                             }
                         });

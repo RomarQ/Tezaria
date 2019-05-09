@@ -105,7 +105,9 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, 
                 setModalError(e.message);
         }
 
-        setEncrypting(false);
+        if (isMounted.current)
+            setEncrypting(false);
+            
         loader(LoadTypes.USER_DATA, true);
     }
 

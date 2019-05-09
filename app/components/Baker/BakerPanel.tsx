@@ -82,8 +82,6 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
         setOpen(null);
     }
 
-    console.log(nodeInfo)
-
     return (
         <div className={classes.root}>
             <div className={classes.leftSection}>
