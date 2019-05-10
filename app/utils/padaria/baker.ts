@@ -56,7 +56,7 @@ const self:BakerInterface = {
             if (!metadata)
                 return;
             
-            let bakingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${metadata.level.cycle}`, QueryTypes.GET) as BakingRight[];
+            let bakingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${metadata.level.cycle}&max_priority=5`, QueryTypes.GET) as BakingRight[];
 
             bakingRights = bakingRights.filter(right => !!right.estimated_time);
                 
@@ -203,9 +203,7 @@ const self:BakerInterface = {
 
         let res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header)
             .catch(error => {
-                console.log(error)
-                // Hackish fix for id: "error: baking.timestamp_too_early"
-                return rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp+20}`, QueryTypes.POST, header)
+                console.log(error);
             });
 
         if(!res) {
@@ -214,6 +212,8 @@ const self:BakerInterface = {
             res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header);
         };
 
+        if (!res) return;
+        
         console.log("!Starting POW...", res);
 
         let { shell_header, operations:ops } = res;

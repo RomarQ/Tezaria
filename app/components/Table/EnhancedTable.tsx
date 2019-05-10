@@ -87,11 +87,11 @@ const Component: React.FC<Props> = props => {
   
     const isSelected = (id:string) => selected.indexOf(id) !== -1;
   
-    const emptyRows = rowsPerPage - Math.min(rowsPerPage, data.length - page * rowsPerPage);
+    const emptyRows = rowsPerPage - Math.min(rowsPerPage, data ? data.length - page * rowsPerPage : 0);
 
     return (
         <Paper className={className || classes.root}>
-            {!data[0] ? <CircularProgress className={classes.progress} /> : (
+            {!data ? <CircularProgress className={classes.progress} /> : (
                 <React.Fragment>
                     <EnhancedTableToolbar tableTitle={tableTitle} numSelected={selected.length} getActions={getActions} />
                     <div className={classes.tableWrapper}>

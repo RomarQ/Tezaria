@@ -53,7 +53,7 @@ const self:BakingControllerProps = {
 
         await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${crypto.keys.pkh}`, QueryTypes.GET)
             .then(res => {
-                if (!Array.isArray(res))
+                if (res && !Array.isArray(res))
                     self.delegate = res;
             });
 

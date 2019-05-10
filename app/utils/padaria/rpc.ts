@@ -89,11 +89,14 @@ const self:RPCInterface = {
     getCurrentBlockMetadata: () => (
         self.queryNode('/chains/main/blocks/head/metadata', QueryTypes.GET)
     ),
+    getBlockOperations: (blockHash:string) => (
+        self.queryNode(`/chains/main/blocks/${blockHash}/operations`, QueryTypes.GET)
+    ),
     queryNode: (path, method, args) => {
         const options = {
             hostname: self.nodeAddress,
             port: 443,
-            timeout: 60000, // 1min
+            //timeout: 60000, // 1min
             path,
             method,
             key: fs.readFileSync('app/certs/server.key'),
@@ -113,7 +116,7 @@ const self:RPCInterface = {
         const options = {
             hostname: self.tzScanAddress,
             port: 80,
-            timeout: 60000, // 1min
+            //timeout: 60000, // 1min
             path: `/v3${path}`,
             method
         };
@@ -168,7 +171,7 @@ const self:RPCInterface = {
                                 res.statusCode === 200 ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
                             }
                             catch(e) {
-                                console.error('Invalid JSON', result);
+                                console.error('Invalid JSON', result, options, args);
                                 resolve();
                             }
                         });
@@ -176,7 +179,7 @@ const self:RPCInterface = {
                     });
 
                 req.on('error', e => {
-                    console.error(e.message);
+                    console.error(e.message, options, args);
                     resolve();
                 });
 
@@ -187,7 +190,7 @@ const self:RPCInterface = {
                 req.end();
             }
             catch(e) {
-                console.error(e.message);
+                console.error(e.message, options, args);
                 resolve();
             }
         })
@@ -209,6 +212,8 @@ const self:RPCInterface = {
     },
     forgeOperation: async (head, operation, skipConfirmation = false) => {
         const forgedOperation = await self.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operation);
+
+        if (!forgedOperation) return;
 
         if (!skipConfirmation) {
             const forgedConfirmation = operation.contents.reduce((prev, cur) => {

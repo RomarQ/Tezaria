@@ -27,6 +27,7 @@ export interface RPCInterface extends LoadOptions {
     getEndorsementOperations: (blockId:string) => Promise<UnsignedOperationProps[]>;
     getPredecessors: (blockHash:string, length:number) => Promise<string[]>;
     getBlock: (blockHash:string) => Promise<BlockProps>;
+    getBlockOperations: (blockHash:string) => Promise<OperationProps[]>;
 };
 
 type RequestOptions = {

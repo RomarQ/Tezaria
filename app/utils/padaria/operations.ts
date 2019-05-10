@@ -180,7 +180,7 @@ const self: OperationsInterface = {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         const head = await rpc.getCurrentHead();
-        if (prevHeadLevel == head.header.level)
+        if (!head || prevHeadLevel == head.header.level)
             return await self.awaitForOperationToBeIncluded(opHash, prevHeadLevel);
 
         for (const opCollection of head.operations) {
@@ -200,7 +200,11 @@ const self: OperationsInterface = {
             // otherwise the next operation will be rejected because counter will be too high
             self.awaitingLock[source] = true;
 
-            const {forgedConfirmation, ...verifiedOp} = await self.prepareOperations(source, keys, operation);
+            const preparedOp = await self.prepareOperations(source, keys, operation);
+
+            if (!preparedOp) return;
+
+            const {forgedConfirmation, ...verifiedOp} = preparedOp;
             
             const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
 
