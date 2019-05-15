@@ -180,7 +180,7 @@ const self: OperationsInterface = {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         const head = await rpc.getCurrentHead();
-        if (prevHeadLevel == head.header.level)
+        if (!head || prevHeadLevel == head.header.level)
             return await self.awaitForOperationToBeIncluded(opHash, prevHeadLevel);
 
         for (const opCollection of head.operations) {
@@ -200,7 +200,11 @@ const self: OperationsInterface = {
             // otherwise the next operation will be rejected because counter will be too high
             self.awaitingLock[source] = true;
 
-            const {forgedConfirmation, ...verifiedOp} = await self.prepareOperations(source, keys, operation);
+            const preparedOp = await self.prepareOperations(source, keys, operation);
+
+            if (!preparedOp) return;
+
+            const {forgedConfirmation, ...verifiedOp} = preparedOp;
             
             const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
 
@@ -241,7 +245,7 @@ const self: OperationsInterface = {
                 {
                     kind: OperationTypes.reveal.type,
                     fee: String(self.feeDefaults.low),
-                    counter: String(counter++),
+                    counter: String(++counter),
                     public_key: keys.pk,
                     gas_limit: String(self.revealGasCost),
                     storage_limit: String(self.revealStorage)
@@ -257,7 +261,7 @@ const self: OperationsInterface = {
             if (self.operationRequiresCounter(cur.kind)) {
                 if (!cur.gas_limit) cur.gas_limit = String(0);
                 if (!cur.storage_limit) cur.storage_limit = String(0);
-                cur.counter = String(counter++);
+                cur.counter = String(++counter);
             }
             prev.push(cur);
             return prev;

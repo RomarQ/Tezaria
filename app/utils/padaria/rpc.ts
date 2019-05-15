@@ -89,11 +89,14 @@ const self:RPCInterface = {
     getCurrentBlockMetadata: () => (
         self.queryNode('/chains/main/blocks/head/metadata', QueryTypes.GET)
     ),
+    getBlockOperations: (blockHash:string) => (
+        self.queryNode(`/chains/main/blocks/${blockHash}/operations`, QueryTypes.GET)
+    ),
     queryNode: (path, method, args) => {
         const options = {
             hostname: self.nodeAddress,
-            port: 443,
-            timeout: 60000, // 1min
+            port: 3000,
+            //timeout: 60000, // 1min
             path,
             method,
             key: fs.readFileSync('app/certs/server.key'),
@@ -105,7 +108,7 @@ const self:RPCInterface = {
             rejectUnauthorized: false
         } as any;
 
-        options.agent = new https.Agent(options);
+        options.agent = new http.Agent(options);
 
         return self.queryRequest(options, args);
     },
@@ -113,7 +116,7 @@ const self:RPCInterface = {
         const options = {
             hostname: self.tzScanAddress,
             port: 80,
-            timeout: 60000, // 1min
+            //timeout: 60000, // 1min
             path: `/v3${path}`,
             method
         };
@@ -131,7 +134,7 @@ const self:RPCInterface = {
     *   (for example: https://address/.../?parameter=xyz)
     */ 
     queryRequest: (options, args) => (
-        new Promise(resolve => {
+        new Promise((resolve, reject) => {
             try {
                 let req;
                 if (options.port === 443)
@@ -145,11 +148,15 @@ const self:RPCInterface = {
 
                         res.on('end', () => {
                             try {
-                                res.statusCode === 200 ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
+                                if (res.statusCode === 200)
+                                    return resolve(JSON.parse(result))
+                                    
+                                console.error(res.statusMessage, result, options, args);
+                                reject(result);
                             }
                             catch(e) {
-                                console.error('Invalid JSON', result);
-                                resolve();
+                                console.error('Invalid JSON response: ', e, result, options, args);
+                                reject(result);
                             }
                         });
 
@@ -165,11 +172,15 @@ const self:RPCInterface = {
 
                         res.on('end', () => {
                             try {
-                                res.statusCode === 200 ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
+                                if (res.statusCode === 200)
+                                    return resolve(JSON.parse(result))
+                                    
+                                console.error(res.statusMessage, result, options, args);
+                                reject(result);
                             }
                             catch(e) {
-                                console.error('Invalid JSON', result);
-                                resolve();
+                                console.error('Invalid JSON', e, result, options, args);
+                                reject(result);
                             }
                         });
 
@@ -177,7 +188,7 @@ const self:RPCInterface = {
 
                 req.on('error', e => {
                     console.error(e.message);
-                    resolve();
+                    reject(e.message);
                 });
 
                 if (options.method === QueryTypes.POST) {
@@ -188,7 +199,61 @@ const self:RPCInterface = {
             }
             catch(e) {
                 console.error(e.message);
-                resolve();
+                reject(e.message);
+            }
+        })
+    ),
+    queryStreamRequest: (options, cb) => (
+        new Promise((resolve, reject) => {
+            try {
+                let req;
+                if (options.port === 443)
+                    req = https.request(options, res => {
+                        res.setEncoding('utf8');
+                        let result = '';
+                        
+                        res.on('data', chunk => {
+                            try {
+                                result += chunk;
+                                cb(JSON.parse(result));
+                                result = '';
+                            }
+                            catch(e) {
+                                console.error(e, result, chunk);
+                            }
+                        });
+
+                        res.on('end', () => resolve());
+                    });
+                else
+                    req = http.request(options, res => {
+                        res.setEncoding('utf8');
+                        let result = '';
+
+                        res.on('data', chunk => {
+                            try {
+                                result += chunk;
+                                cb(JSON.parse(result));
+                                result = '';
+                            }
+                            catch(e) {
+                                console.error(e, result, chunk);
+                            }
+                        });
+
+                        res.on('end', () => resolve());
+                    });
+
+                req.on('error', e => {
+                    console.error(e.message);
+                    reject(e.message);
+                });
+
+                req.end();
+            }
+            catch(e) {
+                console.error(e.message);
+                reject(e.message);
             }
         })
     ),
@@ -209,6 +274,8 @@ const self:RPCInterface = {
     },
     forgeOperation: async (head, operation, skipConfirmation = false) => {
         const forgedOperation = await self.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operation);
+
+        if (!forgedOperation) return;
 
         if (!skipConfirmation) {
             const forgedConfirmation = operation.contents.reduce((prev, cur) => {

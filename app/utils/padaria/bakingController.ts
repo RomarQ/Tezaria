@@ -53,7 +53,7 @@ const self:BakingControllerProps = {
 
         await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${crypto.keys.pkh}`, QueryTypes.GET)
             .then(res => {
-                if (!Array.isArray(res))
+                if (res && !Array.isArray(res))
                     self.delegate = res;
             });
 
@@ -130,7 +130,7 @@ const self:BakingControllerProps = {
             */
             if(block.level <= head.header.level) {
                 logger({ 
-                    message: `Block ${block.level} was too late to be injected.`,
+                    message: `Block ${block.level} was injected too late.`,
                     type: 'error',
                     severity: LogSeverity.NORMAL
                 });
@@ -150,6 +150,7 @@ const self:BakingControllerProps = {
                                 type: 'error',
                                 severity: LogSeverity.NORMAL
                             });
+                            return;
                         }
                         
                         baker.injectedBlocks.push(injectionHash);

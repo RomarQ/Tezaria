@@ -80,8 +80,15 @@ const clearUserData = () => async (dispatch: Dispatch) => {
 };
 
 const setBakerKeys = (keys: KeysType) => async (dispatch: Dispatch) => {
-	crypto.keys = keys;
-	dispatch({ type: UserDataActionTypes.SET_KEYS, keys });
+    crypto.keys = keys;
+    crypto.loadSigner(keys);
+	dispatch({ 
+        type: UserDataActionTypes.SET_KEYS,
+        keys: {
+            pk: keys.pk,
+            pkh: keys.pkh
+        }
+    });
 	await bakingController.load();
 };
 

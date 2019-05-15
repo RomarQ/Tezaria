@@ -98,7 +98,7 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
     const [selected, setSelected] = React.useState([] as number[]);
     const [orderBy, setOrderBy] = React.useState('balance');
     const [direction, setDirection] = React.useState('desc' as "asc" | "desc");
-    const [rewards, setRewards] = React.useState([] as DelegatorReward[]);
+    const [rewards, setRewards] = React.useState(null as DelegatorReward[]);
 
     React.useEffect(() => {
         updateRewards();
@@ -120,7 +120,7 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
 
     const handleRewardsPayment = () => {
         if (paymentsAllowed) {
-            setRewards([]);
+            setRewards(null);
             props.handleRewardsPayment(rewards.filter(r => selected.includes(r.id)), updateRewards);
             setSelected([]);
         }
@@ -220,7 +220,7 @@ const Component: React.FC<Props> = ({classes, pkh, cycle, paymentsAllowed, ...pr
             orderBy={orderBy}
             onSelectAll={handleSelectAll}
             onSortRequest={handleSortRequest}
-            rowCount={rewards.filter(r => !r.paid).length}
+            rowCount={rewards ? rewards.filter(r => !r.paid).length: 0}
         />
     );
 

@@ -8,6 +8,7 @@ import utils, { Prefix } from './utils';
 import { 
     CryptoInterface,
 } from './crypto.d';
+import Signer from './signer';
 
 const DERIVATION_ITERATIONS = 32768;
 
@@ -16,9 +17,13 @@ const self:CryptoInterface = {
     *   States
     */
     keys: null,
+    signer: null,
     /*
     *   Functions
     */
+    loadSigner: (keys) => {
+        self.signer = new Signer(keys);
+    },
     mnemonicToSeed: (mnemonic, passphrase = "") => {
         if (!bip39.validateMnemonic(mnemonic)) throw new Error('Crypto: Mnemonic is Invalid.');
 
@@ -153,6 +158,10 @@ const self:CryptoInterface = {
         throw new Error('Crypto: Invalid Secret.');
     },
     sign: (bytes:string, sk:string, watermark?:Uint8Array) => {
+        return self.signer.sign(bytes, watermark);
+        
+        // @ Remove After testing
+
         let buffer = utils.hexToBuffer(bytes);
 
         buffer = watermark ? utils.mergeBuffers(watermark, buffer) : buffer;

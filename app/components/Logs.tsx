@@ -18,7 +18,7 @@ import { LoggerActionsPrototypes } from '../actions/logger';
 import { LogProps } from '../reducers/logger';
 
 
-const styles = ({ spacing, palette }: Theme) => createStyles({
+const styles = ({ spacing }: Theme) => createStyles({
     root: {
         margin: 50,
     },

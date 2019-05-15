@@ -48,7 +48,7 @@ interface Props extends WithStyles<typeof styles> {
     rowCount: number;
 }
 
-const Component: React.SFC<Props & TableSortLabelProps> = props => {
+const Component: React.FC<Props & TableSortLabelProps> = props => {
     const { 
         columnNames,
         numSelected,
