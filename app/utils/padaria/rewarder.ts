@@ -61,7 +61,7 @@ const self:RewardControllerInterface = {
             const rewardShare = utils.getRewardShare(balance, rewards.delegate_staking_balance, rewards.totalRewards);
             const rewardFee = utils.getRewardFee(rewardShare, self.feePercentage);
 
-            if (rewardShare - rewardFee <= 0)
+            if (rewardShare - rewardFee - Number(operations.feeDefaults.medium) <= 0)
                 return prev;
 
             return [

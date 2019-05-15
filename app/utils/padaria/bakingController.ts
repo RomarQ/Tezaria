@@ -150,6 +150,7 @@ const self:BakingControllerProps = {
                                 type: 'error',
                                 severity: LogSeverity.NORMAL
                             });
+                            return;
                         }
                         
                         baker.injectedBlocks.push(injectionHash);

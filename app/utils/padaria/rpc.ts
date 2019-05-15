@@ -95,7 +95,7 @@ const self:RPCInterface = {
     queryNode: (path, method, args) => {
         const options = {
             hostname: self.nodeAddress,
-            port: 443,
+            port: 3000,
             //timeout: 60000, // 1min
             path,
             method,
@@ -108,7 +108,7 @@ const self:RPCInterface = {
             rejectUnauthorized: false
         } as any;
 
-        options.agent = new https.Agent(options);
+        options.agent = new http.Agent(options);
 
         return self.queryRequest(options, args);
     },
@@ -134,7 +134,7 @@ const self:RPCInterface = {
     *   (for example: https://address/.../?parameter=xyz)
     */ 
     queryRequest: (options, args) => (
-        new Promise(resolve => {
+        new Promise((resolve, reject) => {
             try {
                 let req;
                 if (options.port === 443)
@@ -148,11 +148,15 @@ const self:RPCInterface = {
 
                         res.on('end', () => {
                             try {
-                                res.statusCode === 200 ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
+                                if (res.statusCode === 200)
+                                    return resolve(JSON.parse(result))
+                                    
+                                console.error(res.statusMessage, result, options, args);
+                                reject(result);
                             }
                             catch(e) {
-                                console.error('Invalid JSON response: ', options, result, args);
-                                resolve();
+                                console.error('Invalid JSON response: ', e, result, options, args);
+                                reject(result);
                             }
                         });
 
@@ -168,19 +172,23 @@ const self:RPCInterface = {
 
                         res.on('end', () => {
                             try {
-                                res.statusCode === 200 ? resolve(JSON.parse(result)) : console.error(res.statusMessage);
+                                if (res.statusCode === 200)
+                                    return resolve(JSON.parse(result))
+                                    
+                                console.error(res.statusMessage, result, options, args);
+                                reject(result);
                             }
                             catch(e) {
-                                console.error('Invalid JSON', result, options, args);
-                                resolve();
+                                console.error('Invalid JSON', e, result, options, args);
+                                reject(result);
                             }
                         });
 
                     });
 
                 req.on('error', e => {
-                    console.error(e.message, options, args);
-                    resolve();
+                    console.error(e.message);
+                    reject(e.message);
                 });
 
                 if (options.method === QueryTypes.POST) {
@@ -190,8 +198,62 @@ const self:RPCInterface = {
                 req.end();
             }
             catch(e) {
-                console.error(e.message, options, args);
-                resolve();
+                console.error(e.message);
+                reject(e.message);
+            }
+        })
+    ),
+    queryStreamRequest: (options, cb) => (
+        new Promise((resolve, reject) => {
+            try {
+                let req;
+                if (options.port === 443)
+                    req = https.request(options, res => {
+                        res.setEncoding('utf8');
+                        let result = '';
+                        
+                        res.on('data', chunk => {
+                            try {
+                                result += chunk;
+                                cb(JSON.parse(result));
+                                result = '';
+                            }
+                            catch(e) {
+                                console.error(e, result, chunk);
+                            }
+                        });
+
+                        res.on('end', () => resolve());
+                    });
+                else
+                    req = http.request(options, res => {
+                        res.setEncoding('utf8');
+                        let result = '';
+
+                        res.on('data', chunk => {
+                            try {
+                                result += chunk;
+                                cb(JSON.parse(result));
+                                result = '';
+                            }
+                            catch(e) {
+                                console.error(e, result, chunk);
+                            }
+                        });
+
+                        res.on('end', () => resolve());
+                    });
+
+                req.on('error', e => {
+                    console.error(e.message);
+                    reject(e.message);
+                });
+
+                req.end();
+            }
+            catch(e) {
+                console.error(e.message);
+                reject(e.message);
             }
         })
     ),
