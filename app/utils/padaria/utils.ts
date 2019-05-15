@@ -79,7 +79,7 @@ const self:UtilsInterface = {
     KTEZ:   { char: 'Kꜩ',  unit: 1000000000 },
     MTEZ:   { char: 'Mꜩ',  unit: 1000000000000 },
     setDebugMode: (mode:boolean) => self.debug = mode,
-    operationType(op:any) {
+    operationType(op) {
         if(!op || !op.contents) return 3;
 
         switch (op.contents[0].kind) {

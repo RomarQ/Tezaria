@@ -56,7 +56,7 @@ const self:BakerInterface = {
             if (!metadata)
                 return;
             
-            let bakingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${metadata.level.cycle}`, QueryTypes.GET) as BakingRight[];
+            let bakingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${metadata.level.cycle}&max_priority=5`, QueryTypes.GET) as BakingRight[];
 
             bakingRights = bakingRights.filter(right => !!right.estimated_time);
                 
@@ -150,14 +150,16 @@ const self:BakerInterface = {
             []
         ] as UnsignedOperations;
 
-        const operationArgs = {
-            seed: '',
-            seedHash: new Uint8Array([]),
-            nonceHash: '',
-            seedHex: ''
+        const operationArgs = {} as {
+            seed: string;
+            seedHash: Uint8Array;
+            nonceHash: string;
+            seedHex: string;
         };
         
         if (self.levelWaterMark % Number(rpc.networkConstants['blocks_per_commitment']) === 0) {
+            console.error('Commitment Time!', self.levelWaterMark, Number(rpc.networkConstants['blocks_per_commitment']));
+
             operationArgs.seed = crypto.hexNonce(64);
             operationArgs.seedHash = crypto.seedHash(operationArgs.seed);
             operationArgs.nonceHash = utils.b58encode(operationArgs.seedHash, Prefix.nce);
@@ -174,8 +176,6 @@ const self:BakerInterface = {
                 if(op.branch !== head.hash) return;
 
                 const operationType = utils.operationType(op);
-
-                if (operationType < 0) return;
                 
                 addedOps.push(op.hash);
                 operations[operationType].push({
@@ -203,16 +203,16 @@ const self:BakerInterface = {
 
         let res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header)
             .catch(error => {
-                console.log(error)
-                // Hackish fix for id: "error: baking.timestamp_too_early"
-                return rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp+20}`, QueryTypes.POST, header)
+                console.log(error);
             });
-
+/* 
         if(!res) {
             console.log("Preapply failed, sending empty operations now.");
             header.operations = [[],[],[],[]];
             res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header);
-        };
+        }; */
+
+        if (!res || !res.shell_header) return;
 
         console.log("!Starting POW...", res);
 

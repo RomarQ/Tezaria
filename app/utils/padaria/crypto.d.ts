@@ -1,11 +1,15 @@
+import { SignerProps } from './signer';
+
 export interface CryptoInterface {
     /*
     *   States
     */
     keys: KeysType;
+    signer: SignerProps,
     /*
     *   Functions
     */
+    loadSigner: (keys:KeysType) => void;
     mnemonicToSeed: (mnemonic:string, passphrase:string) => Buffer;
     isEdesk: (secret:string) => boolean;
     isEdsk: (secret:string) => boolean;
@@ -26,8 +30,8 @@ export interface CryptoInterface {
     POW: (forged:string, priority:number, seedHex:string) => Promise<{blockbytes:string, att:number}>;
 };
 
-export type signatureProps = {
-    sig: string;
+export type SignatureProps = {
+    sig: Uint8Array;
     edsig: string;
     signedBytes: string;
 };

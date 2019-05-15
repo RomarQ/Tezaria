@@ -50,24 +50,34 @@ const self:RewardControllerInterface = {
     prepareRewardsToSendByCycle: async (pkh, cycle) => {
         let rewards = await self.getDelegatorsRewardsByCycle(pkh, cycle);
 
-        if (!rewards) return;
+        if (!rewards) return [];
 
         rewards.totalRewards = rewards.blocks_rewards+rewards.endorsements_rewards+rewards.revelation_rewards+rewards.fees;
 
-        let preparedRewards = rewards.delegators_balance.map(({ account, balance }, index) => {
+        if (rewards.totalRewards === 0)
+            return [];
+
+        let preparedRewards = rewards.delegators_balance.reduce((prev, { account, balance }, index) => {
             const rewardShare = utils.getRewardShare(balance, rewards.delegate_staking_balance, rewards.totalRewards);
             const rewardFee = utils.getRewardFee(rewardShare, self.feePercentage);
-            return {
-                id: index,
-                delegatorContract: account.tz,
-                rewardSharePercentage: utils.getRewardSharePercentage(balance, rewards.delegate_staking_balance),
-                rewards: rewards.totalRewards,
-                rewardShare: rewardShare - rewardFee,
-                balance,
-                rewardFee,
-                cycle
-            }
-        });
+
+            if (rewardShare - rewardFee - Number(operations.feeDefaults.medium) <= 0)
+                return prev;
+
+            return [
+                ...prev,
+                {
+                    id: index,
+                    delegatorContract: account.tz,
+                    rewardSharePercentage: utils.getRewardSharePercentage(balance, rewards.delegate_staking_balance),
+                    rewards: rewards.totalRewards,
+                    rewardShare: rewardShare - rewardFee,
+                    balance,
+                    rewardFee,
+                    cycle
+                }
+            ];
+        }, []);
 
         /*
         *   Get sent rewards for this cycle if there are any

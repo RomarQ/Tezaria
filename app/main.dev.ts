@@ -82,6 +82,9 @@ app.on('ready', async () => {
     }
 
     mainWindow = new BrowserWindow({
+        webPreferences: {
+            nodeIntegration: true
+        },
         show: false,
         center: true,
         height: 800,
@@ -89,7 +92,7 @@ app.on('ready', async () => {
         title: `${appInfo.productName} - ${appInfo.version}`,
         icon : path.join(__dirname, '..', 'resources/assets/icon.png')
     });
-        
+    
     mainWindow.setMenuBarVisibility(false);
     mainWindow.loadURL(`file://${__dirname}/app.html`);
     console.log(__dirname, path.join(__dirname, '..', 'resources/assets/icon.png'))
