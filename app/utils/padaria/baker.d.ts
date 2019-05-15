@@ -1,4 +1,3 @@
-import { BlockProps } from './rpc';
 import { UnsignedOperations } from './operations';
 
 type BakingRight = {

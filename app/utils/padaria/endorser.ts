@@ -125,11 +125,13 @@ const self:EndorderInterface = {
             contents: [
                 {          
                     kind: OperationTypes.endorsement.type,
-                    level: head.header.level,
-                    slot: slots[0]
+                    level: head.header.level
                 }
             ]
-        };
+        } as any;
+
+        if (rpc.network === 'ZERONET')
+            operation.contents[0].slot = slots[0];
 
         const forgedOperation = await rpc.queryNode(`/chains/${head.chain_id}/blocks/${head.hash}/helpers/forge/operations`, QueryTypes.POST, operation) as string;
 

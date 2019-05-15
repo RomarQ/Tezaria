@@ -70,11 +70,19 @@ export type OperationType =
 
 
 export type UnsignedOperations = [
-    UnsignedOperationProps[], // applied
-    UnsignedOperationProps[], // refused
-    UnsignedOperationProps[], // branch_refused
-    UnsignedOperationProps[]  // branch_delayed
+    UnsignedOperationProps[],
+    UnsignedOperationProps[],
+    UnsignedOperationProps[],
+    UnsignedOperationProps[]
 ]
+
+export interface PendingOperations {
+    applied: UnsignedOperationProps[];
+    branch_delayed: UnsignedOperationProps[];
+    branch_refused: UnsignedOperationProps[];
+    refused: UnsignedOperationProps[];
+    unprocessed: UnsignedOperationProps[];
+}
 
 export type UnsignedOperationProps = {
     protocol?: string;

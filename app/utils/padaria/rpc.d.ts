@@ -88,4 +88,10 @@ export type NetworkConstants = {
     seed_nonce_revelation_tip?: string;
     time_between_blocks?: string[];
     tokens_per_roll?: string;
+    // New Zeronet constants
+    delay_per_missing_endorsement?: string;
+    endorsement_bonus_intercept?: number;
+    endorsement_bonus_slope?: number;
+    endorsement_reward_priority_bonus?: string;
+    minimum_endorsements_per_priority?: number[];
 };
