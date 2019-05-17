@@ -79,20 +79,6 @@ const self:UtilsInterface = {
     KTEZ:   { char: 'Kꜩ',  unit: 1000000000 },
     MTEZ:   { char: 'Mꜩ',  unit: 1000000000000 },
     setDebugMode: (mode:boolean) => self.debug = mode,
-    operationType(op) {
-        if(!op || !op.contents) return 3;
-
-        switch (op.contents[0].kind) {
-            case 'endorsement':
-                return 0;
-            case 'ballot':
-                return 1;
-            case 'activate_account':
-                return 2;
-            default:
-                return 3;
-        }
-    },
     createProtocolData: (priority:number, powHeader = '', pow = '', seed = '') => {
         return `${priority.toString(16).padStart(4,"0")}${powHeader.padEnd(8, "0")}${pow.padEnd(8, "0")}${seed ? "ff"+seed.padEnd(64, "0") : "00"}`;
     },
@@ -164,7 +150,7 @@ const self:UtilsInterface = {
         Math.floor(level/rpc.networkConstants['blocks_per_cycle']) * rpc.networkConstants['blocks_per_cycle']
     ),
     lastCycleLevel: (level:number) => (
-        (Math.floor(level/rpc.networkConstants['blocks_per_cycle']) * rpc.networkConstants['blocks_per_cycle']) + rpc.networkConstants['blocks_per_cycle']
+        self.firstCycleLevel(level) + rpc.networkConstants['blocks_per_cycle']
     ),
     hexToBuffer: (hex:string) => new Uint8Array(
         hex.match(/[\da-f]{2}/gi).map((h) => parseInt(h, 16))

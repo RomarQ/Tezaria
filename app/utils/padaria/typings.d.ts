@@ -36,7 +36,6 @@ declare type NonceType = {
     seedNonceHash:  string;
     seed:           string;
     level:          number;
-    revealed:       boolean;
 };
 
 declare type BlockHeaderProps = {

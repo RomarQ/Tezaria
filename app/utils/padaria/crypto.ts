@@ -16,7 +16,6 @@ const self:CryptoInterface = {
     /*
     *   States
     */
-    keys: null,
     signer: null,
     /*
     *   Functions
@@ -157,12 +156,12 @@ const self:CryptoInterface = {
 
         throw new Error('Crypto: Invalid Secret.');
     },
-    sign: (bytes:string, sk:string, watermark?:Uint8Array) => {
+    sign: (bytes:string, watermark?:Uint8Array) => {
         return self.signer.sign(bytes, watermark);
         
         // @ Remove After testing
 
-        let buffer = utils.hexToBuffer(bytes);
+        /* let buffer = utils.hexToBuffer(bytes);
 
         buffer = watermark ? utils.mergeBuffers(watermark, buffer) : buffer;
 
@@ -173,7 +172,7 @@ const self:CryptoInterface = {
             sig: sig,
             edsig: edsig,
             signedBytes: signedBytes
-        }
+        } */
     },
     generateMnemonic: () => (
         bip39.generateMnemonic(160)

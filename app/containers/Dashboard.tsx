@@ -30,7 +30,7 @@ const Dashboard: React.FC<Props> = ({ userData }) => {
             if (isMounted.current && commitState)
                 setTezosCommits(commitState);
         });
-        bakingController.load().then(delegate => {
+        bakingController.load(userData.keys).then(delegate => {
             if (isMounted.current && delegate)
                 setBakerInfo({
                     ...userData,

@@ -1,5 +1,5 @@
 import rpc, { QueryTypes } from './rpc';
-import { UnsignedOperationProps, UnsignedOperations, PendingOperations } from './operations';
+import Operations, { UnsignedOperationProps, UnsignedOperations, PendingOperations, OperationTypes } from './operations';
 import utils, { Prefix } from './utils';
 import crypto from './crypto';
 
@@ -141,13 +141,6 @@ const self:BakerInterface = {
 
         const newTimestamp = Math.max(Math.floor(Date.now()/1000), new Date(timestamp).getTime()/1000);
 
-        const operations = [
-            [],
-            [],
-            [],
-            []
-        ] as UnsignedOperations;
-
         const operationArgs = {} as {
             seed: string;
             seedHash: Uint8Array;
@@ -155,7 +148,6 @@ const self:BakerInterface = {
             seedHex: string;
         };
         
-        console.error(self.levelWaterMark, head.header.level, Number(rpc.networkConstants['blocks_per_commitment']), self.levelWaterMark % Number(rpc.networkConstants['blocks_per_commitment']))
         if (head.header.level % Number(rpc.networkConstants['blocks_per_commitment']) === 0) {
             console.error('Commitment Time!', self.levelWaterMark, Number(rpc.networkConstants['blocks_per_commitment']));
 
@@ -165,34 +157,23 @@ const self:BakerInterface = {
             operationArgs.seedHex = utils.bufferToHex(operationArgs.seedHash);
         }
 
-        let pendingOperations: PendingOperations;
-        const maxTimeToBake = new Date(timestamp).getTime() + ((Number(rpc.networkConstants['time_between_blocks'])-5) * 1000);
-        while (maxTimeToBake > Date.now()) {
-            pendingOperations = await rpc.queryNode(`/chains/main/mempool/pending_operations`, QueryTypes.GET);
-
-            if (!pendingOperations) continue;
-
-            const endorsementCounter = Object.keys(pendingOperations).reduce((prev, cur) => prev+=pendingOperations[cur].length, 0);
-            
-            /*
-            *   Polyfill that applies zeronet changes without breaking mainnet
-            */
-            if (rpc.networkConstants['minimum_endorsements_per_priority']) {
-                if (endorsementCounter >= rpc.networkConstants['minimum_endorsements_per_priority'][priority > 2 ? 3 : priority])
-                    break;
-            }
-            else break;
-        }
+        const pendingOperations = await rpc.getPendingOperations();
         
         if(!pendingOperations) return;
 
         console.log(pendingOperations);
-        const addedOps = [] as string[];
+
+        const operations = await Operations.classifyOperations(pendingOperations, head.protocol);
+
+        // WIP
+        /*  const addedOps = [] as string[];
+
+
         pendingOperations.applied.forEach((op:UnsignedOperationProps) => {
             if (addedOps.indexOf(op.hash) === -1) {
                 if(op.branch !== head.hash) return;
 
-                const operationType = utils.operationType(op);
+                const operationType = Operations.acceptablePasses(op);
                 
                 addedOps.push(op.hash);
                 operations[operationType].push({
@@ -202,17 +183,17 @@ const self:BakerInterface = {
                     signature: op.signature
                 })
             }
-        });
+        }); */
 
-        // Signature cannot be empty, using a dumb signature. [Is not important for this operation]
+        // Signature cannot be empty, using a dummy signature. [Is not important for this operation]
         let header = {
             protocol_data: {
-                protocol : head.protocol,
+                protocol: head.protocol,
                 priority,
-                proof_of_work_nonce : "0000000000000000",
-                signature : "edsigtdv1u5ZbjH4ZTyWsahG1XZeKV64kaZypXqysxvEZtq5L36RAwbQamXmGMJecEiUgb2tQaYk5EXgeuD4Zov6uEa7t7L63f5"
+                proof_of_work_nonce: "0000000000000000",
+                signature: "edsigtdv1u5ZbjH4ZTyWsahG1XZeKV64kaZypXqysxvEZtq5L36RAwbQamXmGMJecEiUgb2tQaYk5EXgeuD4Zov6uEa7t7L63f5"
             },
-            operations: operations
+            operations
         };
 
         if(operationArgs.nonceHash)
@@ -267,7 +248,7 @@ const self:BakerInterface = {
 
         console.log(`POW found in ${pow.att} attemps ${secs} seconds - ${((pow.att/secs)/1000).toLocaleString('fullwide', {maximumFractionDigits:2})} Kh/s`);
 
-        const signed = crypto.sign(pow.blockbytes, keys.sk, utils.mergeBuffers(utils.watermark.blockHeader, utils.b58decode(head.chain_id, Prefix.chainId)));
+        const signed = crypto.sign(pow.blockbytes, utils.mergeBuffers(utils.watermark.blockHeader, utils.b58decode(head.chain_id, Prefix.chainId)));
 
         return {
             timestamp,

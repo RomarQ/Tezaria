@@ -7,11 +7,11 @@ import accuser from './accuser';
 import rewarder from './rewarder';
 import crypto from './crypto';
 import operations from './operations';
+import signer from './signer'
 
 import {
     BakingControllerProps,
-    BakingControllerStartOptions,
-    DelegateProps
+    BakingControllerStartOptions
 } from './bakingController.d';
 
 /*
@@ -48,57 +48,46 @@ const self:BakingControllerProps = {
     //
     // Functions
     //
-    load: async () => {
-        if (!crypto.keys) return;
+    load: async keys => {
+        if (!signer) return;
 
-        await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${crypto.keys.pkh}`, QueryTypes.GET)
+        await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET)
             .then(res => {
                 if (res && !Array.isArray(res))
                     self.delegate = res;
             });
 
         if (self.delegate.deactivated || typeof self.delegate.deactivated == 'undefined') {
-            await operations.registerDelegate(crypto.keys);
+            await operations.registerDelegate(keys);
             return;
         }
 
         return self.delegate;
     },
-    revealNonce: async (keys, head, nonce) => {
-        const operationArgs = {
-            "branch": head.hash,
-            "contents" : [
-                {          
-                    "kind" : "seed_nonce_revelation",
-                    "level" : nonce.level,
-                    "nonce" : nonce.seed,
-                }
-            ]
-        };
-        
-        console.log( await rpc.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operationArgs) );
-    },
-    revealNonces: async (keys, head) => {
+    revealNonces: async head => {
         if (!head || !head.header) return;
 
-        const nonces =
+        const nonces = await 
             self.noncesToReveal.reduce((prev:NonceType[], cur:NonceType) => {
                 const revealStart = utils.firstCycleLevel(cur.level);
                 const revealEnd = utils.lastCycleLevel(cur.level);
+
+                console.log(revealStart, cur.level, revealEnd);
 
                 if (head.header.level > revealEnd) {
                     console.log("End of Reveal, cycle is OVER!");
                     return prev;
                 } 
-                else if (head.header.level >= revealStart && cur.revealed === false) {
+                else if (head.header.level >= revealStart) {
                     console.log("Revealing nonce ", cur);
-                    self.revealNonce(keys, head, cur);
+                    operations.revealNonce(head, cur)
+                        .then(res => console.log(res))
+                        .catch(e => console.error(e));
                     return prev;
                 } 
 
                 prev.push(cur);
                 return prev;
-
             }, []);
 
         if (nonces.length != self.noncesToReveal.length){
@@ -128,14 +117,14 @@ const self:BakingControllerProps = {
             /*
             *   Every block needs to be injected before their respective level starts
             */
-            if(block.level <= head.header.level) {
+/*             if(block.level <= head.header.level) {
                 logger({ 
                     message: `Block ${block.level} was injected too late.`,
                     type: 'error',
                     severity: LogSeverity.NORMAL
                 });
                 return prev;
-            }
+            } */
 
             /*
             *   Inject the block if the "Baking Right Timestamp" for this block is now or has already passed
@@ -161,8 +150,7 @@ const self:BakingControllerProps = {
                                 hash: injectionHash,
                                 seedNonceHash: block.seed_nonce_hash,
                                 seed: block.seed,
-                                level: block.level,
-                                revealed: false
+                                level: block.level
                             });
                         }
                 
@@ -175,7 +163,7 @@ const self:BakingControllerProps = {
             return prev;
         }, []);
 
-        self.revealNonces(keys, head);
+        self.revealNonces(head);
 
         /*
         *   On StartUp avoid running the baker at a middle of a block
