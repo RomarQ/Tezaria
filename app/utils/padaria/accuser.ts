@@ -69,7 +69,7 @@ const self:AccuserInterface = {
                                 severity: LogSeverity.HIGH
                             });
         
-                            operations.doubleBakingEvidence(keys, [cur.header, prev[evidenceIndex].header]);
+                            operations.doubleBakingEvidence([cur.header, prev[evidenceIndex].header]);
                         }
         
                         return [

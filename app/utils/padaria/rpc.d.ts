@@ -1,4 +1,5 @@
 import { OperationsInterface, UnsignedOperationProps, OperationProps, UnsignedOperations } from './operations';
+import { PendingOperations } from './operations';
 
 export interface RPCInterface extends LoadOptions {
     ready: boolean;
@@ -29,6 +30,7 @@ export interface RPCInterface extends LoadOptions {
     getPredecessors: (blockHash:string, length:number) => Promise<string[]>;
     getBlock: (blockHash:string) => Promise<BlockProps>;
     getBlockOperations: (blockHash:string) => Promise<OperationProps[]>;
+    getPendingOperations: () => Promise<UnsignedOperationProps[][]>;
 };
 
 type RequestOptions = {

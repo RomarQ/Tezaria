@@ -8,6 +8,10 @@ export interface OperationsInterface {
         }[];
     };
 
+    endorsementsIndex: number;
+    votesIndex: number;
+    anonymousIndex: number;
+    managersIndex: number;
     contractManagers: ContractManager;
     transactionGasCost: string,
     transactionStorage: string,
@@ -21,14 +25,15 @@ export interface OperationsInterface {
         high: string;
     };
     // Methods
+    revealNonce: (head: BlockProps, nonce:NonceType) => Promise<UnsignedOperationProps>;
     transaction: (source:string, destinations:TransactionDestination[], keys:KeysType,
         fee?:string, gasLimit?:string, storageLimit?:string, batchSize?:number) => (
             Promise<UnsignedOperationProps[]>
         )
-    doubleBakingEvidence: (keys:KeysType, evidences:BlockHeaderProps[]) => (
+    doubleBakingEvidence: (evidences:BlockHeaderProps[]) => (
         Promise<UnsignedOperationProps>
     )
-    doubleEndorsementEvidence: (keys:KeysType, evidences:EndorsementOperationProps[]) => (
+    doubleEndorsementEvidence: (evidences:EndorsementOperationProps[]) => (
         Promise<UnsignedOperationProps>
     )
     registerDelegate: (keys:KeysType) => Promise<UnsignedOperationProps>;
@@ -42,6 +47,10 @@ export interface OperationsInterface {
     forgeOperationLocally: (operation:OperationProps) => string;
     operationRequiresSource: (operationType:OperationType) => boolean;
     operationRequiresCounter: (operationType:OperationType) => boolean;
+    classifyOperations: (operations:UnsignedOperationProps[][], protocol:string) => Promise<UnsignedOperationProps[][]>;
+    acceptablePass: (op:{ contents: {kind:string}[] }) => number;
+    validationPasses: () => {maxSize:number; maxOp?:number}[];
+    sortManagerOperations: (operations:UnsignedOperationProps[], maxSize:number) => UnsignedOperationProps[];
 }
 
 export interface AwaitingLock {
@@ -79,14 +88,14 @@ export type UnsignedOperations = [
 export interface PendingOperations {
     applied: UnsignedOperationProps[];
     branch_delayed: UnsignedOperationProps[];
-    branch_refused: UnsignedOperationProps[];
-    refused: UnsignedOperationProps[];
+    branch_refused?: UnsignedOperationProps[];
+    refused?: UnsignedOperationProps[];
     unprocessed: UnsignedOperationProps[];
 }
 
 export type UnsignedOperationProps = {
     protocol?: string;
-    branch?: string;
+    branch: string;
     contents: OperationContents;
     signature?: string;
     hash?: string;

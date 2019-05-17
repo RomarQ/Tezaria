@@ -58,7 +58,7 @@ export interface UserDataActionsProps {
 
 const loadUserData = () => (dispatch: Dispatch) => (
 	new Promise((resolve, reject) => {
-		crypto.keys = null;
+		crypto.signer = null;
 		storage
 			.getUserData()
 			.then(userData => {
@@ -74,13 +74,12 @@ const loadUserData = () => (dispatch: Dispatch) => (
 );
 
 const clearUserData = () => async (dispatch: Dispatch) => {
-	crypto.keys = null;
+	crypto.signer = null;
 	await storage.clearUserData();
 	dispatch({ type: UserDataActionTypes.CLEAR });
 };
 
 const setBakerKeys = (keys: KeysType) => async (dispatch: Dispatch) => {
-    crypto.keys = keys;
     crypto.loadSigner(keys);
 	dispatch({ 
         type: UserDataActionTypes.SET_KEYS,
@@ -89,7 +88,7 @@ const setBakerKeys = (keys: KeysType) => async (dispatch: Dispatch) => {
             pkh: keys.pkh
         }
     });
-	await bakingController.load();
+	await bakingController.load(keys);
 };
 
 const setBakerSettings = (settings: UserSettingsType) => (dispatch: Dispatch) => (

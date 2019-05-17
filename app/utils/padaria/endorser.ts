@@ -135,7 +135,7 @@ const self:EndorderInterface = {
 
         const forgedOperation = await rpc.queryNode(`/chains/${head.chain_id}/blocks/${head.hash}/helpers/forge/operations`, QueryTypes.POST, operation) as string;
 
-        const signed = crypto.sign(forgedOperation, keys.sk, utils.mergeBuffers(utils.watermark.endorsement, utils.b58decode(head.chain_id, Prefix.chainId)));
+        const signed = crypto.sign(forgedOperation, utils.mergeBuffers(utils.watermark.endorsement, utils.b58decode(head.chain_id, Prefix.chainId)));
 
         return rpc.injectOperation({
             ...operation,

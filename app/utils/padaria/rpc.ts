@@ -7,7 +7,8 @@ import utils, { Prefix } from './utils';
 
 import operations, {
     UnsignedOperationProps,
-    UnsignedOperations
+    UnsignedOperations,
+    PendingOperations
 }  from './operations';
 
 import {
@@ -318,6 +319,17 @@ const self:RPCInterface = {
             hash: operationHash,
             ...preappliedOp
         };
+    },
+    getPendingOperations: async () => {
+        const pendingOperations = await self.queryNode(`/chains/main/mempool/pending_operations`, QueryTypes.GET) as PendingOperations;
+        
+        if (!pendingOperations) return;
+
+        // Only retain the applied, unprocessed and delayed operations
+        delete pendingOperations.branch_refused;
+        delete pendingOperations.refused;
+
+        return Object.keys(pendingOperations).map(type => pendingOperations[type]);
     },
     getEndorsementOperations: async blockId => {      
         const operations = await self.queryNode(`/chains/main/blocks/${blockId}/operations`, QueryTypes.GET) as UnsignedOperations;
