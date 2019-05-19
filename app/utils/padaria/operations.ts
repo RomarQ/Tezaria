@@ -350,7 +350,7 @@ const self: OperationsInterface = {
                 forgeResult += `${cleanedDestination}00`;
                 break;
             case 9: break;
-            case 10:
+            case 10: // Delegation
                 forgeResult += `ff00${utils.bufferToHex(utils.b58decode(operation.delegate, Prefix.tz1))}`;
                 break;
         }
@@ -425,8 +425,10 @@ const self: OperationsInterface = {
                 return 0;
             case OperationTypes.ballot.type || OperationTypes.proposal.type:
                 return 1;
-            case OperationTypes.activateAccount.type || OperationTypes.doubleBakingEvidence.type
-                || OperationTypes.doubleEndorsementEvidence.type || OperationTypes.seedNonceRevelation.type:
+            case OperationTypes.activateAccount.type
+                || OperationTypes.doubleBakingEvidence.type
+                || OperationTypes.doubleEndorsementEvidence.type
+                || OperationTypes.seedNonceRevelation.type:
                 return 2;
             default:
                 return 3;

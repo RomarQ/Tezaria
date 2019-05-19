@@ -13,6 +13,7 @@ import {
     BakingControllerProps,
     BakingControllerStartOptions
 } from './bakingController.d';
+import { LogOrigins, LogSeverity } from './logger';
 
 /*
 * Constants
@@ -103,6 +104,7 @@ const self:BakingControllerProps = {
         await storage.setBakerNonces(self.noncesToReveal);
     },
     run: async (keys, logger) => {
+        const { pkh } = keys;
         if (self.locked || self.forcedLock || self.delegate.deactivated) return;
         self.locked = true;
 
@@ -115,18 +117,6 @@ const self:BakingControllerProps = {
 
         baker.pendingBlocks = baker.pendingBlocks.reduce((prev, block) => {
             /*
-            *   Every block needs to be injected before their respective level starts
-            */
-/*             if(block.level <= head.header.level) {
-                logger({ 
-                    message: `Block ${block.level} was injected too late.`,
-                    type: 'error',
-                    severity: LogSeverity.NORMAL
-                });
-                return prev;
-            } */
-
-            /*
             *   Inject the block if the "Baking Right Timestamp" for this block is now or has already passed
             */
             if(new Date() >= new Date(block.timestamp))
@@ -137,7 +127,8 @@ const self:BakingControllerProps = {
                             logger({ 
                                 message: 'Inject failed',
                                 type: 'error',
-                                severity: LogSeverity.NORMAL
+                                severity: LogSeverity.HIGH,
+                                origin: LogOrigins.BAKER
                             });
                             return;
                         }
@@ -153,8 +144,13 @@ const self:BakingControllerProps = {
                                 level: block.level
                             });
                         }
-                
-                        console.log(`Baked ${injectionHash} block at level ${block.level}`);
+                        
+                        logger({ 
+                            message: `Baked ${injectionHash} block at level ${block.level}`,
+                            type: 'success',
+                            severity: LogSeverity.HIGH,
+                            origin: LogOrigins.BAKER
+                        });
                     })
                     .catch((e:Error) => console.error(e));
             }
@@ -186,7 +182,7 @@ const self:BakingControllerProps = {
         (async () => {
             if (self.baking && !self.locks.baker) {
                 self.locks.baker = true;
-                await baker.run(keys, head, logger);
+                await baker.run(pkh, head, logger);
                 self.locks.baker = false;
             }
         })();
@@ -261,10 +257,9 @@ const self:BakingControllerProps = {
             pows[2] = await crypto.POW(utils.bufferToHex(new Uint8Array(tests[2])), 0, "4e07e55960daee56883d231b3c41f223733f58be90b5a1ee2147df8de5b8ac86") as any;
             pows[3] = await crypto.POW(utils.bufferToHex(new Uint8Array(tests[3])), 0, "4e07e55960daee56883d231b3c41f223733f58be90b5a1ee2147df8de5b8ac86") as any;
             pows[4] = await crypto.POW(utils.bufferToHex(new Uint8Array(tests[4])), 0, "4e07e55960daee56883d231b3c41f223733f58be90b5a1ee2147df8de5b8ac86") as any;
-            
-            const tPoW = pows.reduce((p, c) => p+c.att, 0);
+
+            const tPoW = pows.reduce((p, c) => p+c.attempt, 0);
             resolve((tPoW/Number(((new Date().getTime() - start)/1000).toFixed(3)))/1000);
-            
         });
     },
 };

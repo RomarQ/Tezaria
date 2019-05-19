@@ -31,6 +31,7 @@ export interface RPCInterface extends LoadOptions {
     getBlock: (blockHash:string) => Promise<BlockProps>;
     getBlockOperations: (blockHash:string) => Promise<OperationProps[]>;
     getPendingOperations: () => Promise<UnsignedOperationProps[][]>;
+    monitorOperations: (callback: (operations:any) => void) => Promise<void>;
 };
 
 type RequestOptions = {

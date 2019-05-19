@@ -2,8 +2,9 @@ import React from 'react';
 import { bindActionCreators, Dispatch, ActionCreatorsMapObject } from 'redux';
 import { connect } from 'react-redux';
 import Component from '../../../components/Widgets/Baking/BakingRights';
-import LoggerActions, { LoggerActionsPrototypes, LogTypes, LogOrigins } from '../../../actions/logger';
+import LoggerActions, { LoggerActionsPrototypes, LogTypes } from '../../../actions/logger';
 import baker, { IncomingBakings, CompletedBaking } from '../../../utils/padaria/baker';
+import { LogOrigins } from '../../../utils/padaria/logger';
 
 type Props = {
     pkh:    string;
@@ -37,7 +38,7 @@ const Container = ({ pkh, logger }:Props) => {
         })
         .catch((error:Error) => {
             logger.add({
-                logType:  LogTypes.ERROR,
+                type:  LogTypes.ERROR,
                 message:  error,
                 origin: LogOrigins.RPC
             });
@@ -50,7 +51,7 @@ const Container = ({ pkh, logger }:Props) => {
         })
         .catch((error:Error) => {
             logger.add({
-                logType:  LogTypes.ERROR,
+                type:  LogTypes.ERROR,
                 message:  error.message,
                 origin: LogOrigins.RPC
             });

@@ -62,13 +62,13 @@ const Component:React.FC<Props> = ({ classes, logs }) => {
             <div>
                 <List dense>
                     {logs.map(log => (
-                        <ListItem key={log.key} className={`${classes[log.logType]} ${classes.listItem}`}>
+                        <ListItem key={log.key} className={`${classes[log.type]} ${classes.listItem}`}>
                             <ListItemAvatar>
-                                {LogIcons[log.logType]}
+                                {LogIcons[log.type] || <WarningIcon />}
                             </ListItemAvatar>
                             <ListItemText
-                                primary={log.message}
-                                secondary={new Date(log.timestamp).toLocaleString()}
+                                primary={log.message || ''}
+                                secondary={log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
                             />
                             <ListItemSecondaryAction>
                                 <IconButton aria-label="Delete">

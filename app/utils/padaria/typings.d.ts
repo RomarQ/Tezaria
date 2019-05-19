@@ -1,18 +1,12 @@
 declare module 'bs58check';
 declare module 'electron-json-storage';
 
-const enum LogSeverity {
-    VERY_HIGH,
-    HIGH,
-    MEDIUM,
-    NORMAL,
-    NEUTRAL
-};
-
-declare type LogProps = {
+declare interface LoggerActionProps {
+    key:        number;
     type:       'error' | 'warning' | 'info' | 'success';
     message:    string;
-    severity:   LogSeverity;
+    severity?:  number;
+    origin?:    number;
 };
 
 declare type KeysType = {

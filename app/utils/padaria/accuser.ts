@@ -6,6 +6,7 @@ import bakingController from './bakingController';
 import {
     AccuserInterface
 } from './accuser.d';
+import { LogOrigins, LogSeverity } from './logger';
 
 const self:AccuserInterface = {
     /*
@@ -59,14 +60,16 @@ const self:AccuserInterface = {
                             logger({ 
                                 message: `You double baked at level [ ${cur.header.level} ] on blocks [${cur.hash}, ${prev[evidenceIndex].hash}] , shutting down the baker...`,
                                 type: 'error',
-                                severity: LogSeverity.VERY_HIGH
+                                severity: LogSeverity.VERY_HIGH,
+                                origin: LogOrigins.ACCUSER
                             });
                         }
                         else {
                             logger({ 
                                 message: `Baker ${cur.metadata.baker} double baked at level ${cur.header.level}, accusing now...`,
                                 type: 'info',
-                                severity: LogSeverity.HIGH
+                                severity: LogSeverity.HIGH,
+                                origin: LogOrigins.ACCUSER
                             });
         
                             operations.doubleBakingEvidence([cur.header, prev[evidenceIndex].header]);

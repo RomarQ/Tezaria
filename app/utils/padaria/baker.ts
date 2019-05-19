@@ -1,7 +1,12 @@
 import rpc, { QueryTypes } from './rpc';
-import Operations, { UnsignedOperationProps, UnsignedOperations, PendingOperations, OperationTypes } from './operations';
+import Operations, { OperationTypes } from './operations';
 import utils, { Prefix } from './utils';
 import crypto from './crypto';
+
+import {
+    LogOrigins,
+    LogSeverity
+} from './logger';
 
 import {
     BakerInterface,
@@ -89,11 +94,11 @@ const self:BakerInterface = {
     },
     levelCompleted: () => {
         self.bakedBlocks = [
-            ...self.bakedBlocks.slice(1, self.bakedBlocks.length > 5 ? 4 : self.bakedBlocks.length-1), 
+            ...self.bakedBlocks.slice(1, self.bakedBlocks.length > 5 ? 4 : self.bakedBlocks.length), 
             self.levelWaterMark
         ];
     },
-    run: async (keys, head, logger) => {
+    run: async (pkh, head, logger) => {
         self.levelWaterMark = head.header.level+1;
 
         try {
@@ -102,43 +107,70 @@ const self:BakerInterface = {
             */
             if (self.bakedBlocks.indexOf(self.levelWaterMark) !== -1) return;
 
-            let bakingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${keys.pkh}&level=${self.levelWaterMark}&max_priority=5`, QueryTypes.GET) as BakingRight[];
+            const bakingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&level=${self.levelWaterMark}&max_priority=5`, QueryTypes.GET) as BakingRight[];
 
             if(!Array.isArray(bakingRight)) {
-                console.error("Not able to get Baking Rights :(");
-                return;
+                return logger({
+                    message: 'Not able to get baking rights.',
+                    type: 'error',
+                    severity: LogSeverity.VERY_HIGH,
+                    origin: LogOrigins.BAKER
+                });
             }
             
-            // If no baking rights were received, then add level as already baked.
+            /*
+            *   If no baking rights were received, then add level as already baked.
+            */
             if (bakingRight.length === 0) {
                 self.levelCompleted();
-                return;
+                return logger({
+                    message: `No baking rights found for level ${self.levelWaterMark}.`,
+                    type: 'info',
+                    severity: LogSeverity.NEUTRAL,
+                    origin: LogOrigins.BAKER
+                });
             }
 
-            // Check if is time to bake
+            /*
+            *   Check if is time to bake
+            */
             if (new Date().getTime() >= new Date(bakingRight[0].estimated_time).getTime() && bakingRight[0].level === self.levelWaterMark)
             {
-                console.log(`Baking a block with a priority of [ ${bakingRight[0].priority} ] on level ${bakingRight[0].level}`);
+                logger({
+                    message: `Baking a block with a priority of [ ${bakingRight[0].priority} ] on level ${bakingRight[0].level}`,
+                    type: 'info',
+                    severity: LogSeverity.NEUTRAL,
+                    origin: LogOrigins.BAKER
+                });
 
-                const bake = await self.bake(keys, head, bakingRight[0].priority, bakingRight[0].estimated_time);
+                const bake = await self.bake(head, bakingRight[0].priority, bakingRight[0].estimated_time, logger);
 
                 console.log(bake);
 
                 if(bake) {
                     self.pendingBlocks.push(bake);
-                    console.log(`Block baked, in pending state now...`);
+                    logger({
+                        message: `Block baked at level ${bake.level}, in pending state now...`,
+                        type: 'info',
+                        severity: LogSeverity.NEUTRAL,
+                        origin: LogOrigins.BAKER
+                    });
                 }
-                else 
-                    console.error(`Failed to bake Block on level ${self.levelWaterMark} :(`);
+                else {
+                    logger({
+                        message: `Failed to bake Block for level ${self.levelWaterMark}.`,
+                        type: 'error',
+                        severity: LogSeverity.VERY_HIGH,
+                        origin: LogOrigins.BAKER
+                    });
+                }
 
                 self.levelCompleted();
             }
         }
         catch(e) { console.error('error', e); };
     },
-    bake: async (keys, head, priority, timestamp) => {
-        console.log('\n\nBaking...\n\n');
-
+    bake: async (head, priority, timestamp, logger) => {
         const newTimestamp = Math.max(Math.floor(Date.now()/1000), new Date(timestamp).getTime()/1000);
 
         const operationArgs = {} as {
@@ -149,7 +181,13 @@ const self:BakerInterface = {
         };
         
         if (head.header.level % Number(rpc.networkConstants['blocks_per_commitment']) === 0) {
-            console.error('Commitment Time!', self.levelWaterMark, Number(rpc.networkConstants['blocks_per_commitment']));
+
+            logger({
+                message: `Level ${self.levelWaterMark} requires nonce reveal.Commitment Time.`,
+                type: 'info',
+                severity: LogSeverity.NEUTRAL,
+                origin: LogOrigins.BAKER
+            });
 
             operationArgs.seed = crypto.hexNonce(64);
             operationArgs.seedHash = crypto.seedHash(operationArgs.seed);
@@ -157,35 +195,30 @@ const self:BakerInterface = {
             operationArgs.seedHex = utils.bufferToHex(operationArgs.seedHash);
         }
 
-        const pendingOperations = await rpc.getPendingOperations();
-        
-        if(!pendingOperations) return;
+        /*
+        *   Monitor new endorsings
+        *   This is helpful to make sure a block is not built too early
+        */
+        let endorsements:any[] = [];
+        rpc.monitorOperations(res => {
+            if (Array.isArray(res))
+                endorsements = [...endorsements, ...res];
+        });
 
-        console.log(pendingOperations);
+        /*
+        *   Waits for more endorsings if needed
+        */
+        const delay = Number(rpc.networkConstants['delay_per_missing_endorsement'] || 8);
+        while(endorsements.length < 12 && Date.now() < new Date(timestamp).getTime() + delay) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        const pendingOperations = await rpc.getPendingOperations();
 
         const operations = await Operations.classifyOperations(pendingOperations, head.protocol);
+        console.log(pendingOperations, operations);
 
-        // WIP
-        /*  const addedOps = [] as string[];
-
-
-        pendingOperations.applied.forEach((op:UnsignedOperationProps) => {
-            if (addedOps.indexOf(op.hash) === -1) {
-                if(op.branch !== head.hash) return;
-
-                const operationType = Operations.acceptablePasses(op);
-                
-                addedOps.push(op.hash);
-                operations[operationType].push({
-                    protocol: head.protocol,
-                    branch: op.branch,
-                    contents: op.contents,
-                    signature: op.signature
-                })
-            }
-        }); */
-
-        // Signature cannot be empty, using a dummy signature. [Is not important for this operation]
+        // Signature cannot be empty, using a fake signature. [Is not important for this operation]
         let header = {
             protocol_data: {
                 protocol: head.protocol,
@@ -203,16 +236,8 @@ const self:BakerInterface = {
             .catch(error => {
                 console.log(error);
             });
-/* 
-        if(!res) {
-            console.log("Preapply failed, sending empty operations now.");
-            header.operations = [[],[],[],[]];
-            res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header);
-        }; */
 
         if (!res || !res.shell_header) return;
-
-        console.log("!Starting POW...", res);
 
         let { shell_header, operations:ops } = res;
 
@@ -238,15 +263,20 @@ const self:BakerInterface = {
         console.log(shell_header, ops)
         const { block } = await rpc.queryNode('/chains/main/blocks/head/helpers/forge_block_header', QueryTypes.POST, shell_header) as { block:string };
 
-        let forged = block.substring(0, block.length - 22);
-        
         const start = Date.now();
 
-        const pow = await crypto.POW(forged, priority, operationArgs.seedHex);
+        const pow = await crypto.POW(block.substring(0, block.length - 22), priority, operationArgs.seedHex);
 
         const secs = ((Date.now() - start) / 1000);
 
-        console.log(`POW found in ${pow.att} attemps ${secs} seconds - ${((pow.att/secs)/1000).toLocaleString('fullwide', {maximumFractionDigits:2})} Kh/s`);
+        const attemptsRate = ((pow.attempt/secs)/1000).toLocaleString('fullwide', {maximumFractionDigits:2});
+
+        logger({
+            message: `POW found in ${pow.attempt} attemps and took ${secs} seconds with a ratio of [${attemptsRate}] Ka/s`,
+            type: 'info',
+            severity: LogSeverity.NEUTRAL,
+            origin: LogOrigins.BAKER
+        });
 
         const signed = crypto.sign(pow.blockbytes, utils.mergeBuffers(utils.watermark.blockHeader, utils.b58decode(head.chain_id, Prefix.chainId)));
 
