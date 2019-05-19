@@ -8,6 +8,7 @@ import {
 import { CSSProperties } from '@material-ui/core/styles/withStyles';
 
 import FabLink from './FabLink';
+import Typography from '@material-ui/core/Typography';
 import routes from '../constants/routes.json';
 
 const styles = ({ palette, spacing }: Theme):Record<string, CSSProperties> => createStyles({
@@ -51,7 +52,7 @@ const Component: React.FC<WithStyles<typeof styles>> = ({ classes }) => (
         <div className={classes.container}>
             <img alt="logo" src="../resources/assets/logo.png" className={classes.logo} />
             <div className={classes.buttons}>
-                {/* <FabLink
+                <FabLink
                     to={routes.NEW_ACCOUNT}
                     variant="extended"
                     size="large"
@@ -61,7 +62,7 @@ const Component: React.FC<WithStyles<typeof styles>> = ({ classes }) => (
                 >
                     Create a new Account
                 </FabLink>
-                <Typography variant="caption">OR</Typography> */}
+                <Typography variant="caption">OR</Typography>
                 <FabLink
                     to={routes.IMPORT_ACCOUNT}
                     variant="extended"

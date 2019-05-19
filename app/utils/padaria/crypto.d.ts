@@ -16,7 +16,7 @@ export interface CryptoInterface {
     encryptSK: (keys:KeysType, passphrase:string) => KeysType;
     decryptSK: (keys:KeysType, passphrase:string) => KeysType;
     getKeysFromMnemonic: (mnemonic: string, passphrase: string) => KeysType;
-    getKeysFromEncSeed: (esk_encoded:string, password:string) => Promise<KeysType>;
+    getKeysFromEncSeed: (esk_encoded:string, password:string) => KeysType;
     getKeysFromDecSecret: (sk_or_seed:string) => KeysType;
     sign: (bytes:string, watermark?:Uint8Array) => SignatureProps;
     generateMnemonic: () => string;

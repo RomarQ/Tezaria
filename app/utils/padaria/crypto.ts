@@ -79,7 +79,7 @@ const self:CryptoInterface = {
     getKeysFromMnemonic: (mnemonic: string, passphrase: string):KeysType => (
         self.seedToKeys(self.mnemonicToSeed(mnemonic, passphrase))
     ),
-    getKeysFromEncSeed: async (esk_encoded:string, password:string):Promise<KeysType> => {
+    getKeysFromEncSeed: (esk_encoded:string, password:string):KeysType => {
         if (!esk_encoded || !password || !crypto.subtle) return null;
 
         // AES in CBC [Salt is the first 8 bytes]

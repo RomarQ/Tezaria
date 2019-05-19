@@ -24,6 +24,16 @@ export interface RPCInterface extends LoadOptions {
     forgeOperation: (head:BlockProps, operation:UnsignedOperationProps, skipConfirmation?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
     preapplyOperations: (operation:UnsignedOperationProps[]) => Promise<UnsignedOperationProps[]>;
     injectOperation: (operation:UnsignedOperationProps) => Promise<UnsignedOperationProps>;
+    getContract: (pkh:string) => Promise<{
+        manager: string;
+        balance: string;
+        spendable: boolean;
+        delegate: {
+            setable: boolean;
+            value: string;
+        };
+        counter: number;
+    }>;
     getManager: (pkh:string) => Promise<{key:string, manager:string}>;
     getCounter: (pkh:string) => Promise<number>;
     getEndorsementOperations: (blockId:string) => Promise<UnsignedOperationProps[]>;

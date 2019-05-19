@@ -7,6 +7,7 @@ import HomePage from '../components/Home';
 import Dashboard from './Dashboard';
 import Rewards from './Rewards';
 import ImportAccount from './Account/ImportAccount';
+import NewAccount from './Account/NewAccount';
 import Settings from '../components/Account/Settings';
 import ProtectAccount from './Account/ProtectAccount';
 import Logs from './Logs';
@@ -86,6 +87,17 @@ export default ({ loader, history, userData, userDataFunc }:Props) => (
             path={routes.IMPORT_ACCOUNT}
             render={() => (
                 <ImportAccount
+                    setBakerKeys={userDataFunc.setBakerKeys}
+                    loader={loader}
+                    history={history}
+                />
+            )}
+        />
+        <Route
+            exact
+            path={routes.NEW_ACCOUNT}
+            render={() => (
+                <NewAccount
                     setBakerKeys={userDataFunc.setBakerKeys}
                     loader={loader}
                     history={history}

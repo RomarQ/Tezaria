@@ -12,47 +12,47 @@ import {
 export const MAX_BATCH_SIZE = 200;
 
 export const OperationTypes = {
-    endorsement: {
+    "endorsement": {
         type: "endorsement" as "endorsement",
         operationCode: 0
     },
-    seedNonceRevelation: {
+    "seed_nonce_revelation": {
         type: "seed_nonce_revelation" as "seed_nonce_revelation",
         operationCode: 1
     },
-    doubleEndorsementEvidence: {
+    "double_endorsement_evidence": {
         type: "double_endorsement_evidence" as "double_endorsement_evidence",
         operationCode: 2
     },
-    doubleBakingEvidence: {
+    "double_baking_evidence": {
         type: "double_baking_evidence" as "double_baking_evidence",
         operationCode: 3
     },
-    activateAccount: {
+    "activate_account": {
         type: "activate_account" as "activate_account",
         operationCode: 4
     },
-    proposal: {
+    "proposal": {
         type: "proposal" as "proposal",
         operationCode: 5
     },
-    ballot: {
+    "ballot": {
         type: "ballot" as "ballot",
         operationCode: 6
     },
-    reveal: {
+    "reveal": {
         type: "reveal" as "reveal",
         operationCode: 7
     },
-    transaction: {
+    "transaction": {
         type: "transaction" as "transaction",
         operationCode: 8
     },
-    origination: {
+    "origination": {
         type: "origination" as "origination",
         operationCode: 9
     },
-    delegation: {
+    "delegation": {
         type: "delegation" as "delegation",
         operationCode: 10
     }
@@ -94,7 +94,7 @@ const self: OperationsInterface = {
         const operation = {
             branch: head.hash,
             contents: [{
-                kind: OperationTypes.doubleBakingEvidence.type,
+                kind: OperationTypes["double_baking_evidence"].type,
                 bh1: evidences[0],
                 bh2: evidences[1]
             }]
@@ -115,7 +115,7 @@ const self: OperationsInterface = {
         const operation = {
             branch: head.hash,
             contents: [{
-                kind: OperationTypes.doubleEndorsementEvidence.type,
+                kind: OperationTypes["double_endorsement_evidence"].type,
                 op1: evidences[0],
                 op2: evidences[1]
             }]
@@ -134,7 +134,7 @@ const self: OperationsInterface = {
         const operation = {
             branch: head.hash,
             contents: [{
-                kind: OperationTypes.seedNonceRevelation.type,
+                kind: OperationTypes["seed_nonce_revelation"].type,
                 level: nonce.level,
                 nonce: nonce.seed
             }]
@@ -209,6 +209,14 @@ const self: OperationsInterface = {
         };
         return self.sendOperation(keys.pkh, keys, [operation]);
     },
+    activateAccount: (keys, secret) => {
+        const operation = {
+            kind: OperationTypes["activate_account"].type,
+            secret,
+            pkh: keys.pkh
+        };
+        return self.sendOperation(keys.pkh, keys, [operation]);
+    },
     awaitForOperationToBeIncluded: async (opHash, prevHeadLevel) => {
         // Wait 2 seconds before checking if the operation was inlcuded
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -234,72 +242,81 @@ const self: OperationsInterface = {
             // otherwise the next operation will be rejected because counter will be too high
             self.awaitingLock[source] = true;
 
-            const preparedOp = await self.prepareOperations(source, keys, operation);
+            try {
+                const preparedOp = await self.prepareOperations(source, keys, operation);
 
-            if (!preparedOp) return;
+                if (!preparedOp) return;
 
-            const {forgedConfirmation, ...verifiedOp} = preparedOp;
-            
-            const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
+                const {forgedConfirmation, ...verifiedOp} = preparedOp;
+                
+                const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
 
-            const injectedOp = await rpc.injectOperation({
-                ...verifiedOp,
-                signature: signed.edsig,
-                signedOperationContents: signed.signedBytes
-            });
+                const injectedOp = await rpc.injectOperation({
+                    ...verifiedOp,
+                    signature: signed.edsig,
+                    signedOperationContents: signed.signedBytes
+                });
 
-            if (typeof injectedOp.hash != 'string') {
-                console.error(injectedOp.hash);
+                if (typeof injectedOp.hash != 'string') {
+                    console.error(injectedOp.hash);
+                    self.awaitingLock[source] = false;
+                    continue;
+                }
+
+                console.log(injectedOp);
+                // Wait for operation to be included
+                await self.awaitForOperationToBeIncluded(injectedOp.hash, 0);
+
                 self.awaitingLock[source] = false;
-                continue;
+                return injectedOp;
+            }
+            catch (e) {
+                console.error(e);
             }
 
-            console.log(injectedOp);
-            // Wait for operation to be included
-            await self.awaitForOperationToBeIncluded(injectedOp.hash, 0);
-
             self.awaitingLock[source] = false;
-            return injectedOp;
+            return;
         }
     },
-    prepareOperations: async (from, keys, operations) => {
+    prepareOperations: async (source, keys, operations) => {
         const head = await rpc.getCurrentHead();
 
-        if (!self.contractManagers[from]) {
-            self.contractManagers[from] = await rpc.getManager(from);
+        if (!self.contractManagers[source]) {
+            self.contractManagers[source] = await rpc.getManager(source);
         }
 
-        let counter = await rpc.getCounter(from);
-
+        let counter = await rpc.getCounter(source);
+        
         /*
         *   Prepare reveal operation if required
         */
-        if (!self.contractManagers[from].key) {
-            operations = [
-                {
+        if (!self.contractManagers[source].key) {
+            await rpc.forgeOperation(head, {
+                branch: head.hash,
+                contents: [{
                     kind: OperationTypes.reveal.type,
                     fee: String(self.feeDefaults.low),
-                    counter: String(++counter),
                     public_key: keys.pk,
+                    source,
+                    counter: String(++counter),
                     gas_limit: String(self.revealGasCost),
                     storage_limit: String(self.revealStorage)
-                },
-                ...operations
-            ];
+                }]
+            });
         }
 
-        operations.reduce((prev, cur) => {
-            if (self.operationRequiresSource(cur.kind)) {
-                if (!cur.source) cur.source = from;
+        operations.forEach(op => {
+            if (self.operationRequiresSource(op.kind)) {
+                if (!op.source) op.source = source;
             }
-            if (self.operationRequiresCounter(cur.kind)) {
-                if (!cur.gas_limit) cur.gas_limit = String(0);
-                if (!cur.storage_limit) cur.storage_limit = String(0);
-                cur.counter = String(++counter);
+            if (self.operationRequiresCounter(op.kind)) {
+                if (!op.gas_limit) op.gas_limit = String(0);
+                if (!op.storage_limit) op.storage_limit = String(0);
+                op.counter = String(++counter);
             }
-            prev.push(cur);
-            return prev;
-        }, []);
+        });
+
+        console.log(operations)
 
         return rpc.forgeOperation(head, {
             branch: head.hash,
@@ -309,26 +326,30 @@ const self: OperationsInterface = {
     forgeOperationLocally: (operation:OperationProps) => {
         let forgeResult = utils.bufferToHex(new Uint8Array([OperationTypes[operation.kind].operationCode]));
 
-        let cleanedSource = utils.bufferToHex(utils.b58decode(operation.source, Prefix.tz1));
-        if (cleanedSource.length > 44) {
-            // must be less or equal 44 bytes
-            throw new Error('provided source is invalid')
+        if (operation.source) {
+            let cleanedSource = utils.bufferToHex(utils.b58decode(operation.source, Prefix.tz1));
+            if (cleanedSource.length > 44) {
+                // must be less or equal 44 bytes
+                throw new Error('provided source is invalid');
+            }
+
+            if(cleanedSource.length % 44 > 0)
+                forgeResult += '0'.repeat(44 - cleanedSource.length % 44) + cleanedSource;
         }
 
-        if(cleanedSource.length % 44 > 0)
-            forgeResult += '0'.repeat(44 - cleanedSource.length % 44) + cleanedSource;
-
-        forgeResult += utils.numberToZarith(Number(operation.fee))
-        forgeResult += utils.numberToZarith(Number(operation.counter))
-        forgeResult += utils.numberToZarith(Number(operation.gas_limit))
-        forgeResult += utils.numberToZarith(Number(operation.storage_limit))
+        operation.fee && (forgeResult += utils.numberToZarith(Number(operation.fee)));
+        operation.counter && (forgeResult += utils.numberToZarith(Number(operation.counter)));
+        operation.gas_limit && (forgeResult += utils.numberToZarith(Number(operation.gas_limit)));
+        operation.storage_limit && (forgeResult += utils.numberToZarith(Number(operation.storage_limit)));
 
         switch (OperationTypes[operation.kind].operationCode) {
             case 0: break;
             case 1: break;
             case 2: break;
             case 3: break;
-            case 4: break;
+            case 4: // Activate Account
+                forgeResult += utils.bufferToHex(utils.b58decode(operation.pkh, Prefix.tz1)) + operation.secret;
+                break;
             case 5: break;
             case 6: break;
             case 7: // Reveal
@@ -421,14 +442,14 @@ const self: OperationsInterface = {
         if(!op || !op.contents) return 3;
 
         switch (op.contents[0].kind) {
-            case OperationTypes.endorsement.type:
+            case OperationTypes["endorsement"].type:
                 return 0;
-            case OperationTypes.ballot.type || OperationTypes.proposal.type:
+            case OperationTypes["ballot"].type || OperationTypes["proposal"].type:
                 return 1;
-            case OperationTypes.activateAccount.type
-                || OperationTypes.doubleBakingEvidence.type
-                || OperationTypes.doubleEndorsementEvidence.type
-                || OperationTypes.seedNonceRevelation.type:
+            case OperationTypes["activate_account"].type
+                || OperationTypes["double_baking_evidence"].type
+                || OperationTypes["double_endorsement_evidence"].type
+                || OperationTypes["seed_nonce_revelation"].type:
                 return 2;
             default:
                 return 3;

@@ -16,7 +16,5 @@ function* loaded() {
 
 export default [
     takeLatest(UserDataActionTypes.LOAD, loaded),
-    takeLatest(UserDataActionTypes.CLEAR, loaded),
-    takeLatest(UserDataActionTypes.SET_KEYS, loaded),
-    takeLatest(UserDataActionTypes.SET_SETTINGS, loaded)
+    takeLatest(UserDataActionTypes.CLEAR, loaded)
 ];

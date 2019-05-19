@@ -43,6 +43,7 @@ const App: React.FC<Props> = props => {
             })
             .then(() => {
                 props.loader(LoadTypes.PADARIA_NODE, true);
+                props.loader(LoadTypes.USER_DATA, true);
             })
             .catch((error:Error) => {
                 logger.add({
@@ -52,14 +53,17 @@ const App: React.FC<Props> = props => {
                 });
 
                 props.loader(LoadTypes.PADARIA_NODE, true);
+                props.loader(LoadTypes.USER_DATA, true);
             });
-
         })
-        .catch((error:Error) => logger.add({
-            type:  LogTypes.ERROR,
-            message:  error,
-            origin: LogOrigins.RPC
-        }));
+        .catch((error:Error) => {
+            props.loader(LoadTypes.USER_DATA, true);
+            logger.add({
+                type:  LogTypes.ERROR,
+                message:  error,
+                origin: LogOrigins.RPC
+            });
+        });
     }, []);
     
     console.log(props);

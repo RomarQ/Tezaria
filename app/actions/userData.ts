@@ -59,8 +59,7 @@ export interface UserDataActionsProps {
 const loadUserData = () => (dispatch: Dispatch) => (
 	new Promise((resolve, reject) => {
 		crypto.signer = null;
-		storage
-			.getUserData()
+		storage.getUserData()
 			.then(userData => {
 				if (!userData.error) {
 					dispatch({ type: UserDataActionTypes.LOAD, userData });
@@ -81,14 +80,13 @@ const clearUserData = () => async (dispatch: Dispatch) => {
 
 const setBakerKeys = (keys: KeysType) => async (dispatch: Dispatch) => {
     crypto.loadSigner(keys);
+
+    keys.encrypted && (delete keys.sk);
+
 	dispatch({ 
         type: UserDataActionTypes.SET_KEYS,
-        keys: {
-            pk: keys.pk,
-            pkh: keys.pkh
-        }
+        keys
     });
-	await bakingController.load(keys);
 };
 
 const setBakerSettings = (settings: UserSettingsType) => (dispatch: Dispatch) => (

@@ -4,3 +4,4 @@ export { default as baker } from './baker';
 export { default as crypto } from './crypto';
 export { default as rewarder } from './rewarder';
 export { default as rpc } from './rpc';
+export { default as operations } from './operations';
