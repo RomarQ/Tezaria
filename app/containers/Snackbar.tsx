@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { withSnackbar, withSnackbarProps } from 'notistack';
 import Button from '@material-ui/core/Button';
-import { LoggerActionProps, LogTypes } from '../actions/logger';
+import { LogTypes } from '../actions/logger';
 import { LoggerProps } from '../reducers/logger';
 
 type Props = {
@@ -22,13 +22,13 @@ const Container: React.FC<Props> = ({ logs, enqueueSnackbar }) => {
         if (snack.key > snackCounter.current++) {
             
             enqueueSnackbar(String(snack.message), {
-                variant: snack.logType,
+                variant: snack.type,
                 anchorOrigin: {
-                    vertical: 'top',
+                    vertical: ['error', 'success'].includes(snack.type) ? 'top' : 'bottom',
                     horizontal: 'center'
                 },
                 preventDuplicate: true,
-                persist: snack.logType === LogTypes.ERROR,
+                persist: snack.type === LogTypes.ERROR,
                 action: (
                     <Button size="small">{'Dismiss'}</Button>
                 ),

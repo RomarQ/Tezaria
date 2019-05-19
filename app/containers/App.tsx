@@ -10,7 +10,9 @@ import rpc from '../utils/padaria/rpc';
 import { LoaderState } from '../reducers/loader';
 import LoaderAction, { LoadTypes, LoaderPrototype } from '../actions/loader';
 import UserDataActions, { UserDataActionsProps } from '../actions/userData';
-import LoggerActions, { LoggerActionsPrototypes, LogTypes, LogOrigins } from '../actions/logger';
+import LoggerActions, { LoggerActionsPrototypes, LogTypes } from '../actions/logger';
+
+import { LogOrigins } from '../utils/padaria/logger';
 
 import Nav from '../components/Nav';
 import Snackbar from './Snackbar';
@@ -44,7 +46,7 @@ const App: React.FC<Props> = props => {
             })
             .catch((error:Error) => {
                 logger.add({
-                    logType:  LogTypes.ERROR,
+                    type:  LogTypes.ERROR,
                     message:  error,
                     origin: LogOrigins.RPC
                 });
@@ -54,7 +56,7 @@ const App: React.FC<Props> = props => {
 
         })
         .catch((error:Error) => logger.add({
-            logType:  LogTypes.ERROR,
+            type:  LogTypes.ERROR,
             message:  error,
             origin: LogOrigins.RPC
         }));

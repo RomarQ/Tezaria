@@ -79,9 +79,9 @@ const self:UtilsInterface = {
     KTEZ:   { char: 'Kꜩ',  unit: 1000000000 },
     MTEZ:   { char: 'Mꜩ',  unit: 1000000000000 },
     setDebugMode: (mode:boolean) => self.debug = mode,
-    createProtocolData: (priority:number, powHeader = '', pow = '', seed = '') => {
-        return `${priority.toString(16).padStart(4,"0")}${powHeader.padEnd(8, "0")}${pow.padEnd(8, "0")}${seed ? "ff"+seed.padEnd(64, "0") : "00"}`;
-    },
+    createProtocolData: (priority:number, powHeader = '', pow = '', seed = '') => (
+        `${priority.toString(16).padStart(4,"0")}${powHeader.padEnd(8, "0")}${pow.padEnd(8, "0")}${seed ? "ff"+seed.padEnd(64, "0") : "00"}`
+    ),
     verifyNodeCommits: async () => {
         const nodeLastCommit = await rpc.queryNode('/monitor/commit_hash', QueryTypes.GET);
         const options = {

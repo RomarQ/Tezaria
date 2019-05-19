@@ -26,7 +26,7 @@ export interface CryptoInterface {
     seedHash: (seed:string) => Uint8Array;
     hexNonce: (size:number) => string;
     nonceHash: (nonce:Uint8Array) => string;
-    POW: (forged:string, priority:number, seedHex:string) => Promise<{blockbytes:string, att:number}>;
+    POW: (forged:string, priority:number, seedHex:string) => Promise<{blockbytes:string, attempt:number}>;
 };
 
 export type SignatureProps = {

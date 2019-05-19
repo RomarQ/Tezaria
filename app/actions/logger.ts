@@ -1,4 +1,5 @@
-import { Dispatch } from 'redux';
+import { Dispatch, ActionCreatorsMapObject } from 'redux';
+import { LogOrigins } from '../utils/padaria/logger';
 
 export enum LogTypes {
     SUCCESS = 'success',
@@ -7,43 +8,29 @@ export enum LogTypes {
     INFO    = 'info'
 };
 
-export enum LogOrigins {
-    RPC         = 'RPC',
-    API         = 'APIO',
-    BAKER       = 'BAKER',
-    ENDORSER    = 'ENDORSER',
-    ACCUSER     = 'ACCUSER'
-};
-
 export enum LoggerActionTypes {
     ADD         = 'ADD_LOG',
     REMOVE      = 'REMOVE_LOG',
     CLEAR_ALL   = 'CLEAR_LOGS'
 }
 
-export type LoggerActionProps = {
-    key?:           number;
-    logType?:       LogTypes;
-    origin?:        LogOrigins;
-    message?:       string;
-};
-
-export type LoggerAction = {
+export interface LoggerAction {
     type: LoggerActionTypes;
-} & LoggerActionProps;
+    log?: LoggerActionProps
+};
 
 export type LoggerAddPrototype = (logProps:LoggerActionProps) => void;
 export type LoggerRemovePrototype = (logProps:LoggerActionProps) => void;
 export type LoggerClearAllPrototype = () => void;
 
-export interface LoggerActionsPrototypes {
+export interface LoggerActionsPrototypes extends ActionCreatorsMapObject {
     add:        LoggerAddPrototype;
     remove:     LoggerRemovePrototype;
     clearAll:   LoggerClearAllPrototype;
 }
 
 const action = (actionType: LoggerActionTypes, logProps?:LoggerActionProps):LoggerAction => (
-    logProps ? { type: actionType, ...logProps } : { type: actionType }
+    logProps ? { type: actionType, log: logProps } : { type: actionType }
 );
 
 const add:LoggerAddPrototype = (logProps) => 
