@@ -234,7 +234,7 @@ const self: OperationsInterface = {
 
         return await self.awaitForOperationToBeIncluded(opHash, head.header.level);
     },
-    sendOperation: async (source, keys, operation) => {
+    sendOperation: async (source, keys, operation, skipReveal = false) => {
         while (true) {
             // Wait for operation turn
             if (self.awaitingLock[source]) continue;
@@ -243,7 +243,7 @@ const self: OperationsInterface = {
             self.awaitingLock[source] = true;
 
             try {
-                const preparedOp = await self.prepareOperations(source, keys, operation);
+                const preparedOp = await self.prepareOperations(source, keys, operation, skipReveal);
 
                 if (!preparedOp) return;
 
@@ -278,7 +278,7 @@ const self: OperationsInterface = {
             return;
         }
     },
-    prepareOperations: async (source, keys, operations) => {
+    prepareOperations: async (source, keys, operations, skipReveal = false) => {
         const head = await rpc.getCurrentHead();
 
         if (!self.contractManagers[source]) {
@@ -286,14 +286,16 @@ const self: OperationsInterface = {
         }
 
         let counter = await rpc.getCounter(source);
-        
+
         /*
         *   Prepare reveal operation if required
         */
-        if (!self.contractManagers[source].key) {
-            await rpc.forgeOperation(head, {
-                branch: head.hash,
-                contents: [{
+        if (!self.contractManagers[source].key && !skipReveal) {
+            self.awaitingLock[source] = false;
+            await self.sendOperation(
+                source,
+                keys,
+                [{
                     kind: OperationTypes.reveal.type,
                     fee: String(self.feeDefaults.low),
                     public_key: keys.pk,
@@ -301,8 +303,9 @@ const self: OperationsInterface = {
                     counter: String(++counter),
                     gas_limit: String(self.revealGasCost),
                     storage_limit: String(self.revealStorage)
-                }]
-            });
+                }],
+                true
+            );
         }
 
         operations.forEach(op => {
