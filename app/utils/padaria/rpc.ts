@@ -4,10 +4,12 @@ import fs from 'fs';
 import { GraphQLClient } from 'graphql-request';
 
 import utils, { Prefix } from './utils';
+import bakingController from './bakingController';
 
 import operations, {
     UnsignedOperationProps,
-    UnsignedOperations
+    UnsignedOperations,
+    PendingOperations
 }  from './operations';
 
 import {
@@ -53,6 +55,9 @@ const self:RPCInterface = {
         await self.setNetworkConstants();
         await self.setCurrentNetwork();
         await utils.verifyNodeCommits();
+
+        // @REMOVE for production
+        (window as any).checkHashPower = bakingController.checkHashPower;
 
         return self.ready = true;
     },
@@ -219,7 +224,7 @@ const self:RPCInterface = {
                                 result = '';
                             }
                             catch(e) {
-                                console.error(e, result, chunk);
+                                console.error(e, result);
                             }
                         });
 
@@ -237,7 +242,7 @@ const self:RPCInterface = {
                                 result = '';
                             }
                             catch(e) {
-                                console.error(e, result, chunk);
+                                console.error(e, result);
                             }
                         });
 
@@ -318,6 +323,34 @@ const self:RPCInterface = {
             hash: operationHash,
             ...preappliedOp
         };
+    },
+    monitorOperations: async callback => {
+        const options = {
+            hostname: self.nodeAddress,
+            port: 3000,
+            path: '/chains/main/mempool/monitor_operations/?applied',
+            method: QueryTypes.GET,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        } as any;
+        options.agent = new http.Agent(options);
+
+        self.queryStreamRequest(options, callback);
+    },
+    getPendingOperations: async () => {
+        const pendingOperations = await self.queryNode(`/chains/main/mempool/pending_operations`, QueryTypes.GET) as PendingOperations;
+        
+        if (!pendingOperations) return;
+
+        pendingOperations.branch_delayed.map(op => op[1]);
+        pendingOperations.unprocessed.map(op => op[1]);
+
+        // Only retain the applied, unprocessed and delayed operations
+        delete pendingOperations.branch_refused;
+        delete pendingOperations.refused;
+
+        return Object.keys(pendingOperations).map(type => pendingOperations[type]);
     },
     getEndorsementOperations: async blockId => {      
         const operations = await self.queryNode(`/chains/main/blocks/${blockId}/operations`, QueryTypes.GET) as UnsignedOperations;

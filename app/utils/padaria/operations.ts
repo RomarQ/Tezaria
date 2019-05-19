@@ -1,10 +1,15 @@
-import rpc from './rpc';
+import rpc, { QueryTypes } from './rpc';
 import crypto from './crypto';
 import utils, { Prefix } from './utils';
 
-export const MAX_BATCH_SIZE = 200;
+import {
+    OperationsInterface,
+    OperationType,
+    OperationProps,
+    UnsignedOperationProps
+} from './operations.d';
 
-import { OperationsInterface, OperationType, OperationProps } from './operations.d';
+export const MAX_BATCH_SIZE = 200;
 
 export const OperationTypes = {
     endorsement: {
@@ -61,6 +66,16 @@ const self: OperationsInterface = {
     awaitingLock: {},
     awaitingOperations: {},
     //
+    /*
+    *   The index of the different components of the protocol's validation passes *)
+    *   TODO: ideally, we would like this to be more abstract and possibly part of
+    *   the protocol, while retaining the generality of lists *)
+    *   Hypothesis : we suppose [List.length validation_passes = 4]
+    */
+    endorsementsIndex: 0,
+    votesIndex: 1,
+    anonymousIndex: 2,
+    managersIndex: 3,
     contractManagers: {},
     transactionGasCost: '10200',
     transactionStorage: '0',
@@ -73,7 +88,7 @@ const self: OperationsInterface = {
         medium: '1520',
         high: '3000'
     },
-    doubleBakingEvidence: async (keys, evidences) => {
+    doubleBakingEvidence: async evidences => {
         const head = await rpc.getCurrentHead();
 
         const operation = {
@@ -87,14 +102,14 @@ const self: OperationsInterface = {
 
         const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(head, operation, true);
         
-        const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
+        const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
         return await rpc.injectOperation({
             ...verifiedOp,
             signature: signed.edsig,
             signedOperationContents: signed.signedBytes
         });
     },
-    doubleEndorsementEvidence: async (keys, evidences) => {
+    doubleEndorsementEvidence: async evidences => {
         const head = await rpc.getCurrentHead();
 
         const operation = {
@@ -108,8 +123,27 @@ const self: OperationsInterface = {
 
         const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(head, operation, true);
         
-        const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
+        const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
         return await rpc.injectOperation({
+            ...verifiedOp,
+            signature: signed.edsig,
+            signedOperationContents: signed.signedBytes
+        });
+    },
+    revealNonce: async (head, nonce) => {
+        const operation = {
+            branch: head.hash,
+            contents: [{
+                kind: OperationTypes.seedNonceRevelation.type,
+                level: nonce.level,
+                nonce: nonce.seed
+            }]
+        };
+
+        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(head, operation, true);
+        
+        const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
+        return rpc.injectOperation({
             ...verifiedOp,
             signature: signed.edsig,
             signedOperationContents: signed.signedBytes
@@ -206,7 +240,7 @@ const self: OperationsInterface = {
 
             const {forgedConfirmation, ...verifiedOp} = preparedOp;
             
-            const signed = crypto.sign(forgedConfirmation, keys.sk, utils.watermark.genericOperation);
+            const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
 
             const injectedOp = await rpc.injectOperation({
                 ...verifiedOp,
@@ -316,11 +350,105 @@ const self: OperationsInterface = {
                 forgeResult += `${cleanedDestination}00`;
                 break;
             case 9: break;
-            case 10:
+            case 10: // Delegation
                 forgeResult += `ff00${utils.bufferToHex(utils.b58decode(operation.delegate, Prefix.tz1))}`;
                 break;
         }
         return forgeResult;
+    },
+    /*
+    *   We classify operations, sort managers operation by interest and add bad ones at the end
+    *   Hypothesis : we suppose that the received manager operations have a valid gas_limit
+    *   [classify_operations] classify the operation in 4 lists indexed as such :
+    *       - 0 -> Endorsements
+    *       - 1 -> Votes and proposals
+    *       - 2 -> Anonymous operations
+    *       - 3 -> High-priority manager operations.
+    *       Returns two list :
+    *       - A desired set of operations to be included
+    *       - Potentially overflowing operations
+    */
+    classifyOperations: async (operations, protocol) => {
+        const liveBlocks = await rpc.queryNode('/chains/main/blocks/head/live_blocks', QueryTypes.GET) as string[];
+
+        // Remove operations that are too old
+        operations = operations.map(operationsType => (
+            operationsType.filter(({ branch }:{branch:string}) => liveBlocks.includes(branch))
+        ));
+        
+        // Prepare Operations
+        let validationPasses = self.validationPasses();
+        let operationsList:UnsignedOperationProps[][] = [];
+        for (let i = 0; i < validationPasses.length; i++)
+            operationsList.push([] as UnsignedOperationProps[]);
+
+        operations.forEach(operationsType => {
+            operationsType.forEach((op:UnsignedOperationProps) => {
+                op.protocol = protocol;
+                delete op.hash;
+                const pass = self.acceptablePass(op);
+                operationsList[pass] = [
+                    ...operationsList[pass],
+                    op
+                ];
+            });
+        });
+
+        const managerOperations = operationsList[self.managersIndex];
+        const managerOpsMaxSize = validationPasses[self.managersIndex].maxSize;
+
+        // @TODO: sort_manager_operations 
+
+        return operationsList;
+    },
+    /*
+    *   Sort operation consisdering potential gas and storage usage.
+    *   Weight = fee / (max ( (size/size_total), (gas/gas_total))) 
+    */
+    sortManagerOperations: (operations, maxSize) => {
+        // https://gitlab.com/tezos/tezos/blob/07b47c09cc4a245252f1e75ffbe789aa8767f7fb/src/proto_alpha/lib_delegate/client_baking_forge.ml
+        const computeWeight = (op:UnsignedOperationProps, fee:number, gas:number):number => {
+            let size = op.contents.reduce((prev, cur) => {
+                return prev += self.forgeOperationLocally(cur);
+            }, utils.bufferToHex(utils.b58decode(op.branch, Prefix.blockHash))).length;
+            
+            return fee / Math.max(size/maxSize, gas/Number(rpc.networkConstants['hard_gas_limit_per_block']));
+        };
+
+        return operations;
+    },
+    acceptablePass: op => {
+        if(!op || !op.contents) return 3;
+
+        switch (op.contents[0].kind) {
+            case OperationTypes.endorsement.type:
+                return 0;
+            case OperationTypes.ballot.type || OperationTypes.proposal.type:
+                return 1;
+            case OperationTypes.activateAccount.type
+                || OperationTypes.doubleBakingEvidence.type
+                || OperationTypes.doubleEndorsementEvidence.type
+                || OperationTypes.seedNonceRevelation.type:
+                return 2;
+            default:
+                return 3;
+        }
+    },
+    validationPasses: () => {
+        // Allow 100 wallet activations or denunciations per block
+        let maxAnonymousOps = rpc.networkConstants['max_revelations_per_block'] + 100;
+        return [ 
+            { 
+                maxSize: 32 * 1024,
+                maxOp: 32
+            }, // 32 endorsements
+            { maxSize: 32 * 1024 }, // 32k of voting operations
+            { 
+                maxSize: maxAnonymousOps * 1024,
+                maxOp: maxAnonymousOps
+            },
+            { maxSize: 512 * 1024 } // 512kB
+        ];
     },
     operationRequiresSource: (operationType:OperationType) => (
         ['reveal','proposals','ballot','transaction','origination','delegation'].includes(operationType)

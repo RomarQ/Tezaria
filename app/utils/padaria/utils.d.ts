@@ -21,7 +21,6 @@ export interface UtilsInterface {
 
     setDebugMode: (mode:boolean) => void,
     verifyNodeCommits: () => Promise<TezosCommitProps>;
-    operationType: (op:{ contents: {kind:string}[] }) => number;
     createProtocolData: (priority:number, powHeader?:string, pow?:string, seed?:string) => string;
     convertUnit: (value:number, to:TezosUnitProps, from?:TezosUnitProps) => string;
     convertUnitWithSymbol: (value:number, to:TezosUnitProps, from?:TezosUnitProps) => string;

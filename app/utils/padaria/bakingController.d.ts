@@ -17,9 +17,8 @@ export interface BakingControllerProps {
         rewarder: boolean;
     }
 
-    load: () => Promise<DelegateProps>;
-    revealNonce: (keys:KeysType, head:BlockProps, nonce:NonceType) => Promise<void>;
-    revealNonces: (keys:KeysType, head:BlockProps) => void;
+    load: (keys:KeysType) => Promise<DelegateProps>;
+    revealNonces: (head:BlockProps) => void;
     loadNoncesFromStorage: () => void;
     addNonce: (nonce:NonceType) => void;
     run: (keys:KeysType, logger: (log:LogProps) => void) => void;

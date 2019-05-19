@@ -4,7 +4,6 @@ export interface CryptoInterface {
     /*
     *   States
     */
-    keys: KeysType;
     signer: SignerProps,
     /*
     *   Functions
@@ -19,7 +18,7 @@ export interface CryptoInterface {
     getKeysFromMnemonic: (mnemonic: string, passphrase: string) => KeysType;
     getKeysFromEncSeed: (esk_encoded:string, password:string) => Promise<KeysType>;
     getKeysFromDecSecret: (sk_or_seed:string) => KeysType;
-    sign: (bytes:string, sk:string, watermark?:Uint8Array) => SignatureProps;
+    sign: (bytes:string, watermark?:Uint8Array) => SignatureProps;
     generateMnemonic: () => string;
     checkAddress: (address:string) => boolean;
     checkHash: (buffer:Uint8Array) => boolean;
@@ -27,7 +26,7 @@ export interface CryptoInterface {
     seedHash: (seed:string) => Uint8Array;
     hexNonce: (size:number) => string;
     nonceHash: (nonce:Uint8Array) => string;
-    POW: (forged:string, priority:number, seedHex:string) => Promise<{blockbytes:string, att:number}>;
+    POW: (forged:string, priority:number, seedHex:string) => Promise<{blockbytes:string, attempt:number}>;
 };
 
 export type SignatureProps = {

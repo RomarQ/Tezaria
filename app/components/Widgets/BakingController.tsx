@@ -16,6 +16,7 @@ import { BakingControllerActionsProps } from '../../actions/bakingController';
 import { BakingControllerStateProps } from '../../reducers/bakingController';
 import rewarder from '../../utils/padaria/rewarder';
 import storage from '../../utils/storage';
+import { LoggerActionsPrototypes } from '../../actions/logger';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -54,9 +55,10 @@ type Props = {
     keys: KeysType;
     controllerState: BakingControllerStateProps;
     controllerFunc: BakingControllerActionsProps;
+    logger: LoggerActionsPrototypes;
 } & WithStyles<typeof styles>;
 
-const BakingController: React.FC<Props> = ({ classes, controllerState, controllerFunc, keys }) => {
+const BakingController: React.FC<Props> = ({ classes, controllerState, controllerFunc, keys, logger }) => {
     const isMounted = React.useRef(true);
     const [baking, setBaking] = React.useState(controllerState.baking);
     const [endorsing, setEndorsing] = React.useState(controllerState.endorsing);
@@ -113,8 +115,10 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
             });
     };
 
-    const handleControllerLogs = (log:LogProps) => {
+    const handleControllerLogs = (log:LoggerActionProps) => {
         console.error(log);
+
+        logger.add(log);
     };
 
     const handleChange = (setter:Function, newValue:boolean) => {

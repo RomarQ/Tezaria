@@ -16,7 +16,6 @@ const self:CryptoInterface = {
     /*
     *   States
     */
-    keys: null,
     signer: null,
     /*
     *   Functions
@@ -157,24 +156,9 @@ const self:CryptoInterface = {
 
         throw new Error('Crypto: Invalid Secret.');
     },
-    sign: (bytes:string, sk:string, watermark?:Uint8Array) => {
-        return self.signer.sign(bytes, watermark);
-        
-        // @ Remove After testing
-
-        let buffer = utils.hexToBuffer(bytes);
-
-        buffer = watermark ? utils.mergeBuffers(watermark, buffer) : buffer;
-
-        const sig = sodium.crypto_sign_detached(sodium.crypto_generichash(32, buffer), utils.b58decode(sk, Prefix.edsk), 'uint8array');
-        const edsig = utils.b58encode(sig, Prefix.edsig);
-        const signedBytes = bytes + utils.bufferToHex(sig);
-        return {
-            sig: sig,
-            edsig: edsig,
-            signedBytes: signedBytes
-        }
-    },
+    sign: (bytes:string, watermark?:Uint8Array) => (
+        self.signer.sign(bytes, watermark)
+    ),
     generateMnemonic: () => (
         bip39.generateMnemonic(160)
     ),
@@ -191,8 +175,9 @@ const self:CryptoInterface = {
         self.stampCheck(sodium.crypto_generichash(32, buffer)) <= Number(rpc.networkConstants['proof_of_work_threshold'])
     ),
     stampCheck: (hash:Uint8Array) => {
-        let value, i = value = 0;
-        for (; i < 8; i++) value = value * 256 + hash[i];
+        const size = rpc.networkConstants['proof_of_work_nonce_size'];
+        let value = 0;
+        for (let i = 0; i < size; i++) value = value * 256 + hash[i];
         return value;
     },
     seedHash: (seed:string) => (
@@ -201,7 +186,9 @@ const self:CryptoInterface = {
     hexNonce: (size:number) => {
         const chars = '0123456789abcedf';
         let hex = '';
-        while (size--) hex += chars[(Math.random() * 16) | 0];
+        while (size--) {
+            hex += chars[(Math.random() * 16) | 0];
+        }
         return hex;
     },
     nonceHash: (nonce:Uint8Array) => (
@@ -217,12 +204,11 @@ const self:CryptoInterface = {
             powHeaderLength = 4,
             protocolOffset = forgedLength + priorityLength + powHeaderLength,
             powLength = 4,
-            syncBatchSize = 2000;
+            maximumCallStackSize = 4000;
 
         return new Promise(resolve => {
-            (function rec(att = 0, syncAtt = 0) {
-                att++;
-                syncAtt++;
+            (function rec(attempt = 0, call = 0) {
+
                 for (let i = powLength-1; i >= 0; i--) {
                     if (hashBuffer[protocolOffset+i] == 255) 
                         hashBuffer[protocolOffset+i] = 0;
@@ -234,13 +220,13 @@ const self:CryptoInterface = {
                 
                 if (self.checkHash(hashBuffer)) {
                     const hex = utils.bufferToHex(hashBuffer);
-                    resolve({
+                    return resolve({
                         blockbytes: hex.substr(0, hex.length-128), 
-                        att
+                        attempt
                     });
                 }
                 // setImmediate to avoid RangeError: Maximum call stack size exceeded
-                else syncAtt < syncBatchSize ? setImmediate(rec, att, syncAtt) : setImmediate(rec, att, 0);
+                call < maximumCallStackSize ? rec(++attempt, ++call) : setImmediate(rec, ++attempt, 0);
             })();
         });
     },

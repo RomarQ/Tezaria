@@ -1,4 +1,7 @@
-import { UnsignedOperations } from './operations';
+import {
+    UnsignedOperations,
+    UnsignedOperationProps
+} from './operations';
 
 type BakingRight = {
     cycle?: number;
@@ -56,8 +59,8 @@ export interface BakerInterface {
     getIncomingBakings: (pkh:string) => Promise<IncomingBakings>;
     levelCompleted: () => void;
 
-    run: (keys:KeysType, head:BlockProps, logger: (log:LogProps) => any) => Promise<void>;
-    bake: (keys:KeysType, head:BlockProps, priority:number, timestamp:string) => Promise<{
+    run: (pkh:string, head:BlockProps, logger: (log:LogProps) => void) => Promise<void>;
+    bake: (head:BlockProps, priority:number, timestamp:string, logger: (log:LogProps) => void) => Promise<{
         timestamp: string;
         data: {
             data: string;
