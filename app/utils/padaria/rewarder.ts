@@ -61,9 +61,6 @@ const self:RewardControllerInterface = {
             const rewardShare = utils.getRewardShare(balance, rewards.delegate_staking_balance, rewards.totalRewards);
             const rewardFee = utils.getRewardFee(rewardShare, self.feePercentage);
 
-            if (rewardShare - rewardFee - Number(operations.feeDefaults.medium) <= 0)
-                return prev;
-
             return [
                 ...prev,
                 {
@@ -136,17 +133,18 @@ const self:RewardControllerInterface = {
     sendSelectedRewards: async (keys, rewards, cycle) => {
         const destinations = [] as any[];
 
-        rewards.forEach(reward => {
-            if (reward.paid) return;
+        rewards.forEach(({rewardShare, rewardFee, delegatorContract, paid}) => {
+            if (paid || rewardShare - rewardFee - Number(operations.feeDefaults.low) <= 0)
+                return;
 
             destinations.push({
-                destination: reward.delegatorContract,
-                amount: String(reward.rewardShare - Number(operations.feeDefaults.low))
+                destination: delegatorContract,
+                amount: String(rewardShare - Number(operations.feeDefaults.low))
             });
         });
 
         if (destinations.length === 0) {
-            await storage.setLastRewardedCycle(cycle);
+            await storage.setRewardedCycles(cycle, 0).catch();
             self.lastRewardedCycle = cycle;
             return;
         }
@@ -157,11 +155,7 @@ const self:RewardControllerInterface = {
             // Send one batch of the rewards
             const ops = await operations.transaction(keys.pkh, batch, keys, undefined, undefined, undefined, self.paymentsBatchSize);
 
-            console.log(self.lastRewardedCycle, ops);
-            /*
-            *   Save transactions on storage
-            */
-            await storage.setSentRewardsByCycle(cycle, ops);
+            console.log(cycle, ops);
 
             /*
             *   Get failed transactions if any
@@ -175,7 +169,13 @@ const self:RewardControllerInterface = {
             }, [] as string[]);
     
             /*
-            *   If there is failed transactions, inform baker.
+            *   Save transactions on storage
+            */
+            await storage.setSentRewardsByCycle(cycle, ops).catch();
+            await storage.setRewardedCycles(cycle, batch.length - failedTransactions.length);
+
+            /*
+            *   If there are failed transactions, inform baker.
             */
             if (failedTransactions.length > 0)
                 console.log('OPS, failed transactions', failedTransactions);
@@ -208,16 +208,14 @@ const self:RewardControllerInterface = {
         */
     },
     nextRewardCycle: async () => {
-        let cycle = await rpc.getCurrentCycle();
+        const cycle = await rpc.getCurrentCycle();
 
         if (!cycle) return;
 
         /*
         *   Calculate the current cycle waiting for rewards.
         */
-        cycle -= (rpc.networkConstants['preserved_cycles']+1);
-        
-        return cycle;
+        return cycle - (rpc.networkConstants['preserved_cycles']+1);
     },
     run: async (keys, logger) => {
         console.log('starting rewarder....');
@@ -225,7 +223,7 @@ const self:RewardControllerInterface = {
         *   Get the last cycle that delegators got paid
         */
         if (!self.lastRewardedCycle)
-            self.lastRewardedCycle = (await storage.getLastRewardedCycle()).cycle;
+            self.lastRewardedCycle = await self.nextRewardCycle()
             /*
             *   Decided to remove the external API on this process for sake of simplicity for new bakers
 

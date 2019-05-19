@@ -7,9 +7,10 @@ export enum LogSeverity {
 };
 
 export enum LogOrigins {
-    RPC         = 'RPC',
-    API         = 'API',
-    BAKER       = 'BAKER',
-    ENDORSER    = 'ENDORSER',
-    ACCUSER     = 'ACCUSER'
+    RPC,
+    API,
+    BAKER,
+    ENDORSER,
+    ACCUSER,
+    REWARDER
 };
