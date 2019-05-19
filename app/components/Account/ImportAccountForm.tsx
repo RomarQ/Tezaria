@@ -48,11 +48,13 @@ const styles = ({ palette }: Theme) => createStyles({
         backgroundColor: palette.grey[400],
     },
     buttons: {
-        margin: '25px 0 0px 0',
+        margin: '20px 0 0 0',
         display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignContent: 'center'
+        justifyContent: 'space-between',
+        alignContent: 'stretch'
+    },
+    button: {
+        flexBasis: '45%'
     }
 });
 
@@ -63,8 +65,8 @@ type Props = {
 } & WithStyles<typeof styles>;
 
 const Forms = [
-    MnemonicForm,
-    SecretKeyForm
+    SecretKeyForm,
+    MnemonicForm
 ];
 
 const ImportAccountForm: React.FC<Props> = (props) => {
@@ -74,25 +76,6 @@ const ImportAccountForm: React.FC<Props> = (props) => {
     const { classes, setBakerKeys, loader, history } = props;
     
     const SubmitFunctions = [
-        // Mnemonic Method
-        async (mnemonic:string, passphrase:string, secret:string) => {
-            loader(LoadTypes.USER_DATA);
-
-            try {
-                const keys = crypto.getKeysFromMnemonic(mnemonic, passphrase);
-
-                await setBakerKeys(keys);
-
-                await operations.activateAccount(keys, secret);
-
-                history.push(routes.PROTECT_ACCOUNT);
-
-            } catch(e) {
-                console.log(e);
-            }
-
-            loader(LoadTypes.USER_DATA, true);
-        },
         // Private Key Method
         async (secret:string, passphrase?:string) => {
             loader(LoadTypes.USER_DATA);
@@ -110,6 +93,25 @@ const ImportAccountForm: React.FC<Props> = (props) => {
             }
 
             loader(LoadTypes.USER_DATA, true);
+        },
+        // Mnemonic Method
+        async (mnemonic:string, passphrase:string, secret?:string) => {
+            loader(LoadTypes.USER_DATA);
+
+            try {
+                const keys = crypto.getKeysFromMnemonic(mnemonic, passphrase);
+
+                await setBakerKeys(keys);
+
+                secret && await operations.activateAccount(keys, secret);
+
+                history.push(routes.PROTECT_ACCOUNT);
+
+            } catch(e) {
+                console.log(e);
+            }
+
+            loader(LoadTypes.USER_DATA, true);
         }
     ];
 
@@ -118,8 +120,8 @@ const ImportAccountForm: React.FC<Props> = (props) => {
 
     const FormActions = (
         <div className={classes.buttons}>
-            <Button fullWidth type="submit" >Import</Button>
-            <ButtonLink to={routes.HOME} color="secondary" fullWidth >Cancel</ButtonLink>
+            <Button variant="contained" className={classes.button} color="primary" type="submit" >Import</Button>
+            <ButtonLink to={routes.HOME} type="button" variant="contained" className={classes.button} color="secondary"  >Cancel</ButtonLink>
         </div>
     )
 
