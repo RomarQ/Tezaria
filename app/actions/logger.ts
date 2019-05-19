@@ -1,5 +1,4 @@
 import { Dispatch, ActionCreatorsMapObject } from 'redux';
-import { LogOrigins } from '../utils/padaria/logger';
 
 export enum LogTypes {
     SUCCESS = 'success',

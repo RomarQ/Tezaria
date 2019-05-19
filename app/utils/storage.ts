@@ -17,8 +17,8 @@ export interface StorageFuncProps {
     clearBakerNonces: () => Promise<Error | void>;
     getBakerNonces: () => Promise<NonceType[]>;
     setBakerNonces: (nonces:NonceType[]) => Promise<Error | void>;
-    setLastRewardedCycle: (cycle:number) => Promise<{ error?:Error }>;
-    getLastRewardedCycle: () => Promise<{ error?:Error; cycle?:number; }>;
+    setRewardedCycles: (cycle:number, transactionsCount: number) => Promise<Error | void>;
+    getRewardedCycles: () => Promise<{[cycle:number]: number}>;
     setSentRewardsByCycle: (cycle:number, transactionsStatus:any[]) => Promise<{ error?:Error }>;
     getSentRewardsByCycle: (cycle:number) => Promise<{ error?:Error; operations?:UnsignedOperationProps[]; }>;
 }
@@ -82,23 +82,21 @@ const db:StorageFuncProps = {
     setBakerNonces: (nonces:NonceType[]) => new Promise((resolve, reject) => {
         storage.set('bakerNonces', nonces, (err:Error) => err ? reject(err) : resolve(null));
     }),
-    getLastRewardedCycle: () => new Promise((resolve, reject) => {
-        storage.get('lastRewardedCycle', (error:Error, cycle:number) => {
-            error ? reject({ error }) : resolve({ cycle });
+    getRewardedCycles: () => new Promise((resolve, reject) => {
+        storage.get('rewardedCycles', (error:Error, cycles:{ [cycle:number]: number }) => {
+            error ? reject(error) : resolve(cycles);
         });
     }),
-    setLastRewardedCycle: (cycle:number) => new Promise(async(resolve, reject) => {
-        const lastCycle = (await db.getLastRewardedCycle()).cycle;
-        if (typeof lastCycle != 'number' || lastCycle < cycle) {
-            storage.set('lastRewardedCycle', cycle, (error:Error) => error ? reject({ error }) : resolve({}));
-        };
-        resolve({});
+    setRewardedCycles: (cycle, transactionsCount) => new Promise((resolve, reject) => {
+        db.getRewardedCycles().then((cycles = {}) => {
+            cycles[cycle] = cycles[cycle] ? cycles[cycle] + transactionsCount : transactionsCount;
+
+            storage.set('rewardedCycles', cycles, (error:Error) => error ? reject({ error }) : resolve());
+        }).catch(e => reject(e));
     }),
     setSentRewardsByCycle: (cycle, operations) => new Promise(async (resolve, reject) => {
         if (!cycle || !operations)
             reject({ error: 'Cycle and Reward operations need to be specified.' });
-
-        await db.setLastRewardedCycle(cycle);
 
         const otherOps = await db.getSentRewardsByCycle(cycle);
         if (Array.isArray(otherOps.operations)) {
