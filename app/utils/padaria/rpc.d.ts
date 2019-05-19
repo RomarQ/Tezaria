@@ -1,13 +1,13 @@
 import { OperationsInterface, UnsignedOperationProps, OperationProps, UnsignedOperations } from './operations';
 import { PendingOperations } from './operations';
 
-export interface RPCInterface extends LoadOptions {
+export interface RPCInterface extends UserSettingsType {
     ready: boolean;
     apiClient: any;
     network: string;
     networkEpoch: string;
     networkConstants: NetworkConstants;
-    load: (options:LoadOptions) => Promise<boolean>;
+    load: (options:UserSettingsType) => Promise<boolean>;
     setCurrentNetwork: () => Promise<void>;
     setNetworkConstants: () => Promise<void>;
     getCurrentHead: () => Promise<BlockProps>;
@@ -63,12 +63,6 @@ type RequestOptions = {
 export type QueryType = 
     | 'GET'
     | 'POST';
-
-export type LoadOptions = {
-    nodeAddress: string;
-    tzScanAddress: string;
-    apiAddress: string;
-}
 
 export type TezosUnitType = {
     char: string;

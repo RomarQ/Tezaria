@@ -137,8 +137,8 @@ const ImportAccountForm: React.FC<Props> = (props) => {
                         indicatorColor="secondary"
                         variant="fullWidth"
                     >
-                        <Tab label="Seed Words" />
                         <Tab label="Secret Key" />
+                        <Tab label="Seed Words" />
                     </Tabs>
                 </AppBar>
 

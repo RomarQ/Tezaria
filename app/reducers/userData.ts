@@ -4,8 +4,9 @@ import { rpc, rewarder } from '../utils/padaria';
 const defaultState = {
     ready: false,
     settings: {
+        nodePort: rpc.nodePort,
         nodeAddress: rpc.nodeAddress,
-        tzScanAdress: rpc.tzScanAddress,
+        tzScanAddress: rpc.tzScanAddress,
         apiAddress: rpc.apiAddress,
         delegatorFee: rewarder.feePercentage,
         rewardsBatchSize: rewarder.paymentsBatchSize
@@ -43,11 +44,12 @@ export default (state: UserDataProps = defaultState, action: UserDataActions) =>
                 encrypted: false
             };
         case UserDataActionTypes.SET_SETTINGS:
-            action.settings.nodeAddress ? rpc.nodeAddress = action.settings.nodeAddress : null;
-            action.settings.tzScanAddress ? rpc.tzScanAddress = action.settings.tzScanAddress : null;
-            action.settings.apiAddress ? rpc.apiAddress = action.settings.apiAddress : null;
-            action.settings.delegatorFee ? rewarder.feePercentage = action.settings.delegatorFee : null;
-            action.settings.rewardsBatchSize ? rewarder.paymentsBatchSize = action.settings.rewardsBatchSize : null;
+            action.settings.nodePort && (rpc.nodePort = action.settings.nodePort);
+            action.settings.nodeAddress && (rpc.nodeAddress = action.settings.nodeAddress);
+            action.settings.tzScanAddress && (rpc.tzScanAddress = action.settings.tzScanAddress);
+            action.settings.apiAddress && (rpc.apiAddress = action.settings.apiAddress);
+            action.settings.delegatorFee && (rewarder.feePercentage = action.settings.delegatorFee);
+            action.settings.rewardsBatchSize && (rewarder.paymentsBatchSize = action.settings.rewardsBatchSize);
 
             return {
                 ...state,

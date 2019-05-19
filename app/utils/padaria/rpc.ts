@@ -4,7 +4,7 @@ import fs from 'fs';
 import { GraphQLClient } from 'graphql-request';
 
 import utils, { Prefix } from './utils';
-import bakingController from './bakingController';
+import rewarder from './rewarder';
 
 import operations, {
     UnsignedOperationProps,
@@ -14,8 +14,7 @@ import operations, {
 
 import {
     NetworkConstants,
-    RPCInterface,
-    LoadOptions
+    RPCInterface
 } from './rpc.d';
 
 export enum QueryTypes {
@@ -24,24 +23,26 @@ export enum QueryTypes {
 };
 
 export const DEFAULT_NODE_ADDRESS = '67.207.68.241';
+export const DEFAULT_NODE_PORT = '3000';
 export const DEFAULT_API_ADDRESS = 'http://67.207.68.241:8080/v1alpha1/graphql';
 export const DEFAULT_TZSCAN_API_ADDRESS = 'api.zeronet.tzscan.io';
 
 const self:RPCInterface = {
     ready: false,
     nodeAddress: DEFAULT_NODE_ADDRESS,
+    nodePort: DEFAULT_NODE_PORT,
     tzScanAddress: DEFAULT_TZSCAN_API_ADDRESS,
     apiAddress: DEFAULT_API_ADDRESS,
     apiClient: null,
     network: "",
     networkEpoch: "",
     networkConstants: {},
-    load: async (options:LoadOptions) => {
-        if (options.nodeAddress)
-            self.nodeAddress = options.nodeAddress;
-        
-        if (options.tzScanAddress)
-            self.tzScanAddress = options.tzScanAddress;
+    load: async (options) => {
+        options.nodeAddress && (self.nodeAddress = options.nodeAddress);
+        options.nodePort && (self.nodePort = options.nodePort);
+        options.tzScanAddress && (self.tzScanAddress = options.tzScanAddress);
+        options.rewardsBatchSize && (rewarder.paymentsBatchSize = options.rewardsBatchSize);
+        options.delegatorFee && (rewarder.feePercentage = options.delegatorFee);
 
         if (options.apiAddress) {
             self.apiAddress = options.apiAddress;
@@ -55,9 +56,6 @@ const self:RPCInterface = {
         await self.setNetworkConstants();
         await self.setCurrentNetwork();
         await utils.verifyNodeCommits();
-
-        // @REMOVE for production
-        (window as any).checkHashPower = bakingController.checkHashPower;
 
         return self.ready = true;
     },

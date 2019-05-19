@@ -31,10 +31,9 @@ const styles = ({ palette, spacing }:Theme) => createStyles({
         boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)'
     },
     buttons: {
-        margin: '25px 0 0px 0',
+        margin: '20px 0 0 0',
         display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-evenly',
+        justifyContent: 'space-between',
         alignContent: 'stretch'
     },
     button: {
@@ -45,6 +44,12 @@ const styles = ({ palette, spacing }:Theme) => createStyles({
     },
     label: {
         color: palette.common.white
+    },
+    nodeSection: {
+        margin: '20px 0 0 0',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignContent: 'stretch'
     }
 });
 
@@ -75,22 +80,39 @@ const Component: React.FC<Props> = ({ userData: { settings: currentSettings }, .
     return (
         <div className={classes.root}>
             <form className={classes.container} onSubmit={handleSubmit}>
-                <TextField
-                    style={{ marginBottom: 10 }}
-                    id="nodeAddress"
-                    required
-                    label="Node Address"
-                    type="text"
-                    onChange={handleChange}
-                    value={settings.nodeAddress || ''}
-                    placeholder="Node Address"
-                    fullWidth
-                    variant="outlined"
-                    InputLabelProps={{
-                        shrink: true
-                    }}
-                />
-                <TextField
+                <div className={classes.nodeSection}>
+                    <TextField
+                        style={{ marginBottom: 10, flexBasis: '75%' }}
+                        id="nodeAddress"
+                        required
+                        label="Node Address"
+                        type="text"
+                        onChange={handleChange}
+                        value={settings.nodeAddress || ''}
+                        placeholder="Node Address"
+                        fullWidth
+                        variant="outlined"
+                        InputLabelProps={{
+                            shrink: true
+                        }}
+                    />
+                    <TextField
+                        style={{ marginBottom: 10, flexBasis: '20%' }}
+                        id="nodePort"
+                        required
+                        label="Node Port"
+                        type="text"
+                        onChange={handleChange}
+                        value={settings.nodePort || 8732}
+                        placeholder="Node Port"
+                        fullWidth
+                        variant="outlined"
+                        InputLabelProps={{
+                            shrink: true
+                        }}
+                    />
+                </div>
+{/*                 <TextField
                     style={{ marginBottom: 10 }}
                     id="apiAddress"
                     required
@@ -104,7 +126,7 @@ const Component: React.FC<Props> = ({ userData: { settings: currentSettings }, .
                     InputLabelProps={{
                         shrink: true
                     }}
-                />
+                /> */}
                 <TextField
                     style={{ marginBottom: 10 }}
                     id="tzScanAddress"

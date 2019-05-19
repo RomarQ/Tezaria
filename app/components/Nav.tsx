@@ -56,16 +56,18 @@ const Component: React.FC<Props> = props => {
         setAnchorEl(null);
     }
 
-    const handleClearKeys = () => {
+    const handleClearKeys = async () => {
         loader(LoadTypes.USER_DATA);
-        clearUserData();
+        await clearUserData();
+        loader(LoadTypes.USER_DATA, true);
         history.push(routes.HOME);
     }
 
-    const handleBakerLock = () => {
+    const handleBakerLock = async () => {
         loader(LoadTypes.USER_DATA);
-        loadUserData();
-    }
+        await loadUserData();
+        loader(LoadTypes.USER_DATA, true);
+    };
     
     return (
         <AppBar position="static" className={classes.root}>
