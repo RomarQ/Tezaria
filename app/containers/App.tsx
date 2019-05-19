@@ -37,9 +37,12 @@ const App: React.FC<Props> = props => {
             props.loader(LoadTypes.PADARIA_NODE);
             
             rpc.load({
+                nodePort: settings.nodePort,
                 nodeAddress: settings.nodeAddress,
                 tzScanAddress: settings.tzScanAddress,
-                apiAddress: settings.apiAddress
+                apiAddress: settings.apiAddress,
+                delegatorFee: settings.delegatorFee,
+                rewardsBatchSize: settings.rewardsBatchSize,
             })
             .then(() => {
                 props.loader(LoadTypes.PADARIA_NODE, true);

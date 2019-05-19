@@ -2,7 +2,6 @@ import { Dispatch } from 'redux';
 import storage from '../utils/storage';
 import rpc from '../utils/padaria/rpc';
 import crypto from '../utils/padaria/crypto';
-import bakingController from '../utils/padaria/bakingController';
 
 export enum UserDataActionTypes {
 	LOAD = 'LOAD',
@@ -94,9 +93,12 @@ const setBakerSettings = (settings: UserSettingsType) => (dispatch: Dispatch) =>
 		dispatch({ type: UserDataActionTypes.SET_SETTINGS, settings });
 
 		return rpc.load({
-			nodeAddress: settings.nodeAddress,
-			tzScanAddress: settings.tzScanAddress,
-			apiAddress: settings.apiAddress
+            nodePort: settings.nodePort,
+            nodeAddress: settings.nodeAddress,
+            tzScanAddress: settings.tzScanAddress,
+            apiAddress: settings.apiAddress,
+            delegatorFee: settings.delegatorFee,
+            rewardsBatchSize: settings.rewardsBatchSize
 		});
     })
 );
