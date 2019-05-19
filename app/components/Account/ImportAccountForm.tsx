@@ -10,11 +10,16 @@ import Tab from '@material-ui/core/Tab';
 import MnemonicForm from './MnemonicForm';
 import SecretKeyForm from './SecretKeyForm';
 
-import { crypto } from '../../utils/padaria';
+import {
+    rpc,
+    crypto,
+    operations
+} from '../../utils/padaria';
 
 import routes from '../../constants/routes.json';
 import { SetBakerKeysPrototype } from '../../actions/userData'; 
 import { LoaderPrototype, LoadTypes } from '../../actions/loader';
+import { History } from 'history';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -52,7 +57,7 @@ const styles = ({ palette }: Theme) => createStyles({
 });
 
 type Props = {
-    history: any;
+    history: History;
     setBakerKeys: SetBakerKeysPrototype;
     loader: LoaderPrototype;
 } & WithStyles<typeof styles>;
@@ -70,30 +75,41 @@ const ImportAccountForm: React.FC<Props> = (props) => {
     
     const SubmitFunctions = [
         // Mnemonic Method
-        async (mnemonic:string, passphrase:string) => {
+        async (mnemonic:string, passphrase:string, secret:string) => {
+            loader(LoadTypes.USER_DATA);
+
             try {
                 const keys = crypto.getKeysFromMnemonic(mnemonic, passphrase);
-                console.log(keys);
-                //console.log(crypto.getKeysFromEncSecret('edesk1v7b7ieEBC7W69AB9117BZRm9PVGpahwNrDeB5yLGt2zsSYYuqJhDWBAvaoAV9eSb2XHKeaTMqV8kditNmR', '1234'))
-                //console.log(crypto.seedToKeys(seed))
+
+                await setBakerKeys(keys);
+
+                await operations.activateAccount(keys, secret);
+
+                history.push(routes.PROTECT_ACCOUNT);
+
             } catch(e) {
                 console.log(e);
             }
+
+            loader(LoadTypes.USER_DATA, true);
         },
         // Private Key Method
         async (secret:string, passphrase?:string) => {
+            loader(LoadTypes.USER_DATA);
+
             try {
-                const keys = await (passphrase ? crypto.getKeysFromEncSeed(secret, passphrase) : crypto.getKeysFromDecSecret(secret));
+                const keys = (passphrase ? crypto.getKeysFromEncSeed(secret, passphrase) : crypto.getKeysFromDecSecret(secret));
                 
-                loader(LoadTypes.USER_DATA);
                 await setBakerKeys(keys);
-                loader(LoadTypes.USER_DATA, true);
+
 
                 history.push(routes.PROTECT_ACCOUNT);
                 
             } catch(e) {
                 console.log(e);
             }
+
+            loader(LoadTypes.USER_DATA, true);
         }
     ];
 

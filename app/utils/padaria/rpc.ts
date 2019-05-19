@@ -262,11 +262,14 @@ const self:RPCInterface = {
             }
         })
     ),
+    getContract: pkh => (
+        self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}`, QueryTypes.GET)
+    ),
     getCounter: async pkh => (
         Number(await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/counter`, QueryTypes.GET))
     ),
-    getManager: async pkh => (
-        await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/manager_key`, QueryTypes.GET)
+    getManager: pkh => (
+        self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/manager_key`, QueryTypes.GET)
     ),
     getBalance: async pkh => (
         Number(await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/balance`, QueryTypes.GET))
@@ -277,20 +280,18 @@ const self:RPCInterface = {
         return await
             self.queryNode('/chains/main/blocks/head/helpers/scripts/run_operation', QueryTypes.POST, verifiedOp);
     },
-    forgeOperation: async (head, operation, skipConfirmation = false) => {
+    forgeOperation: async (head, operation) => {
         const forgedOperation = await self.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operation);
 
         if (!forgedOperation) return;
 
-        if (!skipConfirmation) {
-            const forgedConfirmation = operation.contents.reduce((prev, cur) => {
-                return prev += operations.forgeOperationLocally(cur);
-            }, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
-            
-            console.log(forgedOperation);
-            console.log(forgedConfirmation);
-            if (forgedOperation !== forgedConfirmation) throw Error('[RPC] - Validation error on operation forge verification.');
-        }
+        const forgedConfirmation = operation.contents.reduce((prev, cur) => {
+            return prev += operations.forgeOperationLocally(cur);
+        }, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
+        
+        console.log(forgedOperation);
+        console.log(forgedConfirmation);
+        if (forgedOperation !== forgedConfirmation) throw Error('[RPC] - Validation error on operation forge verification.');
 
         return {
             ...operation,

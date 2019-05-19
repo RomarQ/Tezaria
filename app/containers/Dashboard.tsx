@@ -2,7 +2,7 @@ import React from 'react';
 import Wrapper from '../components/Dashboard/Dashboard';
 
 import utils from '../utils/padaria/utils';
-import bakingController from '../utils/padaria/bakingController';
+import bakingController, { DelegateProps } from '../utils/padaria/bakingController';
 
 type Props = {
     userData: UserDataProps;
@@ -11,13 +11,14 @@ type Props = {
 const Dashboard: React.FC<Props> = ({ userData }) => {
     const isMounted = React.useRef(true);
     const [tezosCommits, setTezosCommits] = React.useState(null);
-    const [bakerInfo, setBakerInfo] = React.useState(userData);
+    const [bakerInfo, setBakerInfo] = React.useState(userData as UserDataProps & DelegateProps);
 
     React.useEffect(() => {
         updateInfo();
 
-        // Update every 10 minutes;
-        const intervalId = setInterval(updateInfo, 600000);
+        // Update every 30 seconds or 10 minutes;
+        const delay = !bakerInfo.balance ? 30000 : 600000;
+        const intervalId = setInterval(updateInfo, delay);
 
         return () => {
             clearInterval(intervalId); 

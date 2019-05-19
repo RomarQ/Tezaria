@@ -37,6 +37,7 @@ export interface OperationsInterface {
         Promise<UnsignedOperationProps>
     )
     registerDelegate: (keys:KeysType) => Promise<UnsignedOperationProps>;
+    activateAccount: (keys:KeysType, secret:string) => Promise<UnsignedOperationProps>;
     awaitForOperationToBeIncluded: (hash:string, prevHeadLevel:number) => Promise<boolean>;
     sendOperation: (source:string, keys:KeysType, operation:OperationProps[]) => (
         Promise<UnsignedOperationProps>
@@ -115,6 +116,8 @@ export interface OperationProps {
     kind: OperationType;
     source?: string;
     fee?: number | string;
+    pkh?: string;
+    secret?: string;
     counter?: number | string;
     gas_limit?: number | string;
     storage_limit?: number | string;

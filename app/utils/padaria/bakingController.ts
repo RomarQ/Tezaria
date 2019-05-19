@@ -24,7 +24,7 @@ const self:BakingControllerProps = {
     //
     // States
     //
-    delegate: {},
+    delegate: null,
 
     intervalId: null,
     baking: false,
@@ -52,15 +52,21 @@ const self:BakingControllerProps = {
     load: async keys => {
         if (!signer) return;
 
-        await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET)
-            .then(res => {
-                if (res && !Array.isArray(res))
-                    self.delegate = res;
-            });
+        try {
+            const contract = await rpc.getContract(keys.pkh);
 
-        if (self.delegate.deactivated || typeof self.delegate.deactivated == 'undefined') {
-            await operations.registerDelegate(keys);
-            return;
+            if (contract.delegate && !contract.delegate.value) {
+                await operations.registerDelegate(keys);
+            }
+            else if (contract.delegate && contract.delegate.value) {
+                await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET)
+                    .then(delegate => {
+                        if (delegate && !Array.isArray(delegate))
+                            self.delegate = delegate;
+                    });
+            }
+        } catch(e) {
+            console.log(e);
         }
 
         return self.delegate;

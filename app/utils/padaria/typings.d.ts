@@ -2,7 +2,7 @@ declare module 'bs58check';
 declare module 'electron-json-storage';
 
 declare interface LoggerActionProps {
-    key?:        number;
+    key?:       number;
     type:       'error' | 'warning' | 'info' | 'success';
     message:    string;
     severity?:  number;

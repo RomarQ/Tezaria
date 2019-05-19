@@ -98,14 +98,14 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     React.useEffect(() => {
 
         baking || endorsing || accusing || rewarding
-        ? controllerFunc.startController(keys, { 
-            baking,
-            endorsing,
-            accusing,
-            rewarding,
-            logger: handleControllerLogs 
-        })
-        : controllerFunc.stopController()
+            ? controllerFunc.startController(keys, { 
+                baking,
+                endorsing,
+                accusing,
+                rewarding,
+                logger: handleControllerLogs 
+            })
+            : controllerFunc.stopController()
 
     }, [baking, endorsing, accusing, rewarding]);
 
