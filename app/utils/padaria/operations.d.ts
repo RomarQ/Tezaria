@@ -39,10 +39,10 @@ export interface OperationsInterface {
     registerDelegate: (keys:KeysType) => Promise<UnsignedOperationProps>;
     activateAccount: (keys:KeysType, secret:string) => Promise<UnsignedOperationProps>;
     awaitForOperationToBeIncluded: (hash:string, prevHeadLevel:number) => Promise<boolean>;
-    sendOperation: (source:string, keys:KeysType, operation:OperationProps[]) => (
+    sendOperation: (source:string, keys:KeysType, operation:OperationProps[], skipReveal?:boolean) => (
         Promise<UnsignedOperationProps>
     )
-    prepareOperations: (source:string, keys:KeysType, operations:OperationProps[]) => (
+    prepareOperations: (source:string, keys:KeysType, operations:OperationProps[], skipReveal?:boolean) => (
         Promise<UnsignedOperationProps & {forgedConfirmation: string}>
     )
     forgeOperationLocally: (operation:OperationProps) => string;
