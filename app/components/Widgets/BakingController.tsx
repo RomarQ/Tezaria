@@ -16,7 +16,8 @@ import { BakingControllerActionsProps } from '../../actions/bakingController';
 import { BakingControllerStateProps } from '../../reducers/bakingController';
 import rewarder from '../../utils/padaria/rewarder';
 import storage from '../../utils/storage';
-import { LoggerActionsPrototypes } from '../../actions/logger';
+import { LoggerActionsPrototypes, LogTypes } from '../../actions/logger';
+import { LogOrigins, LogSeverity } from '../../utils/padaria/logger';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -64,23 +65,28 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     const [endorsing, setEndorsing] = React.useState(controllerState.endorsing);
     const [accusing, setAccusing] = React.useState(controllerState.accusing);
     const [rewarding, setRewarding] = React.useState(controllerState.rewarding);
+    const [rewardedCycles, setRewardedCycles] = React.useState({})
     const [rewarderStartCycle, setRewarderStartCycle] = React.useState(0);
-    const [minRewardableCycle, setMinRewardableCycle] = React.useState(0);
-    const [maxRewardableCycle, setMaxRewardableCycle] = React.useState(0);
     const [rewarderDialog, setRewarderDialog] = React.useState(false);
 
     React.useEffect(() => {
 
         rewarder.nextRewardCycle().then(cycle => {
-            if (isMounted.current) {
-                setMaxRewardableCycle(cycle);
-                setRewarderStartCycle(cycle)
-            }
+            isMounted.current && setRewarderStartCycle(cycle);
         });
 
-        storage.getLastRewardedCycle().then(obj => {
-            if (isMounted.current)
-                setMinRewardableCycle(obj.cycle)
+        storage.getRewardedCycles()
+        .then(cycles => {
+            isMounted.current && setRewardedCycles(cycles);
+        })
+        .catch(e => {
+            console.error(e);
+            logger.add({
+                message: 'Not able to get rewarded cycles, rewarder will be disabled.',
+                type: LogTypes.ERROR,
+                origin: LogOrigins.REWARDER,
+                severity: LogSeverity.VERY_HIGH
+            });
         });
 
         return () => {
@@ -103,18 +109,6 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
 
     }, [baking, endorsing, accusing, rewarding]);
 
-    const handleAction = () => {
-        controllerState.active
-            ? controllerFunc.stopController()
-            : controllerFunc.startController(keys, { 
-                baking,
-                endorsing,
-                accusing,
-                rewarding,
-                logger: handleControllerLogs 
-            });
-    };
-
     const handleControllerLogs = (log:LoggerActionProps) => {
         console.error(log);
 
@@ -126,7 +120,24 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     };
     
     const handleRewarderChange = () => {
-        !rewarding ? setRewarderDialog(true) : setRewarding(false);
+        if (rewarding)
+            setRewarding(false);
+        else {
+            setRewarderDialog(true);
+            storage.getRewardedCycles()
+            .then(cycles => {
+                isMounted.current && setRewardedCycles(cycles);
+            })
+            .catch(e => {
+                console.error(e);
+                logger.add({
+                    message: 'Not able to get rewarded cycles, rewarder will be disabled.',
+                    type: LogTypes.ERROR,
+                    origin: LogOrigins.REWARDER,
+                    severity: LogSeverity.VERY_HIGH
+                });
+            });
+        }
     };
 
     const handleRewarderDialogCancel = () => {
@@ -189,7 +200,7 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
                         />
                         {'will verify and send every reward up to every new cycle (current cycle - ( preserved cycles + 1 ))'}
                         <Chip
-                            label={`${rewarderStartCycle} ... ${maxRewardableCycle > rewarderStartCycle ? maxRewardableCycle+' ...' : '' } +∞`}
+                            label={`${rewarderStartCycle} ... +∞`}
                             color="primary"
                             className={classes.margin}
                         />
@@ -204,10 +215,12 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
                             fullWidth
                             variant="outlined"
                             inputProps={{
-                                min: minRewardableCycle,
-                                max: maxRewardableCycle
+                                min: 0
                             }}
                         />
+                        {rewardedCycles[rewarderStartCycle] &&
+                            <Typography color="secondary">{`You already rewarded ${rewardedCycles[rewarderStartCycle]} delegators in this cycle.`}</Typography>
+                        }
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={handleRewarderDialogDone} color="primary">
