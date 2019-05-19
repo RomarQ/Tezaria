@@ -9,6 +9,7 @@ import {
     DelegatorReward,
     RewardsSplit
 } from './rewarder.d';
+import { LogSeverity, LogOrigins } from './logger';
 
 const DEFAULT_FEE_PERCENTAGE = 10;
 
@@ -124,13 +125,12 @@ const self:RewardControllerInterface = {
 
         return preparedRewards;
     },
-    sendRewardsByCycle: async (keys, cycle) => {
-        console.log('cycle ' + cycle)
+    sendRewardsByCycle: async (keys, cycle, logger) => {
         const rewards = await self.prepareRewardsToSendByCycle(keys.pkh, cycle);
 
-        await self.sendSelectedRewards(keys, rewards, cycle);
+        await self.sendSelectedRewards(keys, rewards, cycle, logger);
     },
-    sendSelectedRewards: async (keys, rewards, cycle) => {
+    sendSelectedRewards: async (keys, rewards, cycle, logger) => {
         const destinations = [] as any[];
 
         rewards.forEach(({rewardShare, rewardFee, delegatorContract, paid}) => {
@@ -149,7 +149,16 @@ const self:RewardControllerInterface = {
             return;
         }
 
-        for (let i = 0; i < destinations.length; i+=self.paymentsBatchSize) {
+        if (logger)
+            logger({
+                message: `Sending ${destinations.length} rewards for cycle ${cycle}`,
+                type: 'info',
+                severity: LogSeverity.NORMAL,
+                origin: LogOrigins.REWARDER
+            });
+        
+        let i = 0;
+        for (; i < destinations.length; i+=self.paymentsBatchSize) {
             // Get a slice of the total destinations
             const batch = destinations.slice(i, Math.min(destinations.length, i+self.paymentsBatchSize));
             // Send one batch of the rewards
@@ -174,20 +183,44 @@ const self:RewardControllerInterface = {
             await storage.setSentRewardsByCycle(cycle, ops).catch();
             await storage.setRewardedCycles(cycle, batch.length - failedTransactions.length);
 
-            /*
-            *   If there are failed transactions, inform baker.
-            */
-            if (failedTransactions.length > 0)
-                console.log('OPS, failed transactions', failedTransactions);
+            if (logger) {
+                /*
+                *   If there are failed transactions, inform baker.
+                */
+                if (failedTransactions.length > 0)
+                    logger({
+                        message: `A total of ${failedTransactions.length} rewards failed to be sent for cycle ${cycle}, operation: ${ops[0].hash}`,
+                        type: 'error',
+                        severity: LogSeverity.VERY_HIGH,
+                        origin: LogOrigins.REWARDER
+                    });
+                else
+                    logger({
+                        message: `Rewards Batch [${i}, ${Math.min(destinations.length, i+self.paymentsBatchSize)}] completed! Op Hash: ${ops[0].hash}`,
+                        type: 'success',
+                        severity: LogSeverity.NORMAL,
+                        origin: LogOrigins.REWARDER
+                    });
+            }
 
             /*
             *   Stop rewarding if baker stopped the rewarder module
             *   (Rewarder should never be terminated during a transaction)
             *   This ensures that data corruption will not occur if baker stops the rewarder during rewarding process
             */
-            if (!bakingController.rewarding)
+            if (!bakingController.rewarding) {
+                i+=self.paymentsBatchSize;
                 break;
+            }
         }
+
+        if (logger)
+            logger({
+                message: `A total of ${Math.min(i, destinations.length)} rewards were sent for cycle ${cycle}`,
+                type: 'success',
+                severity: LogSeverity.NORMAL,
+                origin: LogOrigins.REWARDER
+            });
 
         self.lastRewardedCycle = cycle;
         /*
@@ -248,11 +281,18 @@ const self:RewardControllerInterface = {
         const cycle = await self.nextRewardCycle();
 
         /*
-        *   Don't send any rewards if there was rewards send on a cycle ahead
+        *   Don't send any rewards before it's respective time
         */
-        if (!cycle || cycle < self.lastRewardedCycle) return;
+        if (!cycle || cycle < self.lastRewardedCycle+1) {
+            /*
+            *   Wait a minute before checking again
+            *   Just to avoid spamming the network with useless requests
+            */
+            await new Promise(resolve => setTimeout(resolve, 60000));
+            return;
+        }
 
-        await self.sendRewardsByCycle(keys, self.lastRewardedCycle+1);
+        await self.sendRewardsByCycle(keys, self.lastRewardedCycle+1, logger);
     }
 };
 

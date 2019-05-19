@@ -5,9 +5,13 @@
 
 ### If you want to know more about this project, you can send me an e-mail to rodrigo_quelhas@hotmail.com
 
+## Rewarder Sample (Rewards start being sent at ~30s of the gif)
+
+![Screenshot](https://i.imgur.com/A20DeNc.gif)
+
 ## Progress Sample
 
-![Screenshot](https://imgur.com/9NpzxM5.gif)
+![Screenshot](https://i.imgur.com/9NpzxM5.gif)
 <!-- ![Screenshot](https://i.imgur.com/M313wSe.gif) -->
 
 </div>
