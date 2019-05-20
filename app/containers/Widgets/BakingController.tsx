@@ -13,7 +13,7 @@ const ControllerDispatchers = (dispatch: Dispatch) => ({ controllerFunc: bindAct
 // Logger
 const LoggerDispatchers = (dispatch: Dispatch) => ({ logger: bindActionCreators(LoggerActions, dispatch) });
 
-export default compose(
+export default compose<any>(
     connect(
         ControllerProps,
         ControllerDispatchers
