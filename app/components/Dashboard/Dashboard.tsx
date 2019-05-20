@@ -38,10 +38,10 @@ const styles = () => createStyles({
     },
 });
 
-type Props = {
+interface Props extends WithStyles<typeof styles> {
     bakerInfo: DelegateProps & UserDataProps;
     nodeInfo: TezosCommitProps;
-} & WithStyles<typeof styles>;
+}
 
 const Dashboard: React.FC<Props> = props => {
     const { classes, bakerInfo, nodeInfo } = props;

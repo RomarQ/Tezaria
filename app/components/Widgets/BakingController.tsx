@@ -52,12 +52,12 @@ const styles = ({ palette }: Theme) => createStyles({
     },
 });
 
-type Props = {
+interface Props extends WithStyles<typeof styles> {
     keys: KeysType;
     controllerState: BakingControllerStateProps;
     controllerFunc: BakingControllerActionsProps;
     logger: LoggerActionsPrototypes;
-} & WithStyles<typeof styles>;
+}
 
 const BakingController: React.FC<Props> = ({ classes, controllerState, controllerFunc, keys, logger }) => {
     const isMounted = React.useRef(true);
@@ -98,12 +98,12 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     React.useEffect(() => {
 
         baking || endorsing || accusing || rewarding
-            ? controllerFunc.startController(keys, { 
+            ? controllerFunc.startController(keys, {
                 baking,
                 endorsing,
                 accusing,
                 rewarding,
-                logger: handleControllerLogs 
+                logger: handleControllerLogs
             })
             : controllerFunc.stopController()
 
@@ -118,7 +118,7 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     const handleChange = (setter:Function, newValue:boolean) => {
         setter(newValue);
     };
-    
+
     const handleRewarderChange = () => {
         if (rewarding)
             setRewarding(false);
@@ -151,7 +151,7 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
         setRewarderDialog(false);
         setRewarding(true);
     };
-    
+
     return (
         <div className={classes.root}>
             <div className={classes.switchRow}>
