@@ -2,7 +2,7 @@
     "name": "padaria",
     "productName": "Padaria",
     "private": true,
-    "version": "1.3.4",
+    "version": "1.3.5",
     "description": "Baking System Application for Tezos Blockchain",
     "scripts": {
         "build": "concurrently \"yarn build-main\" \"yarn build-renderer\"",
