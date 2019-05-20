@@ -149,6 +149,29 @@ const self: OperationsInterface = {
             signedOperationContents: signed.signedBytes
         });
     },
+    endorse: async (keys, head, slots) => {
+        const operation = {
+            kind: OperationTypes.endorsement.type,
+            level: head.header.level
+        } as any;
+
+        if (rpc.network === 'ZERONET')
+            operation.slot = slots[0];
+
+        const preparedOp = await self.prepareOperations(keys.pkh, keys, [operation]);
+
+        if (!preparedOp) return;
+
+        const {forgedConfirmation, ...verifiedOp} = preparedOp;
+
+        const signed = crypto.sign(forgedConfirmation, utils.mergeBuffers(utils.watermark.endorsement, utils.b58decode(head.chain_id, Prefix.chainId)));
+
+        return rpc.injectOperation({
+            ...verifiedOp,
+            signature: signed.edsig,
+            signedOperationContents: signed.signedBytes
+        });
+    },
     transaction: async (source, destinations, keys, fee = self.feeDefaults.low, gasLimit = self.transactionGasCost, storageLimit = self.transactionStorage, batchSize = MAX_BATCH_SIZE) => {
         
         if (batchSize > MAX_BATCH_SIZE)
@@ -346,7 +369,10 @@ const self: OperationsInterface = {
         operation.storage_limit && (forgeResult += utils.numberToZarith(Number(operation.storage_limit)));
 
         switch (OperationTypes[operation.kind].operationCode) {
-            case 0: break;
+            case 0:
+                operation.slot && (forgeResult += utils.bufferToHex(new Uint8Array([operation.slot])));
+                forgeResult += utils.bufferToHex(utils.int32Buffer(Number(operation.level)));
+                break;
             case 1: break;
             case 2: break;
             case 3: break;

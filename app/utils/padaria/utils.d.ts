@@ -32,10 +32,11 @@ export interface UtilsInterface {
     firstCycleLevel: (level:number) => number;
     lastCycleLevel: (level:number) => number;
     hexToBuffer: (hex:string) => Uint8Array;
-    bufferToHex: (buffer:Uint8Array) => string;
+    bufferToHex: (buffer:Uint8Array|Uint32Array) => string;
     mergeBuffers: (Uint8Array, Uint8Array) => Uint8Array;
     b58encode: (payload:Uint8Array, prefix:Uint8Array) => string;
     b58decode: (encoded:string, prefix:Uint8Array) => Uint8Array;
+    int32Buffer: (number:number) => Uint32Array;
     numberToZarith: (value:number) => string;
 }
 
