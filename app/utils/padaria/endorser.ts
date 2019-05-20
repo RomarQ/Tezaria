@@ -6,11 +6,9 @@ import {
     EndorderInterface,
     CompletedEndorsingFromServer,
     CompletedEndorsing,
-    IncomingEndorsings,
-    IncomingEndorsingsFromServer,
     EndorsingRight,
 } from './endorser.d';
-import { OperationTypes } from './operations';
+import operations, { OperationTypes } from './operations';
 
 const self:EndorderInterface = {
     /*
@@ -94,7 +92,7 @@ const self:EndorderInterface = {
     run: async (keys, head) => {
         const { hash, header: { level } } = head;
         try {
-            if (self.endorsedBlocks.indexOf(head.header.level) < 0) {
+            if (self.endorsedBlocks.indexOf(level) < 0) {
                 const endorsingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/endorsing_rights?delegate=${keys.pkh}&level=${level}`, QueryTypes.GET);
 
                 if(!Array.isArray(endorsingRight)) {
@@ -102,18 +100,15 @@ const self:EndorderInterface = {
                     return;
                 }
 
-                if (self.endorsedBlocks.indexOf(level) < 0) {
-
+                if (endorsingRight.length > 0 && self.endorsedBlocks.indexOf(endorsingRight[0].level) < 0) {
                     self.endorsedBlocks.push(level);
+                    
+                    console.log(`Endorsing block [ ${hash} ] on level ${level}...`);
 
-                    if (endorsingRight.length > 0) {
-                        console.log(`Endorsing block [ ${hash} ] on level ${level}...`);
+                    const endorse = await operations.endorse(keys, head, endorsingRight[0].slots);
 
-                        const endorse = await self.endorse(keys, head, endorsingRight[0].slots);
-
-                        if(endorse) console.log("Endorsing complete!", endorse);
-                        else console.warn("Failed Endorsing :(");
-                    }
+                    if(endorse) console.log("Endorsing complete!", endorse);
+                    else console.warn("Failed Endorsing :(");
                 }
             }
         }

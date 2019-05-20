@@ -26,6 +26,7 @@ export interface OperationsInterface {
     };
     // Methods
     revealNonce: (head: BlockProps, nonce:NonceType) => Promise<UnsignedOperationProps>;
+    endorse: (keys:KeysType, head:BlockProps, slots:number[]) => Promise<UnsignedOperationProps>;
     transaction: (source:string, destinations:TransactionDestination[], keys:KeysType,
         fee?:string, gasLimit?:string, storageLimit?:string, batchSize?:number) => (
             Promise<UnsignedOperationProps[]>
@@ -116,6 +117,8 @@ export interface OperationProps {
     kind: OperationType;
     source?: string;
     fee?: number | string;
+    level?: number;
+    slot?: number;
     pkh?: string;
     secret?: string;
     counter?: number | string;

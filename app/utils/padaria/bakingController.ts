@@ -53,22 +53,22 @@ const self:BakingControllerProps = {
         if (!signer) return;
 
         try {
-            const contract = await rpc.getContract(keys.pkh);
+            const delegate = await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET)
+                .catch(async () => {
+                    await operations.registerDelegate(keys);
+                    return;
+                });
 
-            if (contract.delegate && !contract.delegate.value) {
-                await operations.registerDelegate(keys);
+            if (delegate && !Array.isArray(delegate)) {
+                self.delegate = delegate;
+                return self.delegate;
             }
-            else if (contract.delegate && contract.delegate.value) {
-                await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET)
-                    .then(delegate => {
-                        if (delegate && !Array.isArray(delegate))
-                            self.delegate = delegate;
-                    });
-            }
+
+            await operations.registerDelegate(keys);
         } catch(e) {
             console.log(e);
         }
-
+     
         return self.delegate;
     },
     revealNonces: async head => {
