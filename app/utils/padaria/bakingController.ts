@@ -59,7 +59,10 @@ const self:BakingControllerProps = {
                     return;
                 });
 
-            if (delegate && !Array.isArray(delegate)) {
+            if (Array.isArray(delegate)) return;
+
+            if (delegate) {
+                delegate.deactivated && await operations.registerDelegate(keys);
                 self.delegate = delegate;
                 return self.delegate;
             }

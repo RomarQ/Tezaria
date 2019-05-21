@@ -363,15 +363,25 @@ const self: OperationsInterface = {
                 forgeResult += '0'.repeat(44 - cleanedSource.length % 44) + cleanedSource;
         }
 
-        operation.fee && (forgeResult += utils.numberToZarith(Number(operation.fee)));
-        operation.counter && (forgeResult += utils.numberToZarith(Number(operation.counter)));
-        operation.gas_limit && (forgeResult += utils.numberToZarith(Number(operation.gas_limit)));
-        operation.storage_limit && (forgeResult += utils.numberToZarith(Number(operation.storage_limit)));
+        typeof operation.fee != 'undefined' &&
+            (forgeResult += utils.numberToZarith(Number(operation.fee)));
+
+        typeof operation.counter != 'undefined' &&
+            (forgeResult += utils.numberToZarith(Number(operation.counter)));
+
+        typeof operation.gas_limit != 'undefined' && 
+            (forgeResult += utils.numberToZarith(Number(operation.gas_limit)));
+
+        typeof operation.storage_limit != 'undefined' && 
+            (forgeResult += utils.numberToZarith(Number(operation.storage_limit)));
 
         switch (OperationTypes[operation.kind].operationCode) {
-            case 0:
-                operation.slot && (forgeResult += utils.bufferToHex(new Uint8Array([operation.slot])));
-                forgeResult += utils.bufferToHex(utils.int32Buffer(Number(operation.level)));
+            case 0: // Endorsement
+                typeof operation.slot != 'undefined' &&
+                    (forgeResult += utils.bufferToHex(new Uint8Array([operation.slot])));
+
+                typeof operation.level != 'undefined' &&
+                    (forgeResult += utils.bufferToHex(utils.int32Buffer(Number(operation.level))));
                 break;
             case 1: break;
             case 2: break;

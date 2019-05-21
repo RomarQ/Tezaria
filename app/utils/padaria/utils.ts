@@ -177,13 +177,14 @@ const self:UtilsInterface = {
         bs58check.decode(encoded).slice(prefix.length)
     ),
     int32Buffer: number => {
-        return new Uint32Array([
+        return new Uint8Array([
             (number & 0xff000000) >> 24,
             (number & 0x00ff0000) >> 16,
             (number & 0x0000ff00) >> 8,
             (number & 0x000000ff)
         ]);
     },
+    
     numberToZarith: (value:number) => {
         let zarith = '';
 
