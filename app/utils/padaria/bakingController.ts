@@ -26,7 +26,6 @@ const self:BakingControllerProps = {
     //
     delegate: null,
 
-    intervalId: null,
     running: false,
     baking: false,
     endorsing: false,
@@ -42,9 +41,7 @@ const self:BakingControllerProps = {
     */
     forcedLock: false,
     locks: {
-        baker: false,
         endorser: false,
-        accuser: false,
         rewarder: false
     },
     //
@@ -123,50 +120,6 @@ const self:BakingControllerProps = {
             return;
         }
 
-/*         baker.pendingBlocks = baker.pendingBlocks.reduce((prev, block) => {
-            /*
-            *   Inject the block if the "Baking Right Timestamp" for this block is now or has already passed
-            
-            if(new Date() >= new Date(block.timestamp))
-            {
-                rpc.queryNode('/injection/block/?chain=main', QueryTypes.POST, block.data)
-                    .then((injectionHash:string) => {
-                        if(!injectionHash) {
-                            logger({ 
-                                message: 'Inject failed',
-                                type: 'error',
-                                severity: LogSeverity.HIGH,
-                                origin: LogOrigins.BAKER
-                            });
-                            return;
-                        }
-                        
-                        baker.injectedBlocks.push(injectionHash);
-
-                        if(block.seed)
-                        {
-                            self.addNonce({
-                                hash: injectionHash,
-                                seedNonceHash: block.seed_nonce_hash,
-                                seed: block.seed,
-                                level: block.level
-                            });
-                        }
-                        
-                        logger({ 
-                            message: `Baked ${injectionHash} block at level ${block.level}`,
-                            type: 'success',
-                            severity: LogSeverity.HIGH,
-                            origin: LogOrigins.BAKER
-                        });
-                    })
-                    .catch((e:Error) => console.error(e));
-            }
-            else prev.push(block);
-
-            return prev;
-        }, []); */
-
         self.revealNonces(header);
 
         /*
@@ -179,6 +132,9 @@ const self:BakingControllerProps = {
         }
 
         //Endorser
+        if (self.endorsing) {
+            await endorser.run(keys.pkh, header, logger);
+        }
         (async () => {
             if (self.endorsing && !self.locks.endorser) {
                 self.locks.endorser = true;
@@ -190,14 +146,6 @@ const self:BakingControllerProps = {
         if (self.baking) {
             baker.run(keys.pkh, header, logger);
         }
-        // Accuser
-        (async () => {
-            if (self.accusing && !self.locks.accuser) {
-                self.locks.accuser = true;
-                await accuser.run(keys.pkh, logger);
-                self.locks.accuser = false;
-            }
-        })();
         // Rewarder
         (async () => {
             if (self.rewarding && !self.locks.rewarder) {
@@ -212,11 +160,20 @@ const self:BakingControllerProps = {
     start: async (keys: KeysType, options: BakingControllerStartOptions) => {
         if(!rpc.ready) return false;
 
-        self.running = true;
         self.baking = options.baking;
         self.endorsing = options.endorsing;
-        self.accusing = options.accusing;
+        if (self.accusing !== options.accusing) {
+            self.accusing = !self.accusing;
+            self.accusing ? accuser.run(keys.pkh, options.logger) : accuser.stop();
+        }
         self.rewarding = options.rewarding;
+
+        /*
+        *   Avoid running more than 1 instance
+        */
+        if (self.running) return true;
+
+        self.running = true;
 
         try {
             const header = await rpc.getBlockHeader('head');
@@ -237,8 +194,6 @@ const self:BakingControllerProps = {
             });
         }
 
-        //self.intervalId = setInterval(() => self.run(keys, options.logger), BAKING_INTERVAL) as any;
-
         return true;
     },
     stop: () => {
@@ -247,11 +202,6 @@ const self:BakingControllerProps = {
         self.endorsing = false;
         self.accusing = false;
         self.rewarding = false;
-
-        if(self.intervalId) {
-            clearInterval(self.intervalId);
-            self.intervalId = null;
-        }
     },
     checkHashPower: () => {
         const tests:number[][] = [];

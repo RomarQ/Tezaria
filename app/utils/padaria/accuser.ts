@@ -1,5 +1,4 @@
-import http from 'http';
-import rpc, { QueryTypes } from './rpc';
+import rpc from './rpc';
 import operations from './operations';
 import bakingController from './bakingController';
 
@@ -10,8 +9,9 @@ import { LogOrigins, LogSeverity } from './logger';
 
 const self:AccuserInterface = {
     /*
-    * States
+    *   States
     */
+    running: false,
     // Endorsements seen so far
     endorsements: [],
     // Blocks received so far
@@ -20,34 +20,31 @@ const self:AccuserInterface = {
     // Highest level seen in a block
     highestLevelEncountered: 0,
     /*
-    * Functions
+    *   Functions
     */
     run: async (pkh, logger) => {
-        const options = {
-            hostname: rpc.nodeAddress,
-            port: rpc.nodePort,
-            path: '/monitor/valid_blocks',
-            method: QueryTypes.GET,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        } as any;
+        if (self.running) return;
 
-        options.agent = new http.Agent(options);
+        self.running = true;
 
         try {
-            await rpc.queryStreamRequest(options, async (block:any) => {
+            await rpc.monitorValidBlocks('main', async (block, resolve) => {
+                console.warn("accuser")
+                if (!self.running) {
+                    return resolve()
+                }
+                
                 if (block.level > self.highestLevelEncountered) {
                     self.highestLevelEncountered = block.level;
                 }
-        
+                
                 self.blocks = await [
                     await rpc.getBlock(block.hash),
                     ...self.blocks.filter(b => b.header.level > self.highestLevelEncountered - self.preservedLevels)
                 ];
 
                 console.log(self.blocks);
-        
+    
                 self.blocks.reduce((prev, cur) => {
                     const evidenceIndex = prev.findIndex(b => b.header.level == cur.header.level && b.metadata.baker == cur.metadata.baker);
         
@@ -92,6 +89,9 @@ const self:AccuserInterface = {
         catch(e) {
             console.error(e);
         }
+    },
+    stop: () => {
+        self.running = false;
     }
 };
 

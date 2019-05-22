@@ -39,7 +39,7 @@ export interface OperationsInterface {
     )
     registerDelegate: (keys:KeysType) => Promise<UnsignedOperationProps>;
     activateAccount: (keys:KeysType, secret:string) => Promise<UnsignedOperationProps>;
-    awaitForOperationToBeIncluded: (hash:string, prevHeadLevel:number) => Promise<boolean>;
+    awaitForOperationToBeIncluded: (hash:string, prevHeadHash:string) => Promise<boolean>;
     sendOperation: (source:string, keys:KeysType, operation:OperationProps[], skipReveal?:boolean) => (
         Promise<UnsignedOperationProps>
     )

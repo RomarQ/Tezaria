@@ -39,10 +39,12 @@ export interface RPCInterface extends UserSettingsType {
     getEndorsementOperations: (blockId:string) => Promise<UnsignedOperationProps[]>;
     getPredecessors: (blockId:string, length:number) => Promise<string[]>;
     getBlock: (blockId:string) => Promise<BlockProps>;
-    getBlockOperations: (blockId:string) => Promise<OperationProps[]>;
+    getBlockOperations: (blockId:string) => Promise<UnsignedOperationProps[][]>;
+    getBlockHash: (blockId:string) => Promise<string>;
     getPendingOperations: () => Promise<UnsignedOperationProps[][]>;
     monitorOperations: (callback: (operations:any, resolve:()=>void) => void) => Promise<void>;
     monitorHeads: (chainId:string, callback: (header:BlockHeaderProps, resolve:()=>void) => void) => Promise<void>;
+    monitorValidBlocks: (chainId:string, callback: (header:BlockHeaderProps, resolve:()=>void) => void) => Promise<void>;
 };
 
 type RequestOptions = {

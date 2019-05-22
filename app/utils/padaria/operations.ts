@@ -239,22 +239,23 @@ const self: OperationsInterface = {
         };
         return self.sendOperation(keys.pkh, keys, [operation]);
     },
-    awaitForOperationToBeIncluded: async (opHash, prevHeadLevel) => {
+    awaitForOperationToBeIncluded: async (opHash, prevHeadHash) => {
         // Wait 2 seconds before checking if the operation was inlcuded
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
-        const head = await rpc.getCurrentHead();
-        if (!head || prevHeadLevel == head.header.level)
-            return await self.awaitForOperationToBeIncluded(opHash, prevHeadLevel);
+        const headHash = await rpc.getBlockHash('head');
+        const operations = await rpc.getBlockOperations('head');
+        if (prevHeadHash === headHash)
+            return await self.awaitForOperationToBeIncluded(opHash, prevHeadHash);
 
-        for (const opCollection of head.operations) {
+        for (const opCollection of operations) {
             for (const op of opCollection) {
                 if (op.hash === opHash)
                     return true;
             }
         }
 
-        return await self.awaitForOperationToBeIncluded(opHash, head.header.level);
+        return await self.awaitForOperationToBeIncluded(opHash, headHash);
     },
     sendOperation: async (source, keys, operation, skipReveal = false) => {
         while (true) {
@@ -287,7 +288,7 @@ const self: OperationsInterface = {
 
                 console.log(injectedOp);
                 // Wait for operation to be included
-                await self.awaitForOperationToBeIncluded(injectedOp.hash, 0);
+                await self.awaitForOperationToBeIncluded(injectedOp.hash, '');
 
                 self.awaitingLock[source] = false;
                 return injectedOp;

@@ -86,6 +86,9 @@ const self:RPCInterface = {
     getCurrentHead: () => (
         self.queryNode('/chains/main/blocks/head', QueryTypes.GET)
     ),
+    getBlockHash: blockId => (
+        self.queryNode(`/chains/main/blocks/${blockId}/hash`, QueryTypes.GET)
+    ),
     getBlockHeader: blockId => (
         self.queryNode(`/chains/main/blocks/${blockId}/header`, QueryTypes.GET)
     ),
@@ -345,6 +348,20 @@ const self:RPCInterface = {
             hostname: self.nodeAddress,
             port: self.nodePort,
             path: `/monitor/heads/${chainId}`,
+            method: QueryTypes.GET,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        } as any;
+        options.agent = self.nodePort === "443" ? new https.Agent(options) : new http.Agent(options);
+
+        return self.queryStreamRequest(options, callback);
+    },
+    monitorValidBlocks: (chainId, callback) => {
+        const options = {
+            hostname: self.nodeAddress,
+            port: self.nodePort,
+            path: `/monitor/valid_blocks/?chain=${chainId}`,
             method: QueryTypes.GET,
             headers: {
                 'Content-Type': 'application/json'

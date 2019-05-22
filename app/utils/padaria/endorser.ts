@@ -9,6 +9,7 @@ import {
     EndorsingRight,
 } from './endorser.d';
 import operations, { OperationTypes } from './operations';
+import { LogSeverity, LogOrigins } from './logger';
 
 const self:EndorderInterface = {
     /*
@@ -90,29 +91,44 @@ const self:EndorderInterface = {
         } catch(e) { console.error("Not able to get Incoming Endorsings."); }
     },
     run: async (pkh, header, logger) => {
-        const { hash, level } = header;
-        try {
-            if (self.endorsedBlocks.indexOf(level) < 0) {
+        const { level } = header;
+
+        if (self.endorsedBlocks.indexOf(level) < 0) {
+            try {
                 const endorsingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/endorsing_rights?delegate=${pkh}&level=${level}`, QueryTypes.GET);
 
-                if(!Array.isArray(endorsingRight)) {
-                    console.error("Not able to get Endorsing Rights :(");
-                    return;
-                }
-
-                if (endorsingRight.length > 0 && self.endorsedBlocks.indexOf(endorsingRight[0].level) < 0) {
-                    self.endorsedBlocks.push(level);
-                    
-                    console.log(`Endorsing block [ ${hash} ] on level ${level}...`);
-
+                if (Array.isArray(endorsingRight) && endorsingRight.length > 0) {
                     const endorse = await operations.endorse(header, endorsingRight[0].slots);
 
-                    if(endorse) console.log("Endorsing complete!", endorse);
-                    else console.warn("Failed Endorsing :(");
+                    if (endorse) {
+                        logger({
+                            message: `Endorsed ${endorsingRight[0].slots.length} slots at level ${level}.`,
+                            type: 'success',
+                            origin: LogOrigins.ENDORSER
+                        });
+                    }
+                    else {
+                        logger({
+                            message: `Failed to endorse at level ${level}.`,
+                            type: 'error',
+                            severity: LogSeverity.VERY_HIGH,
+                            origin: LogOrigins.ENDORSER
+                        });
+                    }
                 }
             }
+            catch(e) {
+                logger({
+                    message: `Something went wrong when endorsing at level ${level}.`,
+                    type: 'error',
+                    severity: LogSeverity.VERY_HIGH,
+                    origin: LogOrigins.ENDORSER
+                });
+                console.error(e);
+            };
+
+            self.endorsedBlocks.push(level);
         }
-        catch(e) { console.error(e); };
     },
     endorse: async (keys, head, slots) => {
         const operation = {
