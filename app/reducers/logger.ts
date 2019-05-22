@@ -25,7 +25,7 @@ export default (state = defaultState, {type, ...props}:LoggerAction) => {
             }
 
             return [
-                    ...state,
+                    ...state.slice(0, 20),
                     {
                         key: ++counter,
                         timestamp: Date.now(),

@@ -33,7 +33,9 @@ declare type NonceType = {
 };
 
 declare type BlockHeaderProps = {
+    chain_id: string;
     context: string;
+    hash: string;
     fitness: string[];
     level: number;
     operations_hash: string;
@@ -41,6 +43,7 @@ declare type BlockHeaderProps = {
     priority: number;
     proof_of_work_nonce: string;
     proto: number
+    protocol?: string;
     signature: string;
     timestamp: string;
     validation_pass: number;

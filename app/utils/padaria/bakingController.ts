@@ -26,7 +26,7 @@ const self:BakingControllerProps = {
     //
     delegate: null,
 
-    intervalId: null,
+    running: false,
     baking: false,
     endorsing: false,
     accusing: false,
@@ -41,9 +41,7 @@ const self:BakingControllerProps = {
     */
     forcedLock: false,
     locks: {
-        baker: false,
         endorser: false,
-        accuser: false,
         rewarder: false
     },
     //
@@ -59,7 +57,10 @@ const self:BakingControllerProps = {
                     return;
                 });
 
-            if (delegate && !Array.isArray(delegate)) {
+            if (Array.isArray(delegate)) return;
+
+            if (delegate) {
+                delegate.deactivated && await operations.registerDelegate(keys);
                 self.delegate = delegate;
                 return self.delegate;
             }
@@ -71,8 +72,7 @@ const self:BakingControllerProps = {
      
         return self.delegate;
     },
-    revealNonces: async head => {
-        if (!head || !head.header) return;
+    revealNonces: async header => {
 
         const nonces = await 
             self.noncesToReveal.reduce((prev:NonceType[], cur:NonceType) => {
@@ -81,13 +81,13 @@ const self:BakingControllerProps = {
 
                 console.log(revealStart, cur.level, revealEnd);
 
-                if (head.header.level > revealEnd) {
+                if (header.level > revealEnd) {
                     console.log("End of Reveal, cycle is OVER!");
                     return prev;
                 } 
-                else if (head.header.level >= revealStart) {
+                else if (header.level >= revealStart) {
                     console.log("Revealing nonce ", cur);
-                    operations.revealNonce(head, cur)
+                    operations.revealNonce(header, cur)
                         .then(res => console.log(res))
                         .catch(e => console.error(e));
                     return prev;
@@ -110,96 +110,42 @@ const self:BakingControllerProps = {
         await storage.setBakerNonces(self.noncesToReveal);
     },
     run: async (keys, logger) => {
-        const { pkh } = keys;
-        if (self.locked || self.forcedLock || self.delegate.deactivated) return;
+        if (self.locked || self.forcedLock || !self.delegate) return;
         self.locked = true;
 
-        const head = await rpc.getCurrentHead();
+        const header = await rpc.getBlockHeader('head');
         
-        if (!head || !head.header) {
+        if (!header) {
             self.locked = false;
             return;
         }
 
-        baker.pendingBlocks = baker.pendingBlocks.reduce((prev, block) => {
-            /*
-            *   Inject the block if the "Baking Right Timestamp" for this block is now or has already passed
-            */
-            if(new Date() >= new Date(block.timestamp))
-            {
-                rpc.queryNode('/injection/block/?chain=main', QueryTypes.POST, block.data)
-                    .then((injectionHash:string) => {
-                        if(!injectionHash) {
-                            logger({ 
-                                message: 'Inject failed',
-                                type: 'error',
-                                severity: LogSeverity.HIGH,
-                                origin: LogOrigins.BAKER
-                            });
-                            return;
-                        }
-                        
-                        baker.injectedBlocks.push(injectionHash);
-
-                        if(block.seed)
-                        {
-                            self.addNonce({
-                                hash: injectionHash,
-                                seedNonceHash: block.seed_nonce_hash,
-                                seed: block.seed,
-                                level: block.level
-                            });
-                        }
-                        
-                        logger({ 
-                            message: `Baked ${injectionHash} block at level ${block.level}`,
-                            type: 'success',
-                            severity: LogSeverity.HIGH,
-                            origin: LogOrigins.BAKER
-                        });
-                    })
-                    .catch((e:Error) => console.error(e));
-            }
-            else prev.push(block);
-
-            return prev;
-        }, []);
-
-        self.revealNonces(head);
+        self.revealNonces(header);
 
         /*
         *   On StartUp avoid running the baker at a middle of a block
         */
-        if (self.levelOnStart > head.header.level) {
+        if (self.levelOnStart > header.level) {
             console.log("Waiting for the next level...");
             self.locked = false;
             return;
         }
 
         //Endorser
+        if (self.endorsing) {
+            await endorser.run(keys.pkh, header, logger);
+        }
         (async () => {
             if (self.endorsing && !self.locks.endorser) {
                 self.locks.endorser = true;
-                await endorser.run(keys, head);
+                await endorser.run(keys.pkh, header, logger);
                 self.locks.endorser = false;
             }
         })();
         // Baker
-        (async () => {
-            if (self.baking && !self.locks.baker) {
-                self.locks.baker = true;
-                await baker.run(pkh, head, logger);
-                self.locks.baker = false;
-            }
-        })();
-        // Accuser
-        (async () => {
-            if (self.accusing && !self.locks.accuser) {
-                self.locks.accuser = true;
-                await accuser.run(keys, logger);
-                self.locks.accuser = false;
-            }
-        })();
+        if (self.baking) {
+            baker.run(keys.pkh, header, logger);
+        }
         // Rewarder
         (async () => {
             if (self.rewarding && !self.locks.rewarder) {
@@ -214,38 +160,48 @@ const self:BakingControllerProps = {
     start: async (keys: KeysType, options: BakingControllerStartOptions) => {
         if(!rpc.ready) return false;
 
-        self.stop();
-
         self.baking = options.baking;
         self.endorsing = options.endorsing;
-        self.accusing = options.accusing;
+        if (self.accusing !== options.accusing) {
+            self.accusing = !self.accusing;
+            self.accusing ? accuser.run(keys.pkh, options.logger) : accuser.stop();
+        }
         self.rewarding = options.rewarding;
 
+        /*
+        *   Avoid running more than 1 instance
+        */
+        if (self.running) return true;
+
+        self.running = true;
+
         try {
-            const head = await rpc.getCurrentHead();
+            const header = await rpc.getBlockHeader('head');
 
             // Stores the current level on Start UP
             if (!self.levelOnStart) 
-                self.levelOnStart = head.header.level+1;
+                self.levelOnStart = header.level+1;
         } catch {
             console.error("Not able to start Baking Service! :(");
         }
 
-        self.intervalId = setInterval(() => self.run(keys, options.logger), BAKING_INTERVAL) as any;
+        while (self.running) {
+            await rpc.monitorHeads('main', (header, resolve) => {
+                console.warn(header.hash);
+                self.running
+                    ? self.run(keys, options.logger)
+                    : resolve();
+            });
+        }
 
         return true;
     },
     stop: () => {
-
+        self.running = false;
         self.baking = false;
         self.endorsing = false;
         self.accusing = false;
         self.rewarding = false;
-
-        if(self.intervalId) {
-            clearInterval(self.intervalId);
-            self.intervalId = null;
-        }
     },
     checkHashPower: () => {
         const tests:number[][] = [];

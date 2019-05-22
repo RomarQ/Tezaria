@@ -8,7 +8,7 @@ import Logs from '../components/Logs';
 
 type Props = {
     logs: LogProps[];
-    loggerActions: ActionCreatorsMapObject<LoggerActionsPrototypes>;
+    loggerActions: LoggerActionsPrototypes;
 }
 
 const Container = (props:Props) => {

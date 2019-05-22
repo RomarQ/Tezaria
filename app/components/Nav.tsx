@@ -14,7 +14,7 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import ButtonLink from './ButtonLink';
 
 import { LoaderPrototype, LoadTypes } from '../actions/loader';
-import { UserDataActionsProps } from '../actions/userData';
+import { UserDataActionsPrototypes } from '../actions/userData';
 
 import routes from '../constants/routes.json';
 
@@ -38,7 +38,7 @@ const styles = ({ spacing }: Theme) => createStyles({
 });
 
 type Props = {
-    userDataFunc: UserDataActionsProps;
+    userDataFunc: UserDataActionsPrototypes;
     loader: LoaderPrototype;
     history: History;
 } & WithStyles<typeof styles>;

@@ -17,7 +17,6 @@ import InfoIcon from '@material-ui/icons/InfoOutlined';
 import { LoggerActionsPrototypes } from '../actions/logger';
 import { LogProps } from '../reducers/logger';
 
-
 const styles = ({ spacing }: Theme) => createStyles({
     root: {
         margin: 50,
@@ -53,7 +52,7 @@ const LogIcons = {
 
 type Props = {
     logs: LogProps[];
-    loggerActions: ActionCreatorsMapObject<LoggerActionsPrototypes>;
+    loggerActions: LoggerActionsPrototypes;
 } & WithStyles<typeof styles>;
 
 const Component:React.FC<Props> = ({ classes, logs }) => {

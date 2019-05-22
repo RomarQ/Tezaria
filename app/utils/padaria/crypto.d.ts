@@ -8,7 +8,7 @@ export interface CryptoInterface {
     /*
     *   Functions
     */
-    loadSigner: (keys:KeysType) => void;
+    loadSigner: (sk:string) => void;
     mnemonicToSeed: (mnemonic:string, passphrase:string) => Buffer;
     isEdesk: (secret:string) => boolean;
     isEdsk: (secret:string) => boolean;

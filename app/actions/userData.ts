@@ -1,7 +1,8 @@
-import { Dispatch } from 'redux';
+import { Dispatch, ActionCreatorsMapObject } from 'redux';
 import storage from '../utils/storage';
 import rpc from '../utils/padaria/rpc';
 import crypto from '../utils/padaria/crypto';
+import bakingController from '../utils/padaria/bakingController';
 
 export enum UserDataActionTypes {
 	LOAD = 'LOAD',
@@ -43,12 +44,12 @@ export type UserDataActions =
 
 export type LoadUserDataPrototype = () => Promise<UserDataProps>;
 export type ClearUserDataPrototype = () => Promise<void>;
-export type SetBakerKeysPrototype = (keys: KeysType) => Promise<void>;
+export type SetBakerKeysPrototype = (keys: KeysType) => (dispatch: Dispatch) => void;
 export type SetBakerSettingsPrototype = (
 	settings: UserSettingsType
 ) => Promise<void>;
 
-export interface UserDataActionsProps {
+export interface UserDataActionsPrototypes extends ActionCreatorsMapObject {
 	loadUserData: LoadUserDataPrototype;
 	clearUserData: ClearUserDataPrototype;
 	setBakerKeys: SetBakerKeysPrototype;
@@ -72,15 +73,14 @@ const loadUserData = () => (dispatch: Dispatch) => (
 );
 
 const clearUserData = () => async (dispatch: Dispatch) => {
-	crypto.signer = null;
+    delete crypto.signer;
+    bakingController.stop();
 	await storage.clearUserData();
 	dispatch({ type: UserDataActionTypes.CLEAR });
 };
 
-const setBakerKeys = (keys: KeysType) => async (dispatch: Dispatch) => {
-    crypto.loadSigner(keys);
-
-    keys.encrypted && (delete keys.sk);
+const setBakerKeys = ({sk, ...keys}: KeysType) => (dispatch: Dispatch) => {
+    crypto.loadSigner(sk);
 
 	dispatch({ 
         type: UserDataActionTypes.SET_KEYS,

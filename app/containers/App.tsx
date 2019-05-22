@@ -9,7 +9,7 @@ import Splash from '../containers/Splash';
 import rpc from '../utils/padaria/rpc';
 import { LoaderState } from '../reducers/loader';
 import LoaderAction, { LoadTypes, LoaderPrototype } from '../actions/loader';
-import UserDataActions, { UserDataActionsProps } from '../actions/userData';
+import UserDataActions, { UserDataActionsPrototypes } from '../actions/userData';
 import LoggerActions, { LoggerActionsPrototypes, LogTypes } from '../actions/logger';
 
 import { LogOrigins } from '../utils/padaria/logger';
@@ -21,11 +21,11 @@ type Props = {
     loading: boolean;
     userDataReady: boolean;
     userData: UserDataProps;
-    userDataFunc: UserDataActionsProps;
+    userDataFunc: UserDataActionsPrototypes;
     loader: LoaderPrototype;
     pending: string[];
     errors: string[];
-    logger: ActionCreatorsMapObject<LoggerActionsPrototypes>;
+    logger: LoggerActionsPrototypes;
 } & RouteComponentProps;
 
 const App: React.FC<Props> = props => {
@@ -50,8 +50,8 @@ const App: React.FC<Props> = props => {
             })
             .catch((error:Error) => {
                 logger.add({
-                    type:  LogTypes.ERROR,
-                    message:  error,
+                    type: LogTypes.ERROR,
+                    message: error.message,
                     origin: LogOrigins.RPC
                 });
 
@@ -62,8 +62,8 @@ const App: React.FC<Props> = props => {
         .catch((error:Error) => {
             props.loader(LoadTypes.USER_DATA, true);
             logger.add({
-                type:  LogTypes.ERROR,
-                message:  error,
+                type: LogTypes.ERROR,
+                message: error.message,
                 origin: LogOrigins.RPC
             });
         });

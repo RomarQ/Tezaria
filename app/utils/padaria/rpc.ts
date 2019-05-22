@@ -79,26 +79,30 @@ const self:RPCInterface = {
         self.networkConstants = await self.queryNode('/chains/main/blocks/head/context/constants', QueryTypes.GET) as NetworkConstants;
     },
     getCurrentCycle: async () => {
-        const header = await self.getCurrentBlockMetadata();
+        const metadata = await self.getBlockMetadata('head');
         
-        return header ? header.level.cycle : undefined;
+        return metadata && metadata.level.cycle;
     },
     getCurrentHead: () => (
         self.queryNode('/chains/main/blocks/head', QueryTypes.GET)
     ),
-    getCurrentBlockHeader: () => (
-        self.queryNode('/chains/main/blocks/head/header', QueryTypes.GET)
+    getBlockHash: blockId => (
+        self.queryNode(`/chains/main/blocks/${blockId}/hash`, QueryTypes.GET)
     ),
-    getCurrentBlockMetadata: () => (
-        self.queryNode('/chains/main/blocks/head/metadata', QueryTypes.GET)
+    getBlockHeader: blockId => (
+        self.queryNode(`/chains/main/blocks/${blockId}/header`, QueryTypes.GET)
     ),
-    getBlockOperations: (blockHash:string) => (
-        self.queryNode(`/chains/main/blocks/${blockHash}/operations`, QueryTypes.GET)
+    getBlockMetadata: blockId => (
+        self.queryNode(`/chains/main/blocks/${blockId}/metadata`, QueryTypes.GET)
+    ),
+    getBlockOperations: blockId => (
+        self.queryNode(`/chains/main/blocks/${blockId}/operations`, QueryTypes.GET)
     ),
     queryNode: (path, method, args) => {
+        console.log('node: ' + path);
         const options = {
             hostname: self.nodeAddress,
-            port: 3000,
+            port: self.nodePort,
             //timeout: 60000, // 1min
             path,
             method,
@@ -116,6 +120,7 @@ const self:RPCInterface = {
         return self.queryRequest(options, args);
     },
     queryTzScan: (path, method = QueryTypes.GET, args) => {
+        console.log('tzscan: ' + path);
         const options = {
             hostname: self.tzScanAddress,
             port: 80,
@@ -206,8 +211,9 @@ const self:RPCInterface = {
             }
         })
     ),
-    queryStreamRequest: (options, cb) => (
-        new Promise((resolve, reject) => {
+    queryStreamRequest: (options, cb) => {
+        console.log('stream node: ' + options.path);
+        return new Promise((resolve, reject) => {
             try {
                 let req;
                 if (options.port === 443)
@@ -218,11 +224,11 @@ const self:RPCInterface = {
                         res.on('data', chunk => {
                             try {
                                 result += chunk;
-                                cb(JSON.parse(result));
+                                cb(JSON.parse(result), resolve);
                                 result = '';
                             }
                             catch(e) {
-                                console.error(e, result);
+                                //console.error(e, result);
                             }
                         });
 
@@ -236,11 +242,11 @@ const self:RPCInterface = {
                         res.on('data', chunk => {
                             try {
                                 result += chunk;
-                                cb(JSON.parse(result));
+                                cb(JSON.parse(result), resolve);
                                 result = '';
                             }
                             catch(e) {
-                                console.error(e, result);
+                                //console.error(e, result);
                             }
                         });
 
@@ -259,7 +265,7 @@ const self:RPCInterface = {
                 reject(e.message);
             }
         })
-    ),
+    },
     getContract: pkh => (
         self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}`, QueryTypes.GET)
     ),
@@ -278,7 +284,7 @@ const self:RPCInterface = {
         return await
             self.queryNode('/chains/main/blocks/head/helpers/scripts/run_operation', QueryTypes.POST, verifiedOp);
     },
-    forgeOperation: async (head, operation) => {
+    forgeOperation: async (metadata, operation) => {
         const forgedOperation = await self.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operation);
 
         if (!forgedOperation) return;
@@ -293,7 +299,7 @@ const self:RPCInterface = {
 
         return {
             ...operation,
-            protocol: head.protocol,
+            protocol: metadata.protocol,
             forgedConfirmation: forgedOperation
         };
     },
@@ -323,7 +329,7 @@ const self:RPCInterface = {
             ...preappliedOp
         };
     },
-    monitorOperations: async callback => {
+    monitorOperations: callback => {
         const options = {
             hostname: self.nodeAddress,
             port: 3000,
@@ -335,7 +341,35 @@ const self:RPCInterface = {
         } as any;
         options.agent = new http.Agent(options);
 
-        self.queryStreamRequest(options, callback);
+        return self.queryStreamRequest(options, callback);
+    },
+    monitorHeads: (chainId, callback) => {
+        const options = {
+            hostname: self.nodeAddress,
+            port: self.nodePort,
+            path: `/monitor/heads/${chainId}`,
+            method: QueryTypes.GET,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        } as any;
+        options.agent = self.nodePort === "443" ? new https.Agent(options) : new http.Agent(options);
+
+        return self.queryStreamRequest(options, callback);
+    },
+    monitorValidBlocks: (chainId, callback) => {
+        const options = {
+            hostname: self.nodeAddress,
+            port: self.nodePort,
+            path: `/monitor/valid_blocks/?chain=${chainId}`,
+            method: QueryTypes.GET,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        } as any;
+        options.agent = self.nodePort === "443" ? new https.Agent(options) : new http.Agent(options);
+
+        return self.queryStreamRequest(options, callback);
     },
     getPendingOperations: async () => {
         const pendingOperations = await self.queryNode(`/chains/main/mempool/pending_operations`, QueryTypes.GET) as PendingOperations;

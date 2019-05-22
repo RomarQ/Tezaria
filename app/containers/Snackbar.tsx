@@ -1,15 +1,17 @@
 import React from 'react';
+import { Dispatch, bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { withSnackbar, withSnackbarProps } from 'notistack';
 import Button from '@material-ui/core/Button';
-import { LogTypes } from '../actions/logger';
+import LoggerActions, { LogTypes, LoggerActionsPrototypes } from '../actions/logger';
 import { LoggerProps } from '../reducers/logger';
 
 type Props = {
     logs: LoggerActionProps[];
+    loggerActions: LoggerActionsPrototypes;
 } & withSnackbarProps;
 
-const Container: React.FC<Props> = ({ logs, enqueueSnackbar }) => {
+const Container: React.FC<Props> = ({ logs, enqueueSnackbar, loggerActions }) => {
     const isMounted = React.useRef(true);
     const snackCounter = React.useRef(0);
 
@@ -33,6 +35,9 @@ const Container: React.FC<Props> = ({ logs, enqueueSnackbar }) => {
                     <Button size="small">{'Dismiss'}</Button>
                 ),
             });
+
+            snack.type != 'error' &&
+                loggerActions.remove(snack);
         }
 
         return () => {
@@ -44,7 +49,10 @@ const Container: React.FC<Props> = ({ logs, enqueueSnackbar }) => {
 };
 
 const mapLogsToProps = ({ logger }:LoggerProps) => ({ logs: logger });
+const mapDispatchersToProps = (dispatch: Dispatch ) => ({ loggerActions: bindActionCreators(LoggerActions, dispatch) });
+
 
 export default connect(
-    mapLogsToProps
+    mapLogsToProps,
+    mapDispatchersToProps
 )(withSnackbar(Container));

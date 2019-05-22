@@ -1,5 +1,6 @@
 import rpc, { QueryTypes } from './rpc';
-import Operations, { OperationTypes } from './operations';
+import Operations from './operations';
+import bakingController from './bakingController';
 import utils, { Prefix } from './utils';
 import crypto from './crypto';
 
@@ -54,7 +55,7 @@ const self:BakerInterface = {
     },
     getIncomingBakings: async pkh => {
         try {
-            const metadata = await rpc.getCurrentBlockMetadata();
+            const metadata = await rpc.getBlockMetadata('head');
 
             if (!metadata)
                 return;
@@ -94,12 +95,12 @@ const self:BakerInterface = {
     },
     levelCompleted: () => {
         self.bakedBlocks = [
-            ...self.bakedBlocks.slice(1, self.bakedBlocks.length > 5 ? 4 : self.bakedBlocks.length), 
+            ...self.bakedBlocks.slice(1, 5), 
             self.levelWaterMark
         ];
     },
-    run: async (pkh, head, logger) => {
-        self.levelWaterMark = head.header.level+1;
+    run: async (pkh, header, logger) => {
+        self.levelWaterMark = header.level+1;
 
         try {
             /*
@@ -132,45 +133,103 @@ const self:BakerInterface = {
             }
 
             /*
-            *   Check if is time to bake
+            *   Wait until is time to bake, but stop if someone already baked this new head
             */
-            if (new Date().getTime() >= new Date(bakingRight[0].estimated_time).getTime() && bakingRight[0].level === self.levelWaterMark)
-            {
-                logger({
-                    message: `Baking a block with a priority of [ ${bakingRight[0].priority} ] on level ${bakingRight[0].level}`,
-                    type: 'info',
-                    severity: LogSeverity.NEUTRAL,
-                    origin: LogOrigins.BAKER
-                });
-
-                const bake = await self.bake(head, bakingRight[0].priority, bakingRight[0].estimated_time, logger);
-
-                console.log(bake);
-
-                if(bake) {
-                    self.pendingBlocks.push(bake);
+            while (bakingRight[0].level === self.levelWaterMark) {
+                /*
+                *   Check if is time to bake
+                */
+                if (new Date().getTime() >= new Date(bakingRight[0].estimated_time).getTime()) {
                     logger({
-                        message: `Block baked at level ${bake.level}, in pending state now...`,
+                        message: `Baking a block with a priority of [ ${bakingRight[0].priority} ] on level ${bakingRight[0].level}`,
                         type: 'info',
                         severity: LogSeverity.NEUTRAL,
                         origin: LogOrigins.BAKER
                     });
+                    /*
+                    *   Start baking the block
+                    */
+                    const block = await self.bake(header, bakingRight[0].priority, bakingRight[0].estimated_time, logger);
+                    /*
+                    *   Check if the block was successfully baked and inject it
+                    */
+                    if (block) {
+                        logger({
+                            message: `Block baked at level ${block.level}, in pending state now...`,
+                            type: 'info',
+                            severity: LogSeverity.NEUTRAL,
+                            origin: LogOrigins.BAKER
+                        });
+                        /*
+                        *   Inject the block
+                        */
+                        try {
+                            const blockHash = await rpc.queryNode('/injection/block/?chain=main', QueryTypes.POST, block.data)
+                            /*
+                            *   Check if the block failed to be injected
+                            */
+                            if(!blockHash) {
+                                logger({ 
+                                    message: 'Inject failed',
+                                    type: 'error',
+                                    severity: LogSeverity.HIGH,
+                                    origin: LogOrigins.BAKER
+                                });
+                                return;
+                            }
+                            
+                            self.injectedBlocks.push(blockHash);
+                            /*
+                            *   Add nonce if this block was a commitment
+                            */
+                            if(block.seed)
+                            {
+                                bakingController.addNonce({
+                                    hash: blockHash,
+                                    seedNonceHash: block.seed_nonce_hash,
+                                    seed: block.seed,
+                                    level: block.level
+                                });
+                            }
+                            
+                            logger({ 
+                                message: `Baked ${blockHash} block at level ${block.level}`,
+                                type: 'success',
+                                severity: LogSeverity.HIGH,
+                                origin: LogOrigins.BAKER
+                            });
+                        }
+                        catch(e) {
+                            console.error(e);
+                        }
+                    }
+                    else {
+                        logger({
+                            message: `Failed to bake Block for level ${self.levelWaterMark}.`,
+                            type: 'error',
+                            severity: LogSeverity.VERY_HIGH,
+                            origin: LogOrigins.BAKER
+                        });
+                    }
+
+                    break;
                 }
                 else {
-                    logger({
-                        message: `Failed to bake Block for level ${self.levelWaterMark}.`,
-                        type: 'error',
-                        severity: LogSeverity.VERY_HIGH,
-                        origin: LogOrigins.BAKER
-                    });
+                    /*
+                    *   Wait a second before trying again
+                    */
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
-
-                self.levelCompleted();
             }
+
+            self.levelCompleted();
         }
-        catch(e) { console.error('error', e); };
+        catch(e) { 
+            console.error('error', e);
+            self.levelCompleted();
+        };
     },
-    bake: async (head, priority, timestamp, logger) => {
+    bake: async (header, priority, timestamp, logger) => {
         const newTimestamp = Math.max(Math.floor(Date.now()/1000), new Date(timestamp).getTime()/1000);
 
         const operationArgs = {} as {
@@ -180,8 +239,7 @@ const self:BakerInterface = {
             seedHex: string;
         };
         
-        if (head.header.level % Number(rpc.networkConstants['blocks_per_commitment']) === 0) {
-
+        if (header.level % Number(rpc.networkConstants['blocks_per_commitment']) === 0) {
             logger({
                 message: `Level ${self.levelWaterMark} requires nonce reveal.Commitment Time.`,
                 type: 'info',
@@ -208,20 +266,22 @@ const self:BakerInterface = {
         /*
         *   Waits for more endorsings if needed
         */
-        const delay = Number(rpc.networkConstants['delay_per_missing_endorsement'] || 8);
-        while(endorsements.length < 12 && Date.now() < new Date(timestamp).getTime() + delay) {
+        const delay = Number(rpc.networkConstants['delay_per_missing_endorsement'] || 10);
+        while(/*endorsements.length < 12 && */Date.now() < new Date(timestamp).getTime() + delay) {
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         const pendingOperations = await rpc.getPendingOperations();
 
-        const operations = await Operations.classifyOperations(pendingOperations, head.protocol);
+        const operations = await Operations.classifyOperations(pendingOperations, header.protocol);
         console.log(pendingOperations, operations);
 
-        // Signature cannot be empty, using a fake signature. [Is not important for this operation]
-        let header = {
+        /*
+        *   Signature cannot be empty, using a fake signature. [Is not important for this operation]
+        */
+        let blockHeader = {
             protocol_data: {
-                protocol: head.protocol,
+                protocol: header.protocol,
                 priority,
                 proof_of_work_nonce: "0000000000000000",
                 signature: "edsigtdv1u5ZbjH4ZTyWsahG1XZeKV64kaZypXqysxvEZtq5L36RAwbQamXmGMJecEiUgb2tQaYk5EXgeuD4Zov6uEa7t7L63f5"
@@ -229,10 +289,10 @@ const self:BakerInterface = {
             operations
         };
 
-        if(operationArgs.nonceHash)
-            header.protocol_data["seed_nonce_hash"] = operationArgs.nonceHash;
+        operationArgs.nonceHash &&
+            (blockHeader.protocol_data["seed_nonce_hash"] = operationArgs.nonceHash);
 
-        let res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, header)
+        let res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, blockHeader)
             .catch(error => {
                 console.log(error);
             });
@@ -278,7 +338,7 @@ const self:BakerInterface = {
             origin: LogOrigins.BAKER
         });
 
-        const signed = crypto.sign(pow.blockbytes, utils.mergeBuffers(utils.watermark.blockHeader, utils.b58decode(head.chain_id, Prefix.chainId)));
+        const signed = crypto.sign(pow.blockbytes, utils.mergeBuffers(utils.watermark.blockHeader, utils.b58decode(header.chain_id, Prefix.chainId)));
 
         return {
             timestamp,
@@ -289,7 +349,7 @@ const self:BakerInterface = {
             seed_nonce_hash: operationArgs.seedHex,
             seed: operationArgs.seed,
             level: self.levelWaterMark,
-            chain_id: head.chain_id
+            chain_id: header.chain_id
         };
     },
 };

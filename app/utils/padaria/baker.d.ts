@@ -59,8 +59,8 @@ export interface BakerInterface {
     getIncomingBakings: (pkh:string) => Promise<IncomingBakings>;
     levelCompleted: () => void;
 
-    run: (pkh:string, head:BlockProps, logger: (log:LogProps) => void) => Promise<void>;
-    bake: (head:BlockProps, priority:number, timestamp:string, logger: (log:LogProps) => void) => Promise<{
+    run: (pkh:string, header:BlockHeaderProps, logger: (log:LogProps) => void) => Promise<void>;
+    bake: (header:BlockHeaderProps, priority:number, timestamp:string, logger: (log:LogProps) => void) => Promise<{
         timestamp: string;
         data: {
             data: string;
