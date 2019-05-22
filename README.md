@@ -5,9 +5,36 @@
 
 ### If you want to know more about this project, you can send me an e-mail to rodrigo_quelhas@hotmail.com
 
+<hr />
+
+### Implemented Modules
+
+| Baker | Endorser | Accuser | Rewarder |
+| - |:-:| -:| - |
+
+
+`It is pre-configured to use my zeronet node, if you want to use your own node instead you need to change the node settings clicking in the cog at the top right corner.`
+
+</div>
+
+
+I still haven't generated a binary for an easy install, but for now you can run it by following this steps:
+
+```sh
+git clone https://github.com/romarq/Padaria
+cd Padaria
+yarn
+yarn start
+```
+
+<hr />
+<div align="center">
+
 ## Rewarder Sample (Rewards start being sent at ~30s of the gif)
 
-![Screenshot](https://i.imgur.com/A20DeNc.gif)
+<a href="https://i.imgur.com/A20DeNc.gif">Rewarder Sample</a>
+<img src="https://i.imgur.com/A20DeNc.gif"/>
+
 
 ## Progress Sample
 
@@ -26,7 +53,7 @@
 * [X] Rewarder Module
 * [X] Operation System to allow multiple operation batches
 * [X] API to store confirmed payments
-* [ ] UI Logger ( 50% )
+* [X] UI Logger ( 70% )
 * [ ] Integrate mobile notifications into the logger
 * [ ] Unit tests
 * [ ] CLEAN SPAGHETTI CODE!!!
