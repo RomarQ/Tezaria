@@ -332,7 +332,7 @@ const self:RPCInterface = {
     monitorOperations: callback => {
         const options = {
             hostname: self.nodeAddress,
-            port: 3000,
+            port: self.nodePort,
             path: '/chains/main/mempool/monitor_operations/?applied',
             method: QueryTypes.GET,
             headers: {
