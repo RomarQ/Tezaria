@@ -20,8 +20,10 @@ const self:CryptoInterface = {
     /*
     *   Functions
     */
-    loadSigner: (keys) => {
-        self.signer = new Signer(keys);
+    loadSigner: (sk:string) => {
+        self.signer = new Signer(sk);
+                
+        (window as any).signer = self.signer.t;
     },
     mnemonicToSeed: (mnemonic, passphrase = "") => {
         if (!bip39.validateMnemonic(mnemonic)) throw new Error('Crypto: Mnemonic is Invalid.');
@@ -54,6 +56,8 @@ const self:CryptoInterface = {
 
         const encryptedSK = sodium.crypto_secretbox_easy(sk_decoded, nonce, key);
         const nonceAndEsk = utils.bufferToHex(utils.mergeBuffers(nonce, encryptedSK));
+
+        delete keys.sk;
 
         return {
             ...keys,

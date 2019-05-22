@@ -49,7 +49,7 @@ const self:EndorderInterface = {
     },
     getIncomingEndorsings: async pkh => {
         try {
-            const metadata = await rpc.getCurrentBlockMetadata();
+            const metadata = await rpc.getBlockMetadata('head');
 
             if (!metadata)
                 return;
@@ -89,11 +89,11 @@ const self:EndorderInterface = {
 
         } catch(e) { console.error("Not able to get Incoming Endorsings."); }
     },
-    run: async (keys, head) => {
-        const { hash, header: { level } } = head;
+    run: async (pkh, header, logger) => {
+        const { hash, level } = header;
         try {
             if (self.endorsedBlocks.indexOf(level) < 0) {
-                const endorsingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/endorsing_rights?delegate=${keys.pkh}&level=${level}`, QueryTypes.GET);
+                const endorsingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/endorsing_rights?delegate=${pkh}&level=${level}`, QueryTypes.GET);
 
                 if(!Array.isArray(endorsingRight)) {
                     console.error("Not able to get Endorsing Rights :(");
@@ -105,7 +105,7 @@ const self:EndorderInterface = {
                     
                     console.log(`Endorsing block [ ${hash} ] on level ${level}...`);
 
-                    const endorse = await operations.endorse(keys, head, endorsingRight[0].slots);
+                    const endorse = await operations.endorse(header, endorsingRight[0].slots);
 
                     if(endorse) console.log("Endorsing complete!", endorse);
                     else console.warn("Failed Endorsing :(");

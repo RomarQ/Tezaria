@@ -3,5 +3,5 @@ export interface AccuserInterface {
     blocks: BlockProps[];
     preservedLevels: number;
     highestLevelEncountered: number;
-    run: (keys:KeysType, logger: (log:LogProps) => any) => Promise<void>;
+    run: (pkh:string, logger: (log:LogProps) => any) => Promise<void>;
 }

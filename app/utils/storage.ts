@@ -63,7 +63,7 @@ const db:StorageFuncProps = {
         });
     }),
     setBakerKeys: (keys:KeysType) => new Promise((resolve, reject) => {
-        storage.set('keys', keys, (error:Error) => error ? resolve({ error }) : resolve({}));
+        storage.set('keys', keys, (error:Error) => error ? reject(error) : resolve());
     }),
     setBakerSettings: (settings:UserSettingsType) => new Promise((resolve, reject) => {
         storage.set('settings', settings, (error:Error) => error ? reject({ error }) : resolve({}));

@@ -9,9 +9,9 @@ import Tab from '@material-ui/core/Tab';
 
 import MnemonicForm from './MnemonicForm';
 import SecretKeyForm from './SecretKeyForm';
+import ProtectAccount from './ProtectAccount';
 
 import {
-    rpc,
     crypto,
     operations
 } from '../../utils/padaria';
@@ -20,6 +20,7 @@ import routes from '../../constants/routes.json';
 import { SetBakerKeysPrototype } from '../../actions/userData'; 
 import { LoaderPrototype, LoadTypes } from '../../actions/loader';
 import { History } from 'history';
+import { LoggerActionsPrototypes } from '../../actions/logger';
 
 const styles = ({ palette }: Theme) => createStyles({
     root: {
@@ -59,9 +60,11 @@ const styles = ({ palette }: Theme) => createStyles({
 });
 
 type Props = {
+    handleImport: (keys:KeysType) => void;
     history: History;
     setBakerKeys: SetBakerKeysPrototype;
     loader: LoaderPrototype;
+    logger: LoggerActionsPrototypes;
 } & WithStyles<typeof styles>;
 
 const Forms = [
@@ -73,7 +76,7 @@ const ImportAccountForm: React.FC<Props> = (props) => {
     const [tab, setTab] = React.useState(0);
     const handleChange = (event:any, newValue:number) => setTab(newValue);
 
-    const { classes, setBakerKeys, loader, history } = props;
+    const { classes, setBakerKeys, loader, logger, handleImport } = props;
     
     const SubmitFunctions = [
         // Private Key Method
@@ -83,11 +86,9 @@ const ImportAccountForm: React.FC<Props> = (props) => {
             try {
                 const keys = (passphrase ? crypto.getKeysFromEncSeed(secret, passphrase) : crypto.getKeysFromDecSecret(secret));
                 
-                await setBakerKeys(keys);
+                setBakerKeys(keys);
 
-
-                history.push(routes.PROTECT_ACCOUNT);
-                
+                handleImport(keys);
             } catch(e) {
                 console.log(e);
             }
@@ -101,12 +102,20 @@ const ImportAccountForm: React.FC<Props> = (props) => {
             try {
                 const keys = crypto.getKeysFromMnemonic(mnemonic, passphrase);
 
-                await setBakerKeys(keys);
+                setBakerKeys(keys);
 
-                secret && await operations.activateAccount(keys, secret);
+                secret &&
+                    operations.activateAccount(keys, secret)
+                        .then(() => logger.add({
+                            type: 'success',
+                            message: 'Account activated :)'
+                        }))
+                        .catch((e) => logger.add({
+                            type: 'success',
+                            message: 'Nice, the account is already activated :)'
+                        }));
 
-                history.push(routes.PROTECT_ACCOUNT);
-
+                handleImport(keys);
             } catch(e) {
                 console.log(e);
             }

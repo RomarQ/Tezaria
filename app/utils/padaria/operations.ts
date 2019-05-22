@@ -89,10 +89,10 @@ const self: OperationsInterface = {
         high: '3000'
     },
     doubleBakingEvidence: async evidences => {
-        const head = await rpc.getCurrentHead();
+        const header = await rpc.getBlockHeader('head');
 
         const operation = {
-            branch: head.hash,
+            branch: header.hash,
             contents: [{
                 kind: OperationTypes["double_baking_evidence"].type,
                 bh1: evidences[0],
@@ -100,7 +100,7 @@ const self: OperationsInterface = {
             }]
         };
 
-        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(head, operation, true);
+        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, true);
         
         const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
         return await rpc.injectOperation({
@@ -110,10 +110,10 @@ const self: OperationsInterface = {
         });
     },
     doubleEndorsementEvidence: async evidences => {
-        const head = await rpc.getCurrentHead();
+        const header = await rpc.getBlockHeader('head');
 
         const operation = {
-            branch: head.hash,
+            branch: header.hash,
             contents: [{
                 kind: OperationTypes["double_endorsement_evidence"].type,
                 op1: evidences[0],
@@ -121,7 +121,7 @@ const self: OperationsInterface = {
             }]
         };
 
-        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(head, operation, true);
+        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, true);
         
         const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
         return await rpc.injectOperation({
@@ -130,9 +130,9 @@ const self: OperationsInterface = {
             signedOperationContents: signed.signedBytes
         });
     },
-    revealNonce: async (head, nonce) => {
+    revealNonce: async (header, nonce) => {
         const operation = {
-            branch: head.hash,
+            branch: header.hash,
             contents: [{
                 kind: OperationTypes["seed_nonce_revelation"].type,
                 level: nonce.level,
@@ -140,7 +140,7 @@ const self: OperationsInterface = {
             }]
         };
 
-        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(head, operation, true);
+        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, true);
         
         const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
         return rpc.injectOperation({
@@ -149,22 +149,21 @@ const self: OperationsInterface = {
             signedOperationContents: signed.signedBytes
         });
     },
-    endorse: async (keys, head, slots) => {
+    endorse: async (header, slots) => {
         const operation = {
-            kind: OperationTypes.endorsement.type,
-            level: head.header.level
+            branch: header.hash,
+            contents: [{
+                kind: OperationTypes.endorsement.type,
+                level: header.level
+            }]
         } as any;
 
-        if (rpc.network === 'ZERONET')
-            operation.slot = slots[0];
+        rpc.network === 'ZERONET' &&
+            (operation.contents[0].slot = slots[0]);
 
-        const preparedOp = await self.prepareOperations(keys.pkh, keys, [operation]);
+        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation);
 
-        if (!preparedOp) return;
-
-        const {forgedConfirmation, ...verifiedOp} = preparedOp;
-
-        const signed = crypto.sign(forgedConfirmation, utils.mergeBuffers(utils.watermark.endorsement, utils.b58decode(head.chain_id, Prefix.chainId)));
+        const signed = crypto.sign(forgedConfirmation, utils.mergeBuffers(utils.watermark.endorsement, utils.b58decode(header.chain_id, Prefix.chainId)));
 
         return rpc.injectOperation({
             ...verifiedOp,
@@ -183,7 +182,7 @@ const self: OperationsInterface = {
                     ...prev,
                     [
                         {
-                            kind: OperationTypes.transaction.type,
+                            kind: OperationTypes["transaction"].type,
                             fee: String(fee),
                             gas_limit: String(gasLimit),
                             storage_limit: String(storageLimit),
@@ -195,7 +194,7 @@ const self: OperationsInterface = {
             }
 
             prev[prev.length-1].push({
-                kind: OperationTypes.transaction.type,
+                kind: OperationTypes["transaction"].type,
                 fee: String(fee),
                 gas_limit: String(gasLimit),
                 storage_limit: String(storageLimit),
@@ -302,7 +301,7 @@ const self: OperationsInterface = {
         }
     },
     prepareOperations: async (source, keys, operations, skipReveal = false) => {
-        const head = await rpc.getCurrentHead();
+        const header = await rpc.getBlockHeader('head');
 
         if (!self.contractManagers[source]) {
             self.contractManagers[source] = await rpc.getManager(source);
@@ -344,8 +343,8 @@ const self: OperationsInterface = {
 
         console.log(operations)
 
-        return rpc.forgeOperation(head, {
-            branch: head.hash,
+        return rpc.forgeOperation(header, {
+            branch: header.hash,
             contents: operations
         });
     },

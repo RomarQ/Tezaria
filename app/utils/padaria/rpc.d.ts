@@ -12,16 +12,16 @@ export interface RPCInterface extends UserSettingsType {
     setNetworkConstants: () => Promise<void>;
     getCurrentHead: () => Promise<BlockProps>;
     getCurrentCycle: () => Promise<number>;
-    getCurrentBlockHeader: () => Promise<BlockHeaderProps>;
-    getCurrentBlockMetadata: () => Promise<BlockMetadataProps>;
+    getBlockHeader: (blockId:string) => Promise<BlockHeaderProps>;
+    getBlockMetadata: (blockId:string) => Promise<BlockMetadataProps>;
     queryNode: (path:string, mothod:QueryType, args?:any) => Promise<any>;
     queryTzScan: (path:string, mothod:QueryType, args?:any) => Promise<any>;
     queryAPI: (query:string, variables?:Object<any>) => Promise<any>;
     queryRequest: (options:RequestOptions, args?:any) => Promise<any>;
-    queryStreamRequest: (options:RequestOptions, cb:(res:any) => void) => Promise<any>;
+    queryStreamRequest: (options:RequestOptions, cb:(res:any, resolve:()=>void) => void) => Promise<any>;
     getBalance: (pkh:string) => Promise<number>;
     simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
-    forgeOperation: (head:BlockProps, operation:UnsignedOperationProps, skipConfirmation?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
+    forgeOperation: (head:BlockHeaderProps, operation:UnsignedOperationProps, skipConfirmation?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
     preapplyOperations: (operation:UnsignedOperationProps[]) => Promise<UnsignedOperationProps[]>;
     injectOperation: (operation:UnsignedOperationProps) => Promise<UnsignedOperationProps>;
     getContract: (pkh:string) => Promise<{
@@ -37,11 +37,12 @@ export interface RPCInterface extends UserSettingsType {
     getManager: (pkh:string) => Promise<{key:string, manager:string}>;
     getCounter: (pkh:string) => Promise<number>;
     getEndorsementOperations: (blockId:string) => Promise<UnsignedOperationProps[]>;
-    getPredecessors: (blockHash:string, length:number) => Promise<string[]>;
-    getBlock: (blockHash:string) => Promise<BlockProps>;
-    getBlockOperations: (blockHash:string) => Promise<OperationProps[]>;
+    getPredecessors: (blockId:string, length:number) => Promise<string[]>;
+    getBlock: (blockId:string) => Promise<BlockProps>;
+    getBlockOperations: (blockId:string) => Promise<OperationProps[]>;
     getPendingOperations: () => Promise<UnsignedOperationProps[][]>;
-    monitorOperations: (callback: (operations:any) => void) => Promise<void>;
+    monitorOperations: (callback: (operations:any, resolve:()=>void) => void) => Promise<void>;
+    monitorHeads: (chainId:string, callback: (header:BlockHeaderProps, resolve:()=>void) => void) => Promise<void>;
 };
 
 type RequestOptions = {

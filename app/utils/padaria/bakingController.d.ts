@@ -2,6 +2,7 @@ export interface BakingControllerProps {
     delegate: DelegateProps;
 
     intervalId: number;
+    running: boolean;
     baking: boolean;
     endorsing: boolean;
     accusing: boolean;
@@ -18,7 +19,7 @@ export interface BakingControllerProps {
     }
 
     load: (keys:KeysType) => Promise<DelegateProps>;
-    revealNonces: (head:BlockProps) => void;
+    revealNonces: (header:BlockHeaderProps) => void;
     loadNoncesFromStorage: () => void;
     addNonce: (nonce:NonceType) => void;
     run: (keys:KeysType, logger: (log:LogProps) => void) => void;

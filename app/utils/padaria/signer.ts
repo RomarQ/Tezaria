@@ -9,27 +9,29 @@ interface SignatureProps {
 
 export interface SignerProps {
     sign: (bytes:string, watermark?:Uint8Array) => SignatureProps;
+    t: () => void;
 }
 
 export default class Signer implements SignerProps {
-    private keys: KeysType = null;
+    private secret: string = null;
 
-    constructor(keys: KeysType) {
-        this.keys = keys;
+    constructor(sk:string) {
+        this.secret = String(sk);
     }
 
+    t = () => console.log(this.secret);
     sign = (bytes:string, watermark?:Uint8Array) => {
         let buffer = utils.hexToBuffer(bytes);
 
-        buffer = watermark ? utils.mergeBuffers(watermark, buffer) : buffer;
+        typeof watermark != 'undefined' && (buffer = utils.mergeBuffers(watermark, buffer));
 
-        const sig = sodium.crypto_sign_detached(sodium.crypto_generichash(32, buffer), utils.b58decode(this.keys.sk, Prefix.edsk), 'uint8array');
+        const sig = sodium.crypto_sign_detached(sodium.crypto_generichash(32, buffer), utils.b58decode(this.secret, Prefix.edsk), 'uint8array');
         const edsig = utils.b58encode(sig, Prefix.edsig);
         const signedBytes = bytes + utils.bufferToHex(sig);
         return {
-            sig: sig,
-            edsig: edsig,
-            signedBytes: signedBytes
+            sig,
+            edsig,
+            signedBytes
         }
     }
 }

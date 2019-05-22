@@ -12,16 +12,18 @@ import Settings from '../components/Account/Settings';
 import ProtectAccount from './Account/ProtectAccount';
 import Logs from './Logs';
 import { LoaderPrototype } from '../actions/loader';
-import { UserDataActionsProps } from '../actions/userData';
+import { UserDataActionsPrototypes } from '../actions/userData';
+import { LoggerActionsPrototypes } from '../actions/logger';
 
 interface Props {
     loader: LoaderPrototype;
     history: History;
     userData: UserDataProps;
-    userDataFunc: UserDataActionsProps;
+    userDataFunc: UserDataActionsPrototypes;
+    logger: LoggerActionsPrototypes;
 }
 
-export default ({ loader, history, userData, userDataFunc }:Props) => (
+export default ({ loader, history, userData, logger, userDataFunc }:Props) => (
     <Switch>
         <AuthRoute
             exact
@@ -87,9 +89,11 @@ export default ({ loader, history, userData, userDataFunc }:Props) => (
             path={routes.IMPORT_ACCOUNT}
             render={() => (
                 <ImportAccount
+                    clearUserData={userDataFunc.clearUserData}
                     setBakerKeys={userDataFunc.setBakerKeys}
                     loader={loader}
                     history={history}
+                    logger={logger}
                 />
             )}
         />

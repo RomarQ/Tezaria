@@ -22,10 +22,10 @@ const self:AccuserInterface = {
     /*
     * Functions
     */
-    run: async (keys, logger) => {
+    run: async (pkh, logger) => {
         const options = {
             hostname: rpc.nodeAddress,
-            port: 3000,
+            port: rpc.nodePort,
             path: '/monitor/valid_blocks',
             method: QueryTypes.GET,
             headers: {
@@ -55,7 +55,7 @@ const self:AccuserInterface = {
                     *   Double Baking Found
                     */
                     if (evidenceIndex !== -1) {
-                        if (cur.metadata.baker === keys.pkh) {
+                        if (cur.metadata.baker === pkh) {
                             bakingController.forcedLock = true;
                             logger({ 
                                 message: `You double baked at level [ ${cur.header.level} ] on blocks [${cur.hash}, ${prev[evidenceIndex].hash}] , shutting down the baker...`,

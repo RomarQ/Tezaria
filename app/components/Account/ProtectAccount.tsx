@@ -82,7 +82,7 @@ type Props = {
     setBakerKeys: SetBakerKeysPrototype;
 };
 
-const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, clearUserData, keys, loader, history, classes }) => {
+const Component: React.FC<Props & WithStyles<typeof styles>> = props => {
     const isMounted = React.useRef(true);
     const [password, setPassword] = React.useState(null);
     const [passwordConfirmation, setPasswordConfirmation] = React.useState(null);
@@ -90,6 +90,8 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, 
     const [encrypting, setEncrypting] = React.useState(false);
 
     React.useEffect(() => () => isMounted.current = false, []);
+
+    const { setBakerKeys, clearUserData, keys, loader, history, classes } = props
 
     const onDecryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
         e.preventDefault();
@@ -101,12 +103,10 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, 
             history.push(routes.DASHBOARD);
         }
         catch(e) {
-            if (isMounted.current)
-                setModalError(e.message);
+            isMounted.current && setModalError(e.message);
         }
 
-        if (isMounted.current)
-            setEncrypting(false);
+        isMounted.current && setEncrypting(false);
             
         loader(LoadTypes.USER_DATA, true);
     }
@@ -114,14 +114,16 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, 
     const onEncryptedSubmit = async (e:React.FormEvent<HTMLFormElement>) =>  {
         e.preventDefault();
         
-        if (!password && password !== passwordConfirmation) {
-            setModalError("Passwords are not equal...");
-            return;
+        if (!password && password !== passwordConfirmation && isMounted.current) {
+            return setModalError("Passwords are not equal...");
         }
-
-        (await storage.setBakerKeys(crypto.encryptSK(keys, password))).error
-            ? console.error('Failed to store encrypted key on disk, key was not stored!')
-            : history.push(routes.DASHBOARD);
+        
+        try {
+            await storage.setBakerKeys(crypto.encryptSK(keys, password));
+            history.push(routes.DASHBOARD);
+        } catch(e) {
+            console.error(e);
+        }
     }
 
     const onDeleteWallet = async () => {
@@ -160,7 +162,7 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = ({ setBakerKeys, 
                             shrink: true
                         }}
                     />
-                    {keys.encrypted || encrypting ? null : (
+                    {(!keys.encrypted || encrypting) && (
                         <TextField
                             id="passwordConfirmation"
                             required

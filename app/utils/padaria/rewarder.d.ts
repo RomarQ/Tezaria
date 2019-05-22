@@ -10,7 +10,7 @@ export interface RewardControllerInterface {
     getRewards: (pkh:string, numberOfCycles:number) => Promise<RewardsInfo>;
     getDelegatorsRewardsByCycle: (pkh:string, cycle:number) => Promise<RewardsSplit>;
     getDelegatorRewardsByCycle: (phk:string, cycle:number) => Promise<DelegatorReward>;
-    prepareRewardsToSendByCycle: (pkh: string, cycle: number) => Promise<DelegatorReward[]>;
+    prepareRewardsToSendByCycle: (pkh:string, cycle: number) => Promise<DelegatorReward[]>;
     sendRewardsByCycle: (keys:KeysType, cycle: number, logger?: (log:LogProps) => void) => Promise<void>;
     sendSelectedRewards: (keys:KeysType, selected:DelegatorReward[], cycle:number, logger?: (log:LogProps) => void) => Promise<void>;
     nextRewardCycle: () => Promise<number>;
