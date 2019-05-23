@@ -266,7 +266,7 @@ const self:BakerInterface = {
         /*
         *   Waits for more endorsings if needed
         */
-        const delay = Number(rpc.networkConstants['delay_per_missing_endorsement'] || 10);
+        const delay = Number(rpc.networkConstants['delay_per_missing_endorsement'] || 10) * 1000;
         while(/*endorsements.length < 12 && */Date.now() < new Date(timestamp).getTime() + delay) {
             await new Promise(resolve => setTimeout(resolve, 1000));
         }

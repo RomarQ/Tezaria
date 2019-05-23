@@ -380,10 +380,11 @@ const self: OperationsInterface = {
                 typeof operation.slot != 'undefined' &&
                     (forgeResult += utils.bufferToHex(new Uint8Array([operation.slot])));
 
-                typeof operation.level != 'undefined' &&
-                    (forgeResult += utils.bufferToHex(utils.int32Buffer(Number(operation.level))));
+                forgeResult += utils.bufferToHex(utils.int32Buffer(Number(operation.level)));
                 break;
-            case 1: break;
+            case 1:
+                forgeResult += utils.bufferToHex(utils.int32Buffer(Number(operation.level))) + operation.nonce;
+                break;
             case 2: break;
             case 3: break;
             case 4: // Activate Account
@@ -485,10 +486,13 @@ const self: OperationsInterface = {
                 return 0;
             case OperationTypes["ballot"].type || OperationTypes["proposal"].type:
                 return 1;
-            case OperationTypes["activate_account"].type
-                || OperationTypes["double_baking_evidence"].type
-                || OperationTypes["double_endorsement_evidence"].type
-                || OperationTypes["seed_nonce_revelation"].type:
+            case OperationTypes["activate_account"].type:
+                return 2;
+            case OperationTypes["double_baking_evidence"].type:
+                return 2;
+            case OperationTypes["double_endorsement_evidence"].type:
+                return 2;
+            case OperationTypes["seed_nonce_revelation"].type:
                 return 2;
             default:
                 return 3;

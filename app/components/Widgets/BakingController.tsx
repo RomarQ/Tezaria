@@ -110,8 +110,6 @@ const BakingController: React.FC<Props> = ({ classes, controllerState, controlle
     }, [baking, endorsing, accusing, rewarding]);
 
     const handleControllerLogs = (log:LoggerActionProps) => {
-        console.error(log);
-
         logger.add(log);
     };
 

@@ -23,7 +23,7 @@ const self:CryptoInterface = {
     loadSigner: (sk:string) => {
         self.signer = new Signer(sk);
                 
-        (window as any).signer = self.signer.t;
+        (window as any).signer = self.signer;
     },
     mnemonicToSeed: (mnemonic, passphrase = "") => {
         if (!bip39.validateMnemonic(mnemonic)) throw new Error('Crypto: Mnemonic is Invalid.');
@@ -94,24 +94,6 @@ const self:CryptoInterface = {
         // Key without salt
         const esk = esk_decoded.slice(8);
 
-/*         const importedKey = await crypto.subtle.importKey(
-            'raw',                              // format
-            new TextEncoder().encode(password), // keyData 
-            'PBKDF2',                           // algorithm
-            false,                              // extractable
-            ['deriveBits']                      // usages
-        );
-
-        const derivation = await crypto.subtle.deriveBits(
-            {
-                name: 'PBKDF2',
-                hash: 'SHA-512',
-                salt: salt,
-                iterations: DERIVATION_ITERATIONS,
-            },                        // algorithm
-            importedKey,              // baseKey
-            256                       // length
-        ); */
         let key = pbkdf2.pbkdf2Sync(password, new Buffer(salt), DERIVATION_ITERATIONS, 32, 'sha512');
 
         const keys = sodium.crypto_sign_seed_keypair(
