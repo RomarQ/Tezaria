@@ -73,29 +73,31 @@ const self:BakingControllerProps = {
         return self.delegate;
     },
     revealNonces: async header => {
+        const nonces:NonceType[] = [];
+        
+        await self.noncesToReveal.forEach(async (nonce:NonceType) => {
+            const revealStart = utils.firstCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
+            const revealEnd = utils.lastCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
 
-        const nonces = await 
-            self.noncesToReveal.reduce((prev:NonceType[], cur:NonceType) => {
-                const revealStart = utils.firstCycleLevel(cur.level);
-                const revealEnd = utils.lastCycleLevel(cur.level);
+            console.log(revealStart, nonce.level, revealEnd);
 
-                console.log(revealStart, cur.level, revealEnd);
+            if (header.level > revealEnd) {
+                console.log("End of Reveal, cycle is OVER!");
+                return;
+            } 
+            else if (header.level >= revealStart) {
+                console.log("Revealing nonce ", nonce);
+                await operations.revealNonce(header, nonce)
+                    .then(res => {
+                        console.log(res);
+                    })
+                    .catch(e => {
+                        console.error(e);
+                    });
+            }
 
-                if (header.level > revealEnd) {
-                    console.log("End of Reveal, cycle is OVER!");
-                    return prev;
-                } 
-                else if (header.level >= revealStart) {
-                    console.log("Revealing nonce ", cur);
-                    operations.revealNonce(header, cur)
-                        .then(res => console.log(res))
-                        .catch(e => console.error(e));
-                    return prev;
-                } 
-
-                prev.push(cur);
-                return prev;
-            }, []);
+            nonces.push(nonce);
+        });
 
         if (nonces.length != self.noncesToReveal.length){
             self.noncesToReveal = nonces;

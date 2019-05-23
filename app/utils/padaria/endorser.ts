@@ -100,9 +100,9 @@ const self:EndorderInterface = {
                 if (Array.isArray(endorsingRight) && endorsingRight.length > 0) {
                     const endorse = await operations.endorse(header, endorsingRight[0].slots);
 
-                    if (endorse) {
+                    if (endorse.hash) {
                         logger({
-                            message: `Endorsed ${endorsingRight[0].slots.length} slots at level ${level}.`,
+                            message: `Endorsed ${endorsingRight[0].slots.length} slots at level ${level} ${endorse.hash}.`,
                             type: 'success',
                             origin: LogOrigins.ENDORSER
                         });

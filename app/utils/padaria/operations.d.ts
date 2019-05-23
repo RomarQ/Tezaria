@@ -117,6 +117,7 @@ export interface OperationProps {
     kind: OperationType;
     source?: string;
     fee?: number | string;
+    nonce?: string;
     level?: number;
     slot?: number;
     pkh?: string;

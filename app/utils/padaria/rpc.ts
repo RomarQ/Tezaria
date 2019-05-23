@@ -99,7 +99,6 @@ const self:RPCInterface = {
         self.queryNode(`/chains/main/blocks/${blockId}/operations`, QueryTypes.GET)
     ),
     queryNode: (path, method, args) => {
-        console.log('node: ' + path);
         const options = {
             hostname: self.nodeAddress,
             port: self.nodePort,
@@ -120,7 +119,6 @@ const self:RPCInterface = {
         return self.queryRequest(options, args);
     },
     queryTzScan: (path, method = QueryTypes.GET, args) => {
-        console.log('tzscan: ' + path);
         const options = {
             hostname: self.tzScanAddress,
             port: 80,
@@ -212,7 +210,6 @@ const self:RPCInterface = {
         })
     ),
     queryStreamRequest: (options, cb) => {
-        console.log('stream node: ' + options.path);
         return new Promise((resolve, reject) => {
             try {
                 let req;
@@ -309,8 +306,6 @@ const self:RPCInterface = {
         if (!Array.isArray(preappliedOps))
             throw Error('[RPC] - Error on preapplying operations.');
 
-        console.log(preappliedOps)
-
         if(
             preappliedOps.some(({contents}) => contents && contents.some(({metadata: { operation_result } }) => 
             operation_result && operation_result.status === "failed"))
@@ -323,7 +318,7 @@ const self:RPCInterface = {
     injectOperation: async ({signedOperationContents, ...rest}) => {
         const [preappliedOp] = await self.preapplyOperations([rest]);
         const operationHash = await self.queryNode('/injection/operation', QueryTypes.POST, signedOperationContents) as string;
-        console.log(`END: ${new Date().toJSON()}`)
+
         return {
             hash: operationHash,
             ...preappliedOp
