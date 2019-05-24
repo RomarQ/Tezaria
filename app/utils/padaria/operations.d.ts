@@ -121,6 +121,8 @@ export interface OperationProps {
     level?: number;
     slot?: number;
     pkh?: string;
+    bh1?: BlockHeaderProps;
+    bh2?: BlockHeaderProps;
     secret?: string;
     counter?: number | string;
     gas_limit?: number | string;

@@ -78,10 +78,13 @@ const self:RPCInterface = {
     setNetworkConstants: async () => {
         self.networkConstants = await self.queryNode('/chains/main/blocks/head/context/constants', QueryTypes.GET) as NetworkConstants;
     },
-    getCurrentCycle: async () => {
-        const metadata = await self.getBlockMetadata('head');
-        
-        return metadata && metadata.level.cycle;
+    getCurrentLevel: (chainId = 'main', blockId = 'head') => (
+        self.queryNode(`/chains/${chainId}/blocks/${blockId}/helpers/current_level`, QueryTypes.GET)
+    ),
+    getCurrentCycle: async (chainId = 'main', blockId = 'head') => {
+        const {level} = await self.getCurrentLevel(chainId, blockId);
+    
+        return level && Math.floor(level/self.networkConstants['blocks_per_cycle']);
     },
     getCurrentHead: () => (
         self.queryNode('/chains/main/blocks/head', QueryTypes.GET)
@@ -97,6 +100,11 @@ const self:RPCInterface = {
     ),
     getBlockOperations: blockId => (
         self.queryNode(`/chains/main/blocks/${blockId}/operations`, QueryTypes.GET)
+    ),
+    getBakingRights: (pkh, level, maxPriority = 5, chainId = 'main', blockId = 'head') => (
+        pkh
+            ? self.queryNode(`/chains/${chainId}/blocks/${blockId}/helpers/baking_rights?delegate=${pkh}&level=${level}&max_priority=${maxPriority}`, QueryTypes.GET)
+            : self.queryNode(`/chains/${chainId}/blocks/${blockId}/helpers/baking_rights?level=${level}&max_priority=${maxPriority}`, QueryTypes.GET)
     ),
     queryNode: (path, method, args) => {
         const options = {
@@ -281,7 +289,7 @@ const self:RPCInterface = {
         return await
             self.queryNode('/chains/main/blocks/head/helpers/scripts/run_operation', QueryTypes.POST, verifiedOp);
     },
-    forgeOperation: async (metadata, operation) => {
+    forgeOperation: async (metadata, operation, verify = true) => {
         const forgedOperation = await self.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operation);
 
         if (!forgedOperation) return;
@@ -290,9 +298,14 @@ const self:RPCInterface = {
             return prev += operations.forgeOperationLocally(cur);
         }, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
         
-        console.log(forgedOperation);
-        console.log(forgedConfirmation);
-        if (forgedOperation !== forgedConfirmation) throw Error('[RPC] - Validation error on operation forge verification.');
+
+        if (forgedOperation !== forgedConfirmation) {
+            console.log(forgedOperation);
+            console.log(forgedConfirmation);
+
+            if (verify)
+                throw Error('[RPC] - Validation error on operation forge verification.');
+        }
 
         return {
             ...operation,

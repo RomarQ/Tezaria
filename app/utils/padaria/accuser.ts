@@ -29,7 +29,6 @@ const self:AccuserInterface = {
 
         try {
             await rpc.monitorValidBlocks('main', async (block, resolve) => {
-                console.warn("accuser")
                 if (!self.running) {
                     return resolve()
                 }
@@ -44,7 +43,7 @@ const self:AccuserInterface = {
                 ];
 
                 console.log(self.blocks);
-    
+
                 self.blocks.reduce((prev, cur) => {
                     const evidenceIndex = prev.findIndex(b => b.header.level == cur.header.level && b.metadata.baker == cur.metadata.baker);
         

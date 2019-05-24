@@ -108,7 +108,7 @@ const self:BakerInterface = {
             */
             if (self.bakedBlocks.indexOf(self.levelWaterMark) !== -1) return;
 
-            const bakingRight = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&level=${self.levelWaterMark}&max_priority=5`, QueryTypes.GET) as BakingRight[];
+            const bakingRight = await rpc.getBakingRights(pkh, self.levelWaterMark, 5);
 
             if(!Array.isArray(bakingRight)) {
                 return logger({
@@ -139,7 +139,7 @@ const self:BakerInterface = {
                 /*
                 *   Check if is time to bake
                 */
-                if (new Date().getTime() >= new Date(bakingRight[0].estimated_time).getTime()) {
+                if (Date.now() >= new Date(bakingRight[0].estimated_time).getTime()) {
                     logger({
                         message: `Baking a block with a priority of [ ${bakingRight[0].priority} ] on level ${bakingRight[0].level}`,
                         type: 'info',
@@ -202,14 +202,6 @@ const self:BakerInterface = {
                         catch(e) {
                             console.error(e);
                         }
-                    }
-                    else {
-                        logger({
-                            message: `Failed to bake Block for level ${self.levelWaterMark}.`,
-                            type: 'error',
-                            severity: LogSeverity.VERY_HIGH,
-                            origin: LogOrigins.BAKER
-                        });
                     }
 
                     break;
@@ -274,7 +266,6 @@ const self:BakerInterface = {
         const pendingOperations = await rpc.getPendingOperations();
 
         const operations = await Operations.classifyOperations(pendingOperations, header.protocol);
-        console.log(pendingOperations, operations);
 
         /*
         *   Signature cannot be empty, using a fake signature. [Is not important for this operation]
@@ -292,9 +283,16 @@ const self:BakerInterface = {
         operationArgs.nonceHash &&
             (blockHeader.protocol_data["seed_nonce_hash"] = operationArgs.nonceHash);
 
-        let res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, blockHeader)
+        const res = await rpc.queryNode(`/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`, QueryTypes.POST, blockHeader)
             .catch(error => {
-                console.log(error);
+                if (!Array.isArray(error) || !error[0].minimum) {
+                    return logger({
+                        message: `Failed to preapply block for level ${self.levelWaterMark} -> ${error}`,
+                        type: 'error',
+                        severity: LogSeverity.VERY_HIGH,
+                        origin: LogOrigins.BAKER
+                    });
+                }
             });
 
         if (!res || !res.shell_header) return;
@@ -320,9 +318,19 @@ const self:BakerInterface = {
             ]
         }, []);
 
-        console.log(shell_header, ops)
-        const { block } = await rpc.queryNode('/chains/main/blocks/head/helpers/forge_block_header', QueryTypes.POST, shell_header) as { block:string };
+        const { block }:{ block:string } = 
+            await rpc.queryNode('/chains/main/blocks/head/helpers/forge_block_header', QueryTypes.POST, shell_header)
+                .catch(error => {
+                    return logger({
+                        message: `Failed to forge block header for level ${self.levelWaterMark} -> ${error}`,
+                        type: 'error',
+                        severity: LogSeverity.VERY_HIGH,
+                        origin: LogOrigins.BAKER
+                    });
+                });
 
+        if (!block) return;
+      
         const start = Date.now();
 
         const pow = await crypto.POW(block.substring(0, block.length - 22), priority, operationArgs.seedHex);

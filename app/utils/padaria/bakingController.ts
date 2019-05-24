@@ -15,11 +15,6 @@ import {
 } from './bakingController.d';
 import { LogOrigins, LogSeverity } from './logger';
 
-/*
-* Constants
-*/
-const BAKING_INTERVAL = 1000; //ms
-
 const self:BakingControllerProps = {
     //
     // States
@@ -87,7 +82,7 @@ const self:BakingControllerProps = {
             } 
             else if (header.level >= revealStart) {
                 console.log("Revealing nonce ", nonce);
-                await operations.revealNonce(header, nonce)
+                return await operations.revealNonce(header, nonce)
                     .then(res => {
                         console.log(res);
                     })
@@ -189,7 +184,6 @@ const self:BakingControllerProps = {
 
         while (self.running) {
             await rpc.monitorHeads('main', (header, resolve) => {
-                console.warn(header.hash);
                 self.running
                     ? self.run(keys, options.logger)
                     : resolve();
