@@ -32,7 +32,7 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
         justifyContent: 'space-between',
         alignItems: 'stretch',
         alignContent: 'center',
-        paddingBottom: 50
+        paddingBottom: 20
     },
     widgets: {
         display: 'flex',
@@ -50,7 +50,6 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
         padding: 20,
         borderRadius: 10,
         boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)',
-        marginTop: 10,
         marginBottom: 10
     }
 });
@@ -67,14 +66,11 @@ const Dashboard: React.FC<Props> = props => {
         <div className={classes.root}>
             {chainInfo.level &&
                 <div className={classes.chainInfo}>
-                    <div>
-                        {'Next level '}
-                        <Chip
-                            color="primary"
-                            avatar={<Avatar>{Eta(chainInfo.estimated_time)}</Avatar>}
-                            label={chainInfo.level}
-                        />
-                    </div>
+                    <Chip
+                        color="primary"
+                        avatar={<Avatar>{Eta(chainInfo.estimated_time)}</Avatar>}
+                        label={`Next Level ${chainInfo.level}`}
+                    />
                     <span>Delegate: {chainInfo.delegate}</span>
                 </div>
             }
