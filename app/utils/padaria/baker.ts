@@ -15,6 +15,8 @@ import {
     CompletedBakingsFromServer,
     BakingRight
 } from './baker.d';
+import { PendingOperations } from './operations';
+import { UnsignedOperationProps } from './operations';
 
 const self:BakerInterface = {
     /*
@@ -233,7 +235,7 @@ const self:BakerInterface = {
         
         if (header.level % Number(rpc.networkConstants['blocks_per_commitment']) === 0) {
             logger({
-                message: `Level ${self.levelWaterMark} requires nonce reveal.Commitment Time.`,
+                message: `Level ${self.levelWaterMark} is a commitment block, generating a nonce to reveal later.`,
                 type: 'info',
                 severity: LogSeverity.NEUTRAL,
                 origin: LogOrigins.BAKER
@@ -265,12 +267,12 @@ const self:BakerInterface = {
 
         const pendingOperations = await rpc.getPendingOperations();
 
-        const operations = await Operations.classifyOperations(pendingOperations, header.protocol);
+        let operations = await Operations.classifyOperations(pendingOperations, header.protocol);
 
         /*
-        *   Signature cannot be empty, using a fake signature. [Is not important for this operation]
+        *   Dummy signature. [Is not important for this operation]
         */
-        let blockHeader = {
+        const blockHeader = {
             protocol_data: {
                 protocol: header.protocol,
                 priority,
@@ -297,21 +299,23 @@ const self:BakerInterface = {
 
         if (!res || !res.shell_header) return;
 
-        let { shell_header, operations:ops } = res;
+        let { shell_header, operations:ops } = res as {
+            shell_header: BlockHeaderProps;
+            operations: PendingOperations[];
+        };
 
         shell_header['protocol_data'] = utils.createProtocolData(priority);
 
-        // Cannot have hash field, needs to be removed
-        ops = ops.reduce((prev:any, cur:any) => {
+        operations = ops.reduce((prev, cur) => {
             // Hash field is not allowed here, needs to be removed
             return [
                 ...prev,
-                cur.applied.reduce((prev2:any, cur2:any) => {
+                cur.applied.reduce((prev2, {data, branch}) => {
                     return [
                         ...prev2,
                         {
-                            data: cur2.data,
-                            branch: cur2.branch
+                            data,
+                            branch
                         }
                     ];
                 }, [])
@@ -352,7 +356,7 @@ const self:BakerInterface = {
             timestamp,
             data: {
                 data: signed.signedBytes,
-                operations: ops
+                operations
             },
             seed_nonce_hash: operationArgs.seedHex,
             seed: operationArgs.seed,

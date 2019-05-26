@@ -19,7 +19,7 @@ import { DelegateProps } from '../../utils/padaria/bakingController';
 import { BakingRight } from '../../utils/padaria/baker';
 
 
-const styles = ({ palette, spacing }: Theme) => createStyles({
+const styles = ({ palette }: Theme) => createStyles({
     root: {
         display: 'flex',
         flexDirection: 'column',
@@ -43,14 +43,17 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
     },
     chainInfo: {
         display: 'flex',
-        justifyContent: 'space-evenly',
+        justifyContent: 'center',
         alignItems: 'stretch',
         alignContent: 'center',
-        backgroundColor: palette.grey[300],
-        padding: 20,
+        padding: 10,
         borderRadius: 10,
+        backgroundColor: palette.background.paper,
         boxShadow: '0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22)',
         marginBottom: 10
+    },
+    chip: {
+        margin: 5
     }
 });
 
@@ -67,11 +70,17 @@ const Dashboard: React.FC<Props> = props => {
             {chainInfo.level &&
                 <div className={classes.chainInfo}>
                     <Chip
+                        className={classes.chip}
                         color="primary"
                         avatar={<Avatar>{Eta(chainInfo.estimated_time)}</Avatar>}
                         label={`Next Level ${chainInfo.level}`}
                     />
-                    <span>Delegate: {chainInfo.delegate}</span>
+                    <Chip
+                        className={classes.chip}
+                        color="primary"
+                        label={`Delegate ${chainInfo.delegate}`}
+                    />
+                    <span></span>
                 </div>
             }
             <div className={classes.top}>

@@ -17,7 +17,7 @@ import { LoaderPrototype, LoadTypes } from '../actions/loader';
 import { UserDataActionsPrototypes } from '../actions/userData';
 
 import routes from '../constants/routes.json';
-
+import bakingController from '../utils/padaria/bakingController';
 
 const styles = ({ spacing }: Theme) => createStyles({
     root: {
@@ -66,6 +66,7 @@ const Component: React.FC<Props> = props => {
     const handleBakerLock = async () => {
         loader(LoadTypes.USER_DATA);
         await loadUserData();
+        bakingController.stop();
         loader(LoadTypes.USER_DATA, true);
     };
     

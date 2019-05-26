@@ -90,12 +90,16 @@ export type UnsignedOperations = [
 export interface PendingOperations {
     applied: UnsignedOperationProps[];
     branch_delayed: UnsignedOperationProps[];
-    branch_refused?: UnsignedOperationProps[];
-    refused?: UnsignedOperationProps[];
-    unprocessed: UnsignedOperationProps[];
+    branch_refused: UnsignedOperationProps[];
+    refused: UnsignedOperationProps[];
+    unprocessed?: UnsignedOperationProps[];
 }
 
 export type UnsignedOperationProps = {
+    data?: {
+        data: string;
+        operations: UnsignedOperationProps[][];
+    };
     protocol?: string;
     branch: string;
     contents: OperationContents;
