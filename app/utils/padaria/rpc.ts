@@ -22,8 +22,8 @@ export enum QueryTypes {
     POST    = 'POST'
 };
 
-export const DEFAULT_NODE_ADDRESS = '67.207.68.241';
-export const DEFAULT_NODE_PORT = '3000';
+export const DEFAULT_NODE_ADDRESS = 'rpc.tezaria.com';
+export const DEFAULT_NODE_PORT = 443;
 export const DEFAULT_API_ADDRESS = 'http://67.207.68.241:8080/v1alpha1/graphql';
 export const DEFAULT_TZSCAN_API_ADDRESS = 'api.zeronet.tzscan.io';
 
@@ -122,7 +122,7 @@ const self:RPCInterface = {
             rejectUnauthorized: false
         } as any;
 
-        options.agent = new http.Agent(options);
+        options.agent = self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options);
 
         return self.queryRequest(options, args);
     },
@@ -151,7 +151,7 @@ const self:RPCInterface = {
         new Promise((resolve, reject) => {
             try {
                 let req;
-                if (options.port === 443)
+                if (options.port == 443)
                     req = https.request(options, res => {
                         res.setEncoding('utf8');
                         let result = '';
@@ -221,7 +221,7 @@ const self:RPCInterface = {
         return new Promise((resolve, reject) => {
             try {
                 let req;
-                if (options.port === 443)
+                if (options.port == 443)
                     req = https.request(options, res => {
                         res.setEncoding('utf8');
                         let result = '';
@@ -361,7 +361,7 @@ const self:RPCInterface = {
                 'Content-Type': 'application/json'
             }
         } as any;
-        options.agent = self.nodePort === "443" ? new https.Agent(options) : new http.Agent(options);
+        options.agent = self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options);
 
         return self.queryStreamRequest(options, callback);
     },
@@ -375,7 +375,7 @@ const self:RPCInterface = {
                 'Content-Type': 'application/json'
             }
         } as any;
-        options.agent = self.nodePort === "443" ? new https.Agent(options) : new http.Agent(options);
+        options.agent = self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options);
 
         return self.queryStreamRequest(options, callback);
     },

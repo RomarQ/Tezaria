@@ -2,13 +2,13 @@ import { OperationsInterface, UnsignedOperationProps, OperationProps, UnsignedOp
 import { PendingOperations } from './operations';
 import { BakingRight } from './baker';
 
-export interface RPCInterface extends UserSettingsType {
+export interface RPCInterface extends TezariaSettingsProps {
     ready: boolean;
     apiClient: any;
     network: string;
     networkEpoch: string;
     networkConstants: NetworkConstants;
-    load: (options:UserSettingsType) => Promise<boolean>;
+    load: (options:TezariaSettingsProps) => Promise<boolean>;
     setCurrentNetwork: () => Promise<void>;
     setNetworkConstants: () => Promise<void>;
     getCurrentHead: () => Promise<BlockProps>;

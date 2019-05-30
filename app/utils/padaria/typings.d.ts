@@ -1,6 +1,15 @@
 declare module 'bs58check';
 declare module 'electron-json-storage';
 
+declare interface TezariaSettingsProps {
+    nodeAddress?: string;
+    nodePort?: number;
+    tzScanAddress?: string;
+    apiAddress?: string;
+    delegatorFee?: number;
+    rewardsBatchSize?: number;
+}
+
 declare interface LoggerActionProps {
     key?:       number;
     type:       'error' | 'warning' | 'info' | 'success';
