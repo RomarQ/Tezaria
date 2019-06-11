@@ -50,7 +50,7 @@ const styles = ({ palette, spacing }: Theme):Record<string, CSSProperties> => cr
 const Component: React.FC<WithStyles<typeof styles>> = ({ classes }) => (
     <div className={classes.root}>
         <div className={classes.container}>
-            <img alt="logo" src="../resources/assets/logo.png" className={classes.logo} />
+            <img alt="logo" src="./assets/logo.png" className={classes.logo} />
             <div className={classes.buttons}>
                 <FabLink
                     to={routes.NEW_ACCOUNT}

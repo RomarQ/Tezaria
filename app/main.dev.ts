@@ -8,7 +8,7 @@
  * When running `yarn build` or `yarn build-main`, this file is compiled to
  * `./app/main.prod.js` using webpack. This gives us some performance wins.
  */
-import { app, ipcMain, BrowserWindow} from 'electron';
+import { app, ipcMain, BrowserWindow, globalShortcut } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import path from 'path';
@@ -24,7 +24,7 @@ export default class AppUpdater {
     }
 }
 
-let mainWindow:BrowserWindow  = null;
+let mainWindow:BrowserWindow = null;
 
 if (process.env.NODE_ENV === 'production') {
     const sourceMapSupport = require('source-map-support');
@@ -90,32 +90,37 @@ app.on('ready', async () => {
         height: 800,
         width: 1280,
         title: `${appInfo.productName} - ${appInfo.version}`,
-        icon : path.join(__dirname, '..', 'resources/assets/icon.png')
+        icon : path.join(__dirname, '..', 'resources/icon.png')
     });
-    
+
+    // Shortcuts
+    globalShortcut.register('CommandOrControl+R', () => mainWindow.reload());
+        
     mainWindow.setMenuBarVisibility(false);
     mainWindow.loadURL(`file://${__dirname}/app.html`);
-    console.log(__dirname, path.join(__dirname, '..', 'resources/assets/icon.png'))
-    mainWindow.webContents.openDevTools();
+    
+    // Dev tools
+    process.env.NODE_ENV === 'development' && mainWindow.webContents.openDevTools();
 
     // @TODO: Use 'ready-to-show' event
-    //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
+    //  https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
     mainWindow.webContents.on('did-finish-load', () => {
         console.log('LOADED ' + new Date)
         if (!mainWindow) {
-        throw new Error('"mainWindow" is not defined');
+            throw new Error('"mainWindow" is not defined');
         }
         //mainWindow.setSize(1024,1024);
         //mainWindow.center();
 
         if (process.env.START_MINIMIZED) {
-        mainWindow.minimize();
+            mainWindow.minimize();
         } else {
-        mainWindow.show();
-        mainWindow.focus();
+            mainWindow.show();
+            mainWindow.focus();
         }
     });
 
+    /*
     // SSL/TSL: this is the self signed certificate support
     app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
         event.preventDefault();
@@ -128,6 +133,7 @@ app.on('ready', async () => {
         // Return true after everything was verified and proved to be correct.
         callback(true);
     });
+    */
 
     mainWindow.on('closed', () => {
         mainWindow = null;

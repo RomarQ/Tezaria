@@ -24,7 +24,7 @@ const styles = ({ spacing }:Theme):Record<string, CSSProperties> => createStyles
     },
     loaderImg: {
         width: 128,
-        background: 'url(../resources/assets/logo.png) no-repeat center',
+        background: 'url(./assets/logo.png) no-repeat center',
         backgroundSize: '40%'
     }
 });
