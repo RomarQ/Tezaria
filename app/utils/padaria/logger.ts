@@ -8,7 +8,7 @@ export enum LogSeverity {
 
 export enum LogOrigins {
     RPC,
-    API,
+    TzScan,
     BAKER,
     ENDORSER,
     ACCUSER,

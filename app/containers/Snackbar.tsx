@@ -15,7 +15,6 @@ const Container: React.FC<Props> = ({ logs, enqueueSnackbar, loggerActions }) =>
     const snackCounter = React.useRef(0);
 
     React.useEffect(() => {
-        console.log(snackCounter, logs)
         logs.filter(log => log.key > snackCounter.current)
             .forEach(log => {
                 snackCounter.current++;

@@ -22,8 +22,8 @@ export enum QueryTypes {
     POST    = 'POST'
 };
 
-export const DEFAULT_NODE_ADDRESS = '67.207.68.241';
-export const DEFAULT_NODE_PORT = '3000';
+export const DEFAULT_NODE_ADDRESS = 'rpc.tezaria.com';
+export const DEFAULT_NODE_PORT = 80;
 export const DEFAULT_API_ADDRESS = 'http://67.207.68.241:8080/v1alpha1/graphql';
 export const DEFAULT_TZSCAN_API_ADDRESS = 'api.zeronet.tzscan.io';
 
@@ -78,10 +78,13 @@ const self:RPCInterface = {
     setNetworkConstants: async () => {
         self.networkConstants = await self.queryNode('/chains/main/blocks/head/context/constants', QueryTypes.GET) as NetworkConstants;
     },
-    getCurrentCycle: async () => {
-        const metadata = await self.getBlockMetadata('head');
-        
-        return metadata && metadata.level.cycle;
+    getCurrentLevel: (chainId = 'main', blockId = 'head') => (
+        self.queryNode(`/chains/${chainId}/blocks/${blockId}/helpers/current_level`, QueryTypes.GET)
+    ),
+    getCurrentCycle: async (chainId = 'main', blockId = 'head') => {
+        const {level} = await self.getCurrentLevel(chainId, blockId);
+    
+        return level && Math.floor(level/self.networkConstants['blocks_per_cycle']);
     },
     getCurrentHead: () => (
         self.queryNode('/chains/main/blocks/head', QueryTypes.GET)
@@ -98,6 +101,11 @@ const self:RPCInterface = {
     getBlockOperations: blockId => (
         self.queryNode(`/chains/main/blocks/${blockId}/operations`, QueryTypes.GET)
     ),
+    getBakingRights: (pkh, level, maxPriority = 5, chainId = 'main', blockId = 'head') => (
+        pkh
+            ? self.queryNode(`/chains/${chainId}/blocks/${blockId}/helpers/baking_rights?delegate=${pkh}&level=${level}&max_priority=${maxPriority}`, QueryTypes.GET)
+            : self.queryNode(`/chains/${chainId}/blocks/${blockId}/helpers/baking_rights?level=${level}&max_priority=${maxPriority}`, QueryTypes.GET)
+    ),
     queryNode: (path, method, args) => {
         const options = {
             hostname: self.nodeAddress,
@@ -105,16 +113,12 @@ const self:RPCInterface = {
             //timeout: 60000, // 1min
             path,
             method,
-            key: fs.readFileSync('app/certs/server.key'),
-            cert: fs.readFileSync('app/certs/server.crt'),
             headers: {
                 'Content-Type': 'application/json'
             },
-            requestCert: false,
-            rejectUnauthorized: false
         } as any;
 
-        options.agent = new http.Agent(options);
+        options.agent = self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options);
 
         return self.queryRequest(options, args);
     },
@@ -143,7 +147,7 @@ const self:RPCInterface = {
         new Promise((resolve, reject) => {
             try {
                 let req;
-                if (options.port === 443)
+                if (options.port == 443)
                     req = https.request(options, res => {
                         res.setEncoding('utf8');
                         let result = '';
@@ -213,7 +217,7 @@ const self:RPCInterface = {
         return new Promise((resolve, reject) => {
             try {
                 let req;
-                if (options.port === 443)
+                if (options.port == 443)
                     req = https.request(options, res => {
                         res.setEncoding('utf8');
                         let result = '';
@@ -224,9 +228,7 @@ const self:RPCInterface = {
                                 cb(JSON.parse(result), resolve);
                                 result = '';
                             }
-                            catch(e) {
-                                //console.error(e, result);
-                            }
+                            catch(e) {}
                         });
 
                         res.on('end', () => resolve());
@@ -242,9 +244,7 @@ const self:RPCInterface = {
                                 cb(JSON.parse(result), resolve);
                                 result = '';
                             }
-                            catch(e) {
-                                //console.error(e, result);
-                            }
+                            catch(e) {}
                         });
 
                         res.on('end', () => resolve());
@@ -281,7 +281,7 @@ const self:RPCInterface = {
         return await
             self.queryNode('/chains/main/blocks/head/helpers/scripts/run_operation', QueryTypes.POST, verifiedOp);
     },
-    forgeOperation: async (metadata, operation) => {
+    forgeOperation: async (metadata, operation, verify = true) => {
         const forgedOperation = await self.queryNode(`/chains/main/blocks/head/helpers/forge/operations`, QueryTypes.POST, operation);
 
         if (!forgedOperation) return;
@@ -290,9 +290,14 @@ const self:RPCInterface = {
             return prev += operations.forgeOperationLocally(cur);
         }, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
         
-        console.log(forgedOperation);
-        console.log(forgedConfirmation);
-        if (forgedOperation !== forgedConfirmation) throw Error('[RPC] - Validation error on operation forge verification.');
+
+        if (forgedOperation !== forgedConfirmation) {
+            console.log(forgedOperation);
+            console.log(forgedConfirmation);
+
+            if (verify)
+                throw Error('[RPC] - Validation error on operation forge verification.');
+        }
 
         return {
             ...operation,
@@ -348,8 +353,9 @@ const self:RPCInterface = {
                 'Content-Type': 'application/json'
             }
         } as any;
-        options.agent = self.nodePort === "443" ? new https.Agent(options) : new http.Agent(options);
+        options.agent = self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options);
 
+        console.log(options)
         return self.queryStreamRequest(options, callback);
     },
     monitorValidBlocks: (chainId, callback) => {
@@ -362,7 +368,7 @@ const self:RPCInterface = {
                 'Content-Type': 'application/json'
             }
         } as any;
-        options.agent = self.nodePort === "443" ? new https.Agent(options) : new http.Agent(options);
+        options.agent = self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options);
 
         return self.queryStreamRequest(options, callback);
     },

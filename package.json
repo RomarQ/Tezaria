@@ -3,6 +3,7 @@
     "productName": "Padaria",
     "private": true,
     "version": "1.4.1",
+    "author": "Rodrigo Quelhas <rodrigo_quelhas@hotmail.com>",
     "description": "Baking System Application for Tezos Blockchain",
     "scripts": {
         "build": "concurrently \"yarn build-main\" \"yarn build-renderer\"",
@@ -61,8 +62,8 @@
     },
     "main": "./app/main.prod.js",
     "build": {
-        "productName": "ElectronReact",
-        "appId": "org.develar.ElectronReact",
+        "productName": "Tezaria",
+        "appId": "org.develar.Tezaria",
         "files": [
             "app/dist/",
             "app/app.html",

@@ -1,19 +1,22 @@
 import { OperationsInterface, UnsignedOperationProps, OperationProps, UnsignedOperations } from './operations';
 import { PendingOperations } from './operations';
+import { BakingRight } from './baker';
 
-export interface RPCInterface extends UserSettingsType {
+export interface RPCInterface extends TezariaSettingsProps {
     ready: boolean;
     apiClient: any;
     network: string;
     networkEpoch: string;
     networkConstants: NetworkConstants;
-    load: (options:UserSettingsType) => Promise<boolean>;
+    load: (options:TezariaSettingsProps) => Promise<boolean>;
     setCurrentNetwork: () => Promise<void>;
     setNetworkConstants: () => Promise<void>;
     getCurrentHead: () => Promise<BlockProps>;
-    getCurrentCycle: () => Promise<number>;
+    getCurrentLevel: (chainId?:string, blockId?:string) => Promise<LevelProps>;
+    getCurrentCycle: (chainId?:string, blockId?:string) => Promise<number>;
     getBlockHeader: (blockId:string) => Promise<BlockHeaderProps>;
     getBlockMetadata: (blockId:string) => Promise<BlockMetadataProps>;
+    getBakingRights: (pkh:string, level:number, maxPriority?:number, chainId?:string, blockId?:string) => Promise<BakingRight[]>;
     queryNode: (path:string, mothod:QueryType, args?:any) => Promise<any>;
     queryTzScan: (path:string, mothod:QueryType, args?:any) => Promise<any>;
     queryAPI: (query:string, variables?:Object<any>) => Promise<any>;
@@ -21,7 +24,7 @@ export interface RPCInterface extends UserSettingsType {
     queryStreamRequest: (options:RequestOptions, cb:(res:any, resolve:()=>void) => void) => Promise<any>;
     getBalance: (pkh:string) => Promise<number>;
     simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
-    forgeOperation: (head:BlockHeaderProps, operation:UnsignedOperationProps, skipConfirmation?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
+    forgeOperation: (head:BlockHeaderProps, operation:UnsignedOperationProps, verify?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
     preapplyOperations: (operation:UnsignedOperationProps[]) => Promise<UnsignedOperationProps[]>;
     injectOperation: (operation:UnsignedOperationProps) => Promise<UnsignedOperationProps>;
     getContract: (pkh:string) => Promise<{

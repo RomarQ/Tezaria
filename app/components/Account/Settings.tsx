@@ -101,7 +101,7 @@ const Component: React.FC<Props> = ({ userData: { settings: currentSettings }, .
                         id="nodePort"
                         required
                         label="Node Port"
-                        type="text"
+                        type="number"
                         onChange={handleChange}
                         value={settings.nodePort || 8732}
                         placeholder="Node Port"

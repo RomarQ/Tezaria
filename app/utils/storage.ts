@@ -10,10 +10,10 @@ export interface StorageDataProps {
 export interface StorageFuncProps {
     getAll: () => Promise<Error | StorageDataProps>;
     setUserData: (obj:UserDataProps) => Promise<Error | void>;
-    getUserData: () => Promise<{ error?:Error, keys?:KeysType, settings?:UserSettingsType }>;
+    getUserData: () => Promise<{ error?:Error, keys?:KeysType, settings?:TezariaSettingsProps }>;
     clearUserData: () => Promise<Error[]>;
     setBakerKeys: (keys:KeysType) => Promise<{ error?:Error }>;
-    setBakerSettings: (settings:UserSettingsType) => Promise<{ error?:Error }>;
+    setBakerSettings: (settings:TezariaSettingsProps) => Promise<{ error?:Error }>;
     clearBakerNonces: () => Promise<Error | void>;
     getBakerNonces: () => Promise<NonceType[]>;
     setBakerNonces: (nonces:NonceType[]) => Promise<Error | void>;
@@ -36,8 +36,8 @@ const db:StorageFuncProps = {
             storage.get('keys', (error:Error, data:KeysType) => error ? reject({ error }) : resolve({ data }));
         }) as { error?:Error, data?:KeysType };
         const settings = await new Promise((resolve, reject) => {
-            storage.get('settings', (error:Error, data:UserSettingsType) => error ? reject({ error }) : resolve({ data }));
-        }) as { error?:Error, data?:UserSettingsType };
+            storage.get('settings', (error:Error, data:TezariaSettingsProps) => error ? reject({ error }) : resolve({ data }));
+        }) as { error?:Error, data?:TezariaSettingsProps };
 
         if(keys.error || settings.error) return { error: new Error("Not able to get User Data from the Storage! :(") };
 
@@ -65,7 +65,7 @@ const db:StorageFuncProps = {
     setBakerKeys: (keys:KeysType) => new Promise((resolve, reject) => {
         storage.set('keys', keys, (error:Error) => error ? reject(error) : resolve());
     }),
-    setBakerSettings: (settings:UserSettingsType) => new Promise((resolve, reject) => {
+    setBakerSettings: (settings:TezariaSettingsProps) => new Promise((resolve, reject) => {
         storage.set('settings', settings, (error:Error) => error ? reject({ error }) : resolve({}));
     }),
     // Baker Data

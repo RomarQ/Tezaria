@@ -1,6 +1,15 @@
 declare module 'bs58check';
 declare module 'electron-json-storage';
 
+declare interface TezariaSettingsProps {
+    nodeAddress?: string;
+    nodePort?: number;
+    tzScanAddress?: string;
+    apiAddress?: string;
+    delegatorFee?: number;
+    rewardsBatchSize?: number;
+}
+
 declare interface LoggerActionProps {
     key?:       number;
     type:       'error' | 'warning' | 'info' | 'success';
@@ -41,6 +50,7 @@ declare type BlockHeaderProps = {
     operations_hash: string;
     predecessor: string
     priority: number;
+    seed_nonce_hash?: string;
     proof_of_work_nonce: string;
     proto: number
     protocol?: string;
@@ -48,6 +58,16 @@ declare type BlockHeaderProps = {
     timestamp: string;
     validation_pass: number;
 };
+
+declare interface LevelProps {
+    cycle: number;
+    cycle_position: number;
+    expected_commitment: boolean;
+    level: number;
+    level_position: number;
+    voting_period: number;
+    voting_period_position: number;
+}
 
 declare type BlockMetadataProps = {
     baker: string;
@@ -60,15 +80,7 @@ declare type BlockMetadataProps = {
     }>;
     consumed_gas: string;
     deactivated: [];
-    level: {
-        cycle: number;
-        cycle_position: number;
-        expected_commitment: boolean;
-        level: number;
-        level_position: number;
-        voting_period: number;
-        voting_period_position: number;
-    };
+    level: LevelProps;
     max_block_header_length: number;
     max_operation_data_length: number;
     max_operation_list_length: Array<{ 
