@@ -2,7 +2,7 @@
     "name": "padaria",
     "productName": "Padaria",
     "private": true,
-    "version": "1.4.1",
+    "version": "1.5.0",
     "author": "Rodrigo Quelhas <rodrigo_quelhas@hotmail.com>",
     "description": "Baking System Application for Tezos Blockchain",
     "scripts": {
