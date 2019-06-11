@@ -18,6 +18,11 @@ export const Prefix = {
     p2esk: new Uint8Array([9, 48, 57, 115, 171]),       // 88 bytes p256
     edsig: new Uint8Array([9, 245, 205, 134, 18]),      // 99 bytes
 
+    sig: new Uint8Array([4, 130, 43]),                  // sig(96)  generic signature
+    block: new Uint8Array([1, 52]),                     // B(51)    block hash
+    LLo: new Uint8Array([29, 159,109]),                 // LLo(53)  operation list list hash
+    Co: new Uint8Array([79, 199]),                      // Co(52)   context hash
+
     chainId: new Uint8Array([87, 82, 0]),              // 15 bytes Net[...]
     nce: new Uint8Array([69, 220, 169]),
     blockHash: new Uint8Array([1,52]), // (* B(51) *)
@@ -147,7 +152,7 @@ const self:UtilsInterface = {
         else return self.convertUnitWithSymbol(value, self.uTEZ);
     },
     firstCycleLevel: (level:number) => (
-        Math.floor(level/rpc.networkConstants['blocks_per_cycle']) * rpc.networkConstants['blocks_per_cycle']
+        (Math.floor(level/rpc.networkConstants['blocks_per_cycle']) * rpc.networkConstants['blocks_per_cycle']) + 1
     ),
     lastCycleLevel: (level:number) => (
         self.firstCycleLevel(level) + rpc.networkConstants['blocks_per_cycle']
@@ -174,7 +179,7 @@ const self:UtilsInterface = {
         return bs58check.encode(buffer);
     },
     b58decode: (encoded, prefix) => (
-        bs58check.decode(encoded).slice(prefix.length)
+        prefix ? bs58check.decode(encoded).slice(prefix.length) : bs58check.decode(encoded)
     ),
     int32Buffer: number => {
         return new Uint8Array([
@@ -184,7 +189,12 @@ const self:UtilsInterface = {
             (number & 0x000000ff)
         ]);
     },
-    
+    int16Buffer: number => {
+        return new Uint8Array([
+            (number & 0x0000ff00) >> 8,
+            (number & 0x000000ff)
+        ]);
+    },
     numberToZarith: (value:number) => {
         let zarith = '';
 

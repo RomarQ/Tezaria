@@ -64,7 +64,7 @@ export interface BakerInterface {
         timestamp: string;
         data: {
             data: string;
-            operations: UnsignedOperations;
+            operations: UnsignedOperationProps[][];
         };
         seed_nonce_hash: string;
         seed: string;

@@ -35,8 +35,9 @@ export interface UtilsInterface {
     bufferToHex: (buffer:Uint8Array) => string;
     mergeBuffers: (Uint8Array, Uint8Array) => Uint8Array;
     b58encode: (payload:Uint8Array, prefix:Uint8Array) => string;
-    b58decode: (encoded:string, prefix:Uint8Array) => Uint8Array;
+    b58decode: (encoded:string, prefix?:Uint8Array) => Uint8Array;
     int32Buffer: (number:number) => Uint8Array;
+    int16Buffer: (number:number) => Uint8Array;
     numberToZarith: (value:number) => string;
 }
 

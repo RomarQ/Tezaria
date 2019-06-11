@@ -100,8 +100,8 @@ const self: OperationsInterface = {
             }]
         };
 
-        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, true);
-        
+        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, false);
+
         const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
         return await rpc.injectOperation({
             ...verifiedOp,
@@ -121,7 +121,7 @@ const self: OperationsInterface = {
             }]
         };
 
-        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, true);
+        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, false);
         
         const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
         return await rpc.injectOperation({
@@ -386,7 +386,43 @@ const self: OperationsInterface = {
                 forgeResult += utils.bufferToHex(utils.int32Buffer(Number(operation.level))) + operation.nonce;
                 break;
             case 2: break;
-            case 3: break;
+            case 3:
+                forgeResult += "000000ce";
+                forgeResult += `${utils.bufferToHex(utils.int32Buffer(Number(operation.bh1.level)))}`;
+                forgeResult += `${utils.bufferToHex(new Uint8Array([Number(operation.bh1.proto)]))}`;
+                forgeResult += `${utils.bufferToHex(utils.b58decode(operation.bh1.predecessor, Prefix.block))}`;
+                forgeResult += "00000000";
+                forgeResult += (Math.floor(new Date(operation.bh1.timestamp).getTime()/1000)).toString(16);
+                forgeResult += `${utils.bufferToHex(new Uint8Array([Number(operation.bh1.validation_pass)]))}`;
+                forgeResult += `${utils.bufferToHex(utils.b58decode(operation.bh1.operations_hash, Prefix.LLo))}`;
+                forgeResult += "00000011000000010000000008";
+                forgeResult += `${operation.bh1.fitness[1]}`;
+                forgeResult += `${utils.bufferToHex(utils.b58decode(operation.bh1.context, Prefix.Co))}`;
+                forgeResult += `00${utils.bufferToHex(new Uint8Array([operation.bh1.priority]))}`;
+                forgeResult += `${operation.bh1.proof_of_work_nonce}`
+                operation.bh1.seed_nonce_hash && (
+                    forgeResult += `|${utils.bufferToHex(utils.b58decode(operation.bh1.seed_nonce_hash, Prefix.nce))}`
+                )
+                forgeResult += `00${utils.bufferToHex(utils.b58decode(operation.bh1.signature, Prefix.sig))}`;
+                
+                forgeResult += "000000ce";
+                forgeResult += `${utils.bufferToHex(utils.int32Buffer(Number(operation.bh2.level)))}`;
+                forgeResult += `${utils.bufferToHex(new Uint8Array([Number(operation.bh2.proto)]))}`;
+                forgeResult += `${utils.bufferToHex(utils.b58decode(operation.bh2.predecessor, Prefix.block))}`;
+                forgeResult += "00000000";
+                forgeResult += (Math.floor(new Date(operation.bh2.timestamp).getTime()/1000)).toString(16);
+                forgeResult += `${utils.bufferToHex(new Uint8Array([Number(operation.bh2.validation_pass)]))}`;
+                forgeResult += `${utils.bufferToHex(utils.b58decode(operation.bh2.operations_hash, Prefix.LLo))}`;
+                forgeResult += "00000011000000010000000008";
+                forgeResult += `${operation.bh2.fitness[1]}`;
+                forgeResult += `${utils.bufferToHex(utils.b58decode(operation.bh2.context, Prefix.Co))}`;
+                forgeResult += `00${utils.bufferToHex(new Uint8Array([operation.bh2.priority]))}`;
+                forgeResult += `${operation.bh2.proof_of_work_nonce}`;
+                operation.bh2.seed_nonce_hash && (
+                    forgeResult += `|${utils.bufferToHex(utils.b58decode(operation.bh2.seed_nonce_hash, Prefix.nce))}`
+                )
+                forgeResult += `00${utils.bufferToHex(utils.b58decode(operation.bh2.signature, Prefix.sig))}`;
+                break;
             case 4: // Activate Account
                 forgeResult += utils.bufferToHex(utils.b58decode(operation.pkh, Prefix.tz1)) + operation.secret;
                 break;

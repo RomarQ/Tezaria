@@ -90,12 +90,16 @@ export type UnsignedOperations = [
 export interface PendingOperations {
     applied: UnsignedOperationProps[];
     branch_delayed: UnsignedOperationProps[];
-    branch_refused?: UnsignedOperationProps[];
-    refused?: UnsignedOperationProps[];
-    unprocessed: UnsignedOperationProps[];
+    branch_refused: UnsignedOperationProps[];
+    refused: UnsignedOperationProps[];
+    unprocessed?: UnsignedOperationProps[];
 }
 
 export type UnsignedOperationProps = {
+    data?: {
+        data: string;
+        operations: UnsignedOperationProps[][];
+    };
     protocol?: string;
     branch: string;
     contents: OperationContents;
@@ -121,6 +125,8 @@ export interface OperationProps {
     level?: number;
     slot?: number;
     pkh?: string;
+    bh1?: BlockHeaderProps;
+    bh2?: BlockHeaderProps;
     secret?: string;
     counter?: number | string;
     gas_limit?: number | string;

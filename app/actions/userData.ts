@@ -32,7 +32,7 @@ interface SetKeysAction {
 
 interface SetSettingsAction {
 	type: UserDataActionTypes.SET_SETTINGS;
-	settings: UserSettingsType;
+	settings: TezariaSettingsProps;
 }
 
 export type UserDataActions =
@@ -46,7 +46,7 @@ export type LoadUserDataPrototype = () => Promise<UserDataProps>;
 export type ClearUserDataPrototype = () => Promise<void>;
 export type SetBakerKeysPrototype = (keys: KeysType) => (dispatch: Dispatch) => void;
 export type SetBakerSettingsPrototype = (
-	settings: UserSettingsType
+	settings: TezariaSettingsProps
 ) => Promise<void>;
 
 export interface UserDataActionsPrototypes extends ActionCreatorsMapObject {
@@ -88,7 +88,7 @@ const setBakerKeys = ({sk, ...keys}: KeysType) => (dispatch: Dispatch) => {
     });
 };
 
-const setBakerSettings = (settings: UserSettingsType) => (dispatch: Dispatch) => (
+const setBakerSettings = (settings: TezariaSettingsProps) => (dispatch: Dispatch) => (
 	storage.setBakerSettings(settings).then(() => {
 		dispatch({ type: UserDataActionTypes.SET_SETTINGS, settings });
 

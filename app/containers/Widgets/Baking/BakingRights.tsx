@@ -1,14 +1,14 @@
 import React from 'react';
-import { bindActionCreators, Dispatch, ActionCreatorsMapObject } from 'redux';
+import { bindActionCreators, Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import Component from '../../../components/Widgets/Baking/BakingRights';
 import LoggerActions, { LoggerActionsPrototypes, LogTypes } from '../../../actions/logger';
 import baker, { IncomingBakings, CompletedBaking } from '../../../utils/padaria/baker';
 import { LogOrigins } from '../../../utils/padaria/logger';
 
-type Props = {
+interface Props {
     pkh:    string;
-    logger: ActionCreatorsMapObject<LoggerActionsPrototypes>;
+    logger: LoggerActionsPrototypes;
 };
 
 const Container = ({ pkh, logger }:Props) => {
@@ -19,17 +19,17 @@ const Container = ({ pkh, logger }:Props) => {
         getIncomingBakings();
         getCompletedBakings();
         
-        return () => { isMounted.current = false; }
-    }, []);
-
-    React.useEffect(() => {
         const id = setInterval(() => {
             getIncomingBakings();
             getCompletedBakings();
         }, 20000);
 
-        return () => { clearInterval(id); }
-    });
+        return () => {
+            isMounted.current = false;
+            clearInterval(id);
+        }
+    }, []);
+
 
     const getIncomingBakings = async () => {
         baker.getIncomingBakings(pkh).then((result:IncomingBakings) => {
@@ -38,8 +38,8 @@ const Container = ({ pkh, logger }:Props) => {
         })
         .catch((error:Error) => {
             logger.add({
-                type:  LogTypes.ERROR,
-                message:  error,
+                type: LogTypes.ERROR,
+                message: error.message,
                 origin: LogOrigins.RPC
             });
         });
@@ -53,7 +53,7 @@ const Container = ({ pkh, logger }:Props) => {
             logger.add({
                 type:  LogTypes.ERROR,
                 message:  error.message,
-                origin: LogOrigins.RPC
+                origin: LogOrigins.TzScan
             });
         });
     }
