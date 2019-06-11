@@ -131,14 +131,14 @@ const self:BakingControllerProps = {
         //Endorser
         if (self.endorsing) {
             await endorser.run(keys.pkh, header, logger);
-        }
+        }/* 
         (async () => {
             if (self.endorsing && !self.locks.endorser) {
                 self.locks.endorser = true;
                 await endorser.run(keys.pkh, header, logger);
                 self.locks.endorser = false;
             }
-        })();
+        })(); */
         // Baker
         if (self.baking) {
             baker.run(keys.pkh, header, logger);
@@ -183,11 +183,17 @@ const self:BakingControllerProps = {
         }
 
         while (self.running) {
-            await rpc.monitorHeads('main', (header, resolve) => {
-                self.running
-                    ? self.run(keys, options.logger)
-                    : resolve();
-            });
+            try {
+                await rpc.monitorHeads('main', (header, resolve) => {
+                    console.log("Block received,", header)
+                    self.running
+                        ? self.run(keys, options.logger)
+                        : resolve();
+                });
+            }
+            catch(e) {
+                console.error(e);
+            }
         }
 
         return true;

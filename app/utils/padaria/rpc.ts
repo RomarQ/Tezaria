@@ -23,7 +23,7 @@ export enum QueryTypes {
 };
 
 export const DEFAULT_NODE_ADDRESS = 'rpc.tezaria.com';
-export const DEFAULT_NODE_PORT = 443;
+export const DEFAULT_NODE_PORT = 80;
 export const DEFAULT_API_ADDRESS = 'http://67.207.68.241:8080/v1alpha1/graphql';
 export const DEFAULT_TZSCAN_API_ADDRESS = 'api.zeronet.tzscan.io';
 
@@ -113,13 +113,9 @@ const self:RPCInterface = {
             //timeout: 60000, // 1min
             path,
             method,
-            key: fs.readFileSync('app/certs/server.key'),
-            cert: fs.readFileSync('app/certs/server.crt'),
             headers: {
                 'Content-Type': 'application/json'
             },
-            requestCert: false,
-            rejectUnauthorized: false
         } as any;
 
         options.agent = self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options);
@@ -232,9 +228,7 @@ const self:RPCInterface = {
                                 cb(JSON.parse(result), resolve);
                                 result = '';
                             }
-                            catch(e) {
-                                //console.error(e, result);
-                            }
+                            catch(e) {}
                         });
 
                         res.on('end', () => resolve());
@@ -250,9 +244,7 @@ const self:RPCInterface = {
                                 cb(JSON.parse(result), resolve);
                                 result = '';
                             }
-                            catch(e) {
-                                //console.error(e, result);
-                            }
+                            catch(e) {}
                         });
 
                         res.on('end', () => resolve());
@@ -363,6 +355,7 @@ const self:RPCInterface = {
         } as any;
         options.agent = self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options);
 
+        console.log(options)
         return self.queryStreamRequest(options, callback);
     },
     monitorValidBlocks: (chainId, callback) => {
