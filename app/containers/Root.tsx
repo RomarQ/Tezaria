@@ -10,9 +10,9 @@ import { SnackbarProvider } from 'notistack';
 import { History } from 'history';
 import App from './App';
 
-type Props = {
+interface Props {
     store: any;
-    history: History<any>;
+    history: History;
 };
 
 const theme = createMuiTheme({

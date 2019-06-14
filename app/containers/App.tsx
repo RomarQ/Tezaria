@@ -16,6 +16,7 @@ import { LogOrigins } from '../utils/padaria/logger';
 
 import Nav from '../components/Nav';
 import Snackbar from './Snackbar';
+import { classes } from 'istanbul-lib-coverage';
 
 interface Props extends RouteComponentProps {
     loading: boolean;
@@ -29,10 +30,15 @@ interface Props extends RouteComponentProps {
 }
 
 const App: React.FC<Props> = props => {
+    const [connectionStatus, setConnectionStatus] = React.useState(navigator.onLine);
     const { loading, pending, userDataFunc, userData, loader, history, logger } = props;
 
     React.useEffect(() => {
         props.loader(LoadTypes.USER_DATA);
+
+        window.addEventListener('online', () => setConnectionStatus(navigator.onLine));
+        window.addEventListener('offline', () => setConnectionStatus(navigator.onLine));
+
         props.userDataFunc.loadUserData().then(({ settings }) => {
             props.loader(LoadTypes.PADARIA_NODE);
             
@@ -63,11 +69,15 @@ const App: React.FC<Props> = props => {
                 origin: LogOrigins.RPC
             });
         });
-    }, []);
+
+    }, [connectionStatus]);
     
     console.log(props);
     return (
         <React.Fragment>
+            <div id="connectionStatus" className={connectionStatus ? 'green' : 'red'}>
+                {connectionStatus ? 'Online' : 'Offline'}
+            </div>
             <Snackbar />
             {loading 
                 ? <Splash waitingFor={pending} /> 
