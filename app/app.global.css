@@ -39,7 +39,7 @@ a:hover {
 }
 
 #content {
-	background: url(/home/romarq/Desktop/tezos.png) repeat;
+	background: url(./assets/tezos.png) repeat;
 	background-size: 128px;
 	display: flex;
 	flex-grow: 1;
