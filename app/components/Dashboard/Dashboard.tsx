@@ -5,18 +5,12 @@ import {
     WithStyles,
     Theme
 } from '@material-ui/core/styles';
-import Avatar from "@material-ui/core/Avatar";
-import Chip from "@material-ui/core/Chip";
 
-import Eta from '../ETA';
-import BakerPanel from '../Baker/BakerPanel';
+import ChainInfo from '../../containers/Dashboard/ChainInfo';
+import BakerPanel from '../../containers/Dashboard/BakerPanel';
 import EndorsingRights from '../../containers/Widgets/Endorsing/EndorsingRights';
 import BakingRights from '../../containers/Widgets/Baking/BakingRights';
 import BakingController from '../../containers/Widgets/BakingController';
-
-import { TezosCommitProps } from '../../utils/padaria/utils';
-import { DelegateProps } from '../../utils/padaria/bakingController';
-import { BakingRight } from '../../utils/padaria/baker';
 
 
 const styles = ({ palette }: Theme) => createStyles({
@@ -58,38 +52,21 @@ const styles = ({ palette }: Theme) => createStyles({
 });
 
 interface Props extends WithStyles<typeof styles> {
-    bakerInfo: DelegateProps & UserDataProps;
-    nodeInfo: TezosCommitProps;
-    chainInfo: BakingRight;
+    userData: UserDataProps;
 }
 
 const Dashboard: React.FC<Props> = props => {
-    const { classes, bakerInfo, nodeInfo, chainInfo } = props;
-    return bakerInfo.keys ? (
+    const { classes, userData } = props;
+    return userData.keys ? (
         <div className={classes.root}>
-            {chainInfo.level &&
-                <div className={classes.chainInfo}>
-                    <Chip
-                        className={classes.chip}
-                        color="primary"
-                        avatar={<Avatar>{Eta(chainInfo.estimated_time)}</Avatar>}
-                        label={`Next Level ${chainInfo.level}`}
-                    />
-                    <Chip
-                        className={classes.chip}
-                        color="primary"
-                        label={`Delegate ${chainInfo.delegate}`}
-                    />
-                    <span></span>
-                </div>
-            }
+            <ChainInfo />
             <div className={classes.top}>
-                <BakerPanel bakerInfo={bakerInfo} nodeInfo={nodeInfo} />
-                <BakingController keys={bakerInfo.keys} />
+                <BakerPanel userData={userData} />
+                <BakingController keys={userData.keys} />
             </div>
             <div className={classes.widgets}>
-                <EndorsingRights pkh={bakerInfo.keys.pkh} />
-                <BakingRights pkh={bakerInfo.keys.pkh} />
+                <EndorsingRights pkh={userData.keys.pkh} />
+                <BakingRights pkh={userData.keys.pkh} />
             </div>
         </div>
     ) : null;

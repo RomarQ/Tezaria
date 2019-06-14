@@ -9,12 +9,19 @@ const parseETA = (t:any) => (
 );
 
 export default (timestamp:string) => {
+    const isMounted = React.useRef(true);
     const [ETA, setETA] = React.useState(parseETA(moment.preciseDiff(timestamp, new Date(), true)));
 
     React.useEffect(() => {
-        const timeout = setInterval(() => setETA(parseETA(moment.preciseDiff(timestamp, new Date(), true))), 1000);
-        return () => clearInterval(timeout);
-    }, [ETA]);
+        isMounted.current = true;
+
+        const timeoutId = setTimeout(() => {
+            if (isMounted.current && new Date(timestamp).getTime() - Date.now() > 0)
+                setETA(parseETA(moment.preciseDiff(timestamp, new Date(), true)));
+        }, 1000);
+
+        return () => clearTimeout(timeoutId);
+    }, [ETA, timestamp]);
 
     return ETA;
 }

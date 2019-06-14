@@ -17,7 +17,7 @@ import { LogOrigins } from '../utils/padaria/logger';
 import Nav from '../components/Nav';
 import Snackbar from './Snackbar';
 
-type Props = {
+interface Props extends RouteComponentProps {
     loading: boolean;
     userDataReady: boolean;
     userData: UserDataProps;
@@ -26,7 +26,7 @@ type Props = {
     pending: string[];
     errors: string[];
     logger: LoggerActionsPrototypes;
-} & RouteComponentProps;
+}
 
 const App: React.FC<Props> = props => {
     const { loading, pending, userDataFunc, userData, loader, history, logger } = props;
@@ -44,20 +44,16 @@ const App: React.FC<Props> = props => {
                 delegatorFee: settings.delegatorFee,
                 rewardsBatchSize: settings.rewardsBatchSize,
             })
-            .then(() => {
-                props.loader(LoadTypes.PADARIA_NODE, true);
-                props.loader(LoadTypes.USER_DATA, true);
-            })
             .catch((error:Error) => {
                 logger.add({
                     type: LogTypes.ERROR,
                     message: error.message,
                     origin: LogOrigins.RPC
                 });
-
-                props.loader(LoadTypes.PADARIA_NODE, true);
-                props.loader(LoadTypes.USER_DATA, true);
             });
+
+            props.loader(LoadTypes.PADARIA_NODE, true);
+            props.loader(LoadTypes.USER_DATA, true);
         })
         .catch((error:Error) => {
             props.loader(LoadTypes.USER_DATA, true);

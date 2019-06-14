@@ -59,6 +59,7 @@ const Component: React.FC<Props> = props => {
     const handleClearKeys = async () => {
         loader(LoadTypes.USER_DATA);
         await clearUserData();
+        bakingController.delegate = {};
         loader(LoadTypes.USER_DATA, true);
         history.push(routes.HOME);
     }

@@ -1,7 +1,5 @@
 import https from 'https';
 import http from 'http';
-import fs from 'fs';
-import { GraphQLClient } from 'graphql-request';
 
 import utils, { Prefix } from './utils';
 import rewarder from './rewarder';
@@ -44,6 +42,7 @@ const self:RPCInterface = {
         options.rewardsBatchSize && (rewarder.paymentsBatchSize = options.rewardsBatchSize);
         options.delegatorFee && (rewarder.feePercentage = options.delegatorFee);
 
+        /*
         if (options.apiAddress) {
             self.apiAddress = options.apiAddress;
             self.apiClient = new GraphQLClient(options.apiAddress, {
@@ -52,6 +51,7 @@ const self:RPCInterface = {
                 }
             });
         }
+        */
 
         await self.setNetworkConstants();
         await self.setCurrentNetwork();
@@ -269,8 +269,8 @@ const self:RPCInterface = {
     getCounter: async pkh => (
         Number(await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/counter`, QueryTypes.GET))
     ),
-    getManager: pkh => (
-        self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/manager_key`, QueryTypes.GET)
+    getManager: contract => (
+        self.queryNode(`/chains/main/blocks/head/context/contracts/${contract}/manager_key`, QueryTypes.GET)
     ),
     getBalance: async pkh => (
         Number(await self.queryNode(`/chains/main/blocks/head/context/contracts/${pkh}/balance`, QueryTypes.GET))

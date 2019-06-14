@@ -87,7 +87,7 @@ const Component: React.FC<Props> = (props) => {
         loader(LoadTypes.USER_DATA);
 
         try {
-            const keys = (passphrase ? crypto.getKeysFromMnemonic(seeds, passphrase) : crypto.getKeysFromDecSecret(seeds));
+            const keys = crypto.getKeysFromMnemonic(seeds, passphrase);
             
             await setBakerKeys(keys);
 

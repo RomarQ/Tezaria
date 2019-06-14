@@ -119,6 +119,7 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = props => {
         }
         
         try {
+            console.log(keys)
             await storage.setBakerKeys(crypto.encryptSK(keys, password));
             history.push(routes.DASHBOARD);
         } catch(e) {

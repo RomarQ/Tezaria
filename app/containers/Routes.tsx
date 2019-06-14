@@ -4,7 +4,7 @@ import { Switch, Route } from 'react-router';
 import AuthRoute from '../components/CustomRoutes/AuthRoute';
 import routes from '../constants/routes.json';
 import HomePage from '../components/Home';
-import Dashboard from './Dashboard';
+import Dashboard from './Dashboard/Dashboard';
 import Rewards from './Rewards';
 import ImportAccount from './Account/ImportAccount';
 import NewAccount from './Account/NewAccount';
@@ -25,11 +25,10 @@ interface Props {
 
 export default ({ loader, history, userData, logger, userDataFunc }:Props) => (
     <Switch>
-        <AuthRoute
+        <Route
             exact
-            userData={userData}
             path={routes.HOME}
-            render={() => <HomePage />}
+            render={() => <HomePage history={history} />}
         />
         <AuthRoute
             exact
@@ -45,12 +44,12 @@ export default ({ loader, history, userData, logger, userDataFunc }:Props) => (
                 />
             )}
         />
-        <AuthRoute
+        <Route
             exact
-            userData={userData}
             path={routes.SETTINGS}
             render={() => (
                 <Settings
+                    history={history}
                     userData={userData}
                     setBakerSettings={userDataFunc.setBakerSettings}
                 />

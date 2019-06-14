@@ -11,7 +11,6 @@ export interface EndorderInterface {
     getCompletedEndorsings: (pkh:string) => Promise<CompletedEndorsing[]>;
     getIncomingEndorsings: (pkh:string) => Promise<IncomingEndorsings>;
     run: (pkh:string, header:BlockHeaderProps, logger: (log:LogProps) => void) => Promise<void>;
-    endorse: (keys:KeysType, head:BlockProps, slots: number[]) => Promise<any>;
 };
 
 export type EndorsingRight = {

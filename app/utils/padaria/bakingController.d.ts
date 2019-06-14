@@ -27,6 +27,8 @@ export interface BakingControllerProps {
 
 declare interface DelegateProps {
     // From Request
+    revealed?: boolean;
+    waitingForRights?: boolean;
     balance?: number | string;
     frozen_balance?: number | string;
     frozen_balance_by_cycle?: {
