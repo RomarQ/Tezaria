@@ -1,7 +1,8 @@
-import { LoggerAction, LogTypes, LoggerActionTypes } from '../actions/logger';
+import { LoggerActions, LogTypes, LoggerActionTypes } from '../actions/logger';
 
 export type LogProps = {
-    timestamp:      number;
+    key: number;
+    timestamp: number;
 } & LoggerActionProps;
 
 export type LoggerProps = {
@@ -12,9 +13,10 @@ const defaultState:LogProps[] = [];
 
 let counter = 0;
 
-export default (state = defaultState, {type, ...props}:LoggerAction) => {
+export default (state = defaultState, {type, ...props}:LoggerActions) => {
     switch (type) {
         case LoggerActionTypes.ADD:
+        
             if (!props.log)
                 return state;
             /*
@@ -33,7 +35,7 @@ export default (state = defaultState, {type, ...props}:LoggerAction) => {
                     }
                 ];
         case LoggerActionTypes.REMOVE:
-            return state.filter(t => props.log && t.key !== props.log.key);
+            return state.filter(t => t.key !== props.key);
         case LoggerActionTypes.CLEAR_ALL:
             return defaultState;
         default:

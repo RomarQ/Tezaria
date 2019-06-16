@@ -54,8 +54,7 @@ const App: React.FC<Props> = props => {
 	const loadRPC = async (settings: TezariaSettingsProps) => {
 		loader(LoadTypes.PADARIA_NODE);
 
-		await rpc
-			.load({
+		await rpc.load({
 				nodePort: settings.nodePort,
 				nodeAddress: settings.nodeAddress,
 				tzScanAddress: settings.tzScanAddress,
@@ -94,7 +93,6 @@ const App: React.FC<Props> = props => {
 					loader(LoadTypes.USER_DATA, true);
 				})
 				.catch((e: Error) => {
-					console.error(e.message);
 					logger.add({
 						type: LogTypes.ERROR,
 						message: e.message,
@@ -107,8 +105,8 @@ const App: React.FC<Props> = props => {
 
 		return () => {
 			isMounted.current = false;
-			window.removeEventListener('online', handleConnectionStateChange);
-			window.removeEventListener('offline', handleConnectionStateChange);
+			//window.removeEventListener('online', handleConnectionStateChange);
+			//window.removeEventListener('offline', handleConnectionStateChange);
 		};
 	}, [connectionStatus]);
 

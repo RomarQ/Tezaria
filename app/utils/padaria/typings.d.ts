@@ -11,11 +11,10 @@ declare interface TezariaSettingsProps {
 }
 
 declare interface LoggerActionProps {
-    key?:       number;
     type:       'error' | 'warning' | 'info' | 'success';
     message:    string;
-    severity?:  number;
-    origin?:    number;
+    severity?:  string;
+    origin?:    string;
 };
 
 declare type KeysType = {

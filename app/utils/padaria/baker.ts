@@ -102,6 +102,7 @@ const self:BakerInterface = {
         ];
     },
     run: async (pkh, header, logger) => {
+        console.log("baker...")
         self.levelWaterMark = header.level+1;
 
         try {
