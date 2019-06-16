@@ -14,6 +14,7 @@ import RedoIcon from '@material-ui/icons/Redo';
 import NumberPicker from '../NumberPicker';
 import { SetBakerSettingsPrototype } from '../../actions/userData';
 import { MAX_BATCH_SIZE } from '../../utils/padaria/operations';
+import { History } from 'history';
 
 const styles = ({ palette, spacing }:Theme) => createStyles({
     root: {
@@ -54,13 +55,14 @@ const styles = ({ palette, spacing }:Theme) => createStyles({
 });
 
 interface Props extends WithStyles<typeof styles> {
+    history: History
     userData: UserDataProps;
     setBakerSettings: SetBakerSettingsPrototype;
 }
 
 const Component: React.FC<Props> = ({ userData: { settings: currentSettings }, ...props }) => {
     const [settings, setSettings] = React.useState(currentSettings);
-    const { classes, setBakerSettings  } = props;
+    const { classes, history, setBakerSettings } = props;
 
     const handleChange = (e:React.ChangeEvent<HTMLInputElement>) => {
         e.preventDefault();
@@ -79,6 +81,9 @@ const Component: React.FC<Props> = ({ userData: { settings: currentSettings }, .
 
     return (
         <div className={classes.root}>
+            <Button onClick={() => history.goBack()}>
+                Go Back
+            </Button>
             <form className={classes.container} onSubmit={handleSubmit}>
                 <div className={classes.nodeSection}>
                     <TextField

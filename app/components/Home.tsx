@@ -5,13 +5,15 @@ import {
     WithStyles,
     Theme
 } from '@material-ui/core/styles';
-import { CSSProperties } from '@material-ui/core/styles/withStyles';
 
+import Fab from '@material-ui/core/Fab';
+import SettingsIcon from '@material-ui/icons/Settings';
 import FabLink from './FabLink';
 import Typography from '@material-ui/core/Typography';
 import routes from '../constants/routes.json';
+import { History } from 'history';
 
-const styles = ({ palette, spacing }: Theme):Record<string, CSSProperties> => createStyles({
+const styles = ({ palette, spacing }: Theme) => createStyles({
     root: {
         display: 'flex',
         flexDirection: 'column',
@@ -44,38 +46,52 @@ const styles = ({ palette, spacing }: Theme):Record<string, CSSProperties> => cr
     },
     logo: {
         width: 220
+    },
+    settingsFab: {
+        position: 'absolute',
+        bottom: spacing.unit * 2,
+        right: spacing.unit * 2
     }
 });
 
-const Component: React.FC<WithStyles<typeof styles>> = ({ classes }) => (
-    <div className={classes.root}>
-        <div className={classes.container}>
-            <img alt="logo" src="../resources/assets/logo.png" className={classes.logo} />
-            <div className={classes.buttons}>
-                <FabLink
-                    to={routes.NEW_ACCOUNT}
-                    variant="extended"
-                    size="large"
-                    color="secondary"
-                    aria-label="new"
-                    className={classes.fab}
-                >
-                    Create a new Account
-                </FabLink>
-                <Typography variant="caption">OR</Typography>
-                <FabLink
-                    to={routes.IMPORT_ACCOUNT}
-                    variant="extended"
-                    size="large"
-                    color="secondary"
-                    aria-label="Import"
-                    className={classes.fab}
-                >
-                    Import an Account
-                </FabLink>
+interface Props extends WithStyles<typeof styles> {
+    history: History;
+}
+
+const Component: React.FC<Props> = ({ classes, history }) => (
+    <React.Fragment>
+        <div className={classes.root}>
+            <div className={classes.container}>
+                <img alt="logo" src="./assets/logo.png" className={classes.logo} />
+                <div className={classes.buttons}>
+                    <FabLink
+                        to={routes.NEW_ACCOUNT}
+                        variant="extended"
+                        size="large"
+                        color="secondary"
+                        aria-label="new"
+                        className={classes.fab}
+                    >
+                        Create a new Account
+                    </FabLink>
+                    <Typography variant="caption">OR</Typography>
+                    <FabLink
+                        to={routes.IMPORT_ACCOUNT}
+                        variant="extended"
+                        size="large"
+                        color="secondary"
+                        aria-label="Import"
+                        className={classes.fab}
+                    >
+                        Import an Account
+                    </FabLink>
+                </div>
             </div>
         </div>
-    </div>
+        <Fab aria-label="settings" className={classes.settingsFab} onClick={() => history.push(routes.SETTINGS)}>
+            <SettingsIcon />
+        </Fab>
+    </React.Fragment>
 );
 
 export default withStyles(styles)(Component);

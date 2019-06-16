@@ -5,13 +5,14 @@ import {
     Theme,
     WithStyles
 } from '@material-ui/core/styles';
-import { CSSProperties } from '@material-ui/core/styles/withStyles';
 
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Typography from '@material-ui/core/Typography';
 import Chip from '@material-ui/core/Chip';
 
-const styles = ({ spacing }:Theme):Record<string, CSSProperties> => createStyles({
+import info from '../../package.json';
+
+const styles = ({ spacing }:Theme) => createStyles({
     root: {
         minHeight: '100vh',
         display: 'flex',
@@ -24,18 +25,20 @@ const styles = ({ spacing }:Theme):Record<string, CSSProperties> => createStyles
     },
     loaderImg: {
         width: 128,
-        background: 'url(../resources/assets/logo.png) no-repeat center',
+        background: 'url(./assets/logo.png) no-repeat center',
         backgroundSize: '40%'
     }
 });
 
-type Props = {
+interface Props extends WithStyles<typeof styles> {
     waitingFor?: string[]
-} & WithStyles<typeof styles>
+}
 
 const Splash: React.FC<Props> = ({ classes, waitingFor }) => (
     <div className={classes.root}>
-        <Typography variant="h1" >Padaria</Typography>
+        <Typography variant="h1" color="primary">
+            {info.productName}
+        </Typography>
         <div className={classes.loaderImg}>
             <CircularProgress size={100} thickness={5} className={classes.loader} color="secondary" />
         </div>

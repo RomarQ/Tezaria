@@ -9,6 +9,7 @@ import Blockies from 'react-blockies';
 
 import utils, { TezosCommitProps } from'../../utils/padaria/utils';
 import { DelegateProps } from '../../utils/padaria/bakingController';
+import { Button } from '@material-ui/core';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
     root: {
@@ -31,7 +32,6 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
         width: 1,
         height: '100%',
         marginLeft: 10,
-        marginRight: 10,
         backgroudColor: '#000'
     },
     labelRow: {
@@ -81,7 +81,7 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
         setAnchorEl(null);
         setOpen(null);
     }
-
+    
     return (
         <div className={classes.root}>
             <div className={classes.leftSection}>
@@ -91,11 +91,15 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
                         seed={bakerInfo.keys.pkh}
                         className={classes.blockie}
                     />
-                    <Chip
-                        label={bakerInfo.balance ? utils.parseTEZWithSymbol(Number(bakerInfo.balance)) : '...'}
-                        color="primary"
-                        className={classes.margin}
-                    />
+                    
+                    <div className={classes.labelRow}>
+                        <Typography>Balance </Typography>
+                        <Chip
+                            label={bakerInfo.balance != 'undefined' ? utils.parseTEZWithSymbol(Number(bakerInfo.balance)) : '...'}
+                            color="primary"
+                            className={classes.margin}
+                        />
+                    </div>
                 </div>
                 <Chip
                     label={bakerInfo.keys.pkh}
@@ -105,7 +109,7 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
                 />
             </div>
             <div className={classes.divider} />
-            <div>
+            <div className={classes.margin}>
                 {nodeInfo ? (
                     <div
                         id="node-commits"
@@ -174,35 +178,45 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
                     </div>
                 ) : null
                 }
-                <div className={classes.labelRow}>
-                    <Typography variant="caption" children="Legible as delegate" style={{marginRight: 10}}/>
-                    {bakerInfo.deactivated || typeof bakerInfo.deactivated == 'undefined'
-                        ? <NotCheckIcon color='secondary' /> : <CheckIcon color='primary' />}
-                </div>
-                <div className={classes.labelRow}>
-                    <Typography variant="caption" children="Stacking Balance" style={{marginRight: 10}}/>
-                    <Chip
-                        label={bakerInfo.staking_balance ? utils.parseTEZWithSymbol(Number(bakerInfo.staking_balance)) : '...'}
-                        color="primary"
-                        className={classes.margin}
-                    />
-                </div>
-                <div className={classes.labelRow}>
-                    <Typography variant="caption" children="Delegators" style={{marginRight: 10}}/>
-                    <Chip
-                        label={bakerInfo.delegated_contracts ? bakerInfo.delegated_contracts.length : 0}
-                        color="primary"
-                        className={classes.margin}
-                    />
-                </div>
-                <div className={classes.labelRow}>
-                    <Typography variant="caption" children="Rolls" style={{marginRight: 10}}/>
-                    <Chip
-                        label={bakerInfo.staking_balance ? utils.getTotalRolls(bakerInfo.staking_balance) : '...'}
-                        color="primary"
-                        className={classes.margin}
-                    />
-                </div>
+                {
+                    bakerInfo.revealed != undefined && !bakerInfo.revealed ? (
+                        <Button type="button" variant="contained" color="secondary" disabled={bakerInfo.balance == 0}>
+                        {"Reveal Account"}
+                        </Button>
+                    ) : (
+                        <React.Fragment>
+                            <div className={classes.labelRow}>
+                                <Typography variant="caption" children="Legible as delegate" style={{marginRight: 10}}/>
+                                {bakerInfo.deactivated || typeof bakerInfo.deactivated == 'undefined'
+                                    ? <NotCheckIcon color='secondary' /> : <CheckIcon color='primary' />}
+                            </div>
+                            <div className={classes.labelRow}>
+                                <Typography variant="caption" children="Stacking Balance" style={{marginRight: 10}}/>
+                                <Chip
+                                    label={bakerInfo.staking_balance ? utils.parseTEZWithSymbol(Number(bakerInfo.staking_balance)) : '...'}
+                                    color="primary"
+                                    className={classes.margin}
+                                />
+                            </div>
+                            <div className={classes.labelRow}>
+                                <Typography variant="caption" children="Delegators" style={{marginRight: 10}}/>
+                                <Chip
+                                    label={bakerInfo.delegated_contracts ? bakerInfo.delegated_contracts.length : 0}
+                                    color="primary"
+                                    className={classes.margin}
+                                />
+                            </div>
+                            <div className={classes.labelRow}>
+                                <Typography variant="caption" children="Rolls" style={{marginRight: 10}}/>
+                                <Chip
+                                    label={bakerInfo.staking_balance ? utils.getTotalRolls(bakerInfo.staking_balance) : '...'}
+                                    color="primary"
+                                    className={classes.margin}
+                                />
+                            </div>
+                        </React.Fragment>
+                    )
+                }
             </div>
         </div>
     );

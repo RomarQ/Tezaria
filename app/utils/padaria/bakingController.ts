@@ -13,13 +13,12 @@ import {
     BakingControllerProps,
     BakingControllerStartOptions
 } from './bakingController.d';
-import { LogOrigins, LogSeverity } from './logger';
 
 const self:BakingControllerProps = {
     //
     // States
     //
-    delegate: null,
+    delegate: {},
 
     running: false,
     baking: false,
@@ -46,20 +45,37 @@ const self:BakingControllerProps = {
         if (!signer) return;
 
         try {
-            const delegate = await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET)
-                .catch(async () => {
-                    await operations.registerDelegate(keys);
-                    return;
-                });
+            const manager = await rpc.getManager(keys.pkh);
 
-            if (Array.isArray(delegate)) return;
-
-            if (delegate) {
-                delegate.deactivated && await operations.registerDelegate(keys);
-                self.delegate = delegate;
+            self.delegate.revealed = !!manager.key;
+            if (!manager.key) {
+                self.delegate.balance = await rpc.getBalance(keys.pkh);
                 return self.delegate;
             }
 
+            const delegate = await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET)
+                .catch(async () => {
+                    await operations.registerDelegate(keys);
+                    self.delegate.waitingForRights = true;
+                    return self.delegate;
+                });
+
+            if (Array.isArray(delegate)) return self.delegate;
+
+            if (delegate) {
+                self.delegate = {
+                    waitingForRights: false,
+                    ...self.delegate,
+                    ...delegate
+                }
+
+                delegate.deactivated &&
+                    await operations.registerDelegate(keys) && (self.delegate.waitingForRights = true);
+        
+                return self.delegate;
+            }
+
+            self.delegate.waitingForRights = true;
             await operations.registerDelegate(keys);
         } catch(e) {
             console.log(e);

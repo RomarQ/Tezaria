@@ -37,7 +37,7 @@ export interface RPCInterface extends TezariaSettingsProps {
         };
         counter: number;
     }>;
-    getManager: (pkh:string) => Promise<{key:string, manager:string}>;
+    getManager: (contract:string) => Promise<{key:string, manager:string}>;
     getCounter: (pkh:string) => Promise<number>;
     getEndorsementOperations: (blockId:string) => Promise<UnsignedOperationProps[]>;
     getPredecessors: (blockId:string, length:number) => Promise<string[]>;

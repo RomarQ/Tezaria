@@ -129,31 +129,6 @@ const self:EndorderInterface = {
 
             self.endorsedBlocks.push(level);
         }
-    },
-    endorse: async (keys, head, slots) => {
-        const operation = {
-            branch: head.hash,
-            contents: [
-                {          
-                    kind: OperationTypes.endorsement.type,
-                    level: head.header.level
-                }
-            ]
-        } as any;
-
-        if (rpc.network === 'ZERONET')
-            operation.contents[0].slot = slots[0];
-
-        const forgedOperation = await rpc.queryNode(`/chains/${head.chain_id}/blocks/${head.hash}/helpers/forge/operations`, QueryTypes.POST, operation) as string;
-
-        const signed = crypto.sign(forgedOperation, utils.mergeBuffers(utils.watermark.endorsement, utils.b58decode(head.chain_id, Prefix.chainId)));
-
-        return rpc.injectOperation({
-            ...operation,
-            protocol: head.protocol,
-            signature: signed.edsig,
-            signedOperationContents: signed.signedBytes
-        });
     }
 };
 

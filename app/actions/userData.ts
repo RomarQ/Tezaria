@@ -79,8 +79,8 @@ const clearUserData = () => async (dispatch: Dispatch) => {
 	dispatch({ type: UserDataActionTypes.CLEAR });
 };
 
-const setBakerKeys = ({sk, ...keys}: KeysType) => (dispatch: Dispatch) => {
-    crypto.loadSigner(sk);
+const setBakerKeys = (keys: KeysType) => (dispatch: Dispatch) => {
+    crypto.loadSigner(keys.sk);
 
 	dispatch({ 
         type: UserDataActionTypes.SET_KEYS,
