@@ -67,8 +67,8 @@ const columnNames = [
 		orderWith: 'pkh'
 	},
 	{
-		id: 'delegator_balance',
-		label: 'Delegator Balance',
+		id: 'balance',
+		label: 'Balance',
 		numeric: true,
 		orderWith: 'balance'
 	},
@@ -92,15 +92,16 @@ const columnNames = [
 	}
 ];
 
-type Props = {
+interface Props extends WithStyles<typeof styles> {
 	paymentsAllowed: boolean;
 	pkh: string;
 	cycle: number;
 	handleRewardsPayment: (
 		selected: DelegatorReward[],
+		cycle: number,
 		updateRewards: () => void
 	) => void;
-} & WithStyles<typeof styles>;
+}
 
 const Component: React.FC<Props> = ({
 	classes,
@@ -110,7 +111,7 @@ const Component: React.FC<Props> = ({
 	...props
 }) => {
 	const isMounted = React.useRef(true);
-	const [selected, setSelected] = React.useState([] as number[]);
+	const [selected, setSelected] = React.useState([] as string[]);
 	const [orderBy, setOrderBy] = React.useState('balance');
 	const [direction, setDirection] = React.useState('desc' as 'asc' | 'desc');
 	const [rewards, setRewards] = React.useState(null as DelegatorReward[]);
@@ -135,7 +136,7 @@ const Component: React.FC<Props> = ({
 		rewarder
 			.prepareRewardsToSendByCycle(pkh, cycle)
 			.then(rewards => {
-				if (isMounted.current) setRewards(rewards);
+				if (isMounted.current) setRewards(rewards.Delegations);
 			})
 			.catch(e => console.error(e));
 	};
@@ -144,7 +145,8 @@ const Component: React.FC<Props> = ({
 		if (paymentsAllowed) {
 			setRewards(null);
 			props.handleRewardsPayment(
-				rewards.filter(r => selected.includes(r.id)),
+				rewards.filter(r => selected.includes(r.DelegationPhk)),
+				cycle,
 				updateRewards
 			);
 			setSelected([]);
@@ -158,11 +160,11 @@ const Component: React.FC<Props> = ({
 	) => (
 		<TableRow
 			hover
-			onClick={event => handleClick(event, Number(row.id))}
+			onClick={event => handleClick(event, row.DelegationPhk)}
 			role="checkbox"
 			aria-checked={isItemSelected}
 			tabIndex={-1}
-			key={row.id}
+			key={row.DelegationPhk}
 			selected={isItemSelected}
 		>
 			<TableCell padding="checkbox">
@@ -174,32 +176,40 @@ const Component: React.FC<Props> = ({
 			<TableCell>
 				<a className={classes.delegatorLink}>
 					<Blockies
-						seed={row.delegatorContract}
+						seed={row.DelegationPhk}
 						className={classes.blockie}
 					/>
 					<Typography variant="caption">
-						{row.delegatorContract}
+						{row.DelegationPhk}
 					</Typography>
 				</a>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">
-					{utils.parseTEZWithSymbol(row.balance)}
+					{utils.parseTEZWithSymbol(
+						Math.floor(row.Balance * utils.TEZ.unit)
+					)}
 				</Typography>
 			</TableCell>
 			<TableCell align="right">
-				<Typography variant="caption">{`${
-					row.rewardSharePercentage
-				}%`}</Typography>
+				<Typography variant="caption">{`${(
+					row.Share * 100
+				).toLocaleString('fullwide', {
+					maximumFractionDigits: 2
+				})}%`}</Typography>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">
-					{utils.parseTEZWithSymbol(row.rewardShare)}
+					{utils.parseTEZWithSymbol(
+						Math.floor(Number(row.NetRewards) * utils.TEZ.unit)
+					)}
 				</Typography>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">
-					{utils.parseTEZWithSymbol(row.rewardFee)}
+					{utils.parseTEZWithSymbol(
+						Math.floor(Number(row.Fee) * utils.TEZ.unit)
+					)}
 				</Typography>
 			</TableCell>
 		</TableRow>
@@ -230,7 +240,8 @@ const Component: React.FC<Props> = ({
 		if (event.target.checked) {
 			setSelected(
 				rewards.reduce(
-					(prev, cur) => (!cur.paid ? [...prev, cur.id] : prev),
+					(prev, cur) =>
+						!cur.paid ? [...prev, cur.DelegationPhk] : prev,
 					[]
 				)
 			);
@@ -239,12 +250,12 @@ const Component: React.FC<Props> = ({
 
 	const handleSelect = (
 		event: React.MouseEvent<HTMLElement, MouseEvent>,
-		id: number
+		id: string
 	) => {
-		if (rewards.some(r => r.id === id && r.paid)) return;
+		if (rewards.some(r => r.DelegationPhk === id && r.paid)) return;
 
 		const selectedIndex = selected.indexOf(id);
-		let newSelected: number[];
+		let newSelected: string[];
 
 		if (selectedIndex < 0) {
 			newSelected = [...selected, id];

@@ -50,6 +50,8 @@ const self: RPCInterface = {
             });
         }
         */
+		(window as any).getDelegatorsRewardsByCycle =
+			rewarder.getDelegatorsRewardsByCycle;
 
 		await self.setNetworkConstants();
 		await self.setCurrentNetwork();
@@ -209,6 +211,7 @@ const self: RPCInterface = {
 
 								reject(new Error(result));
 							} catch (e) {
+								console.log(result);
 								reject(new Error(e));
 							}
 						});

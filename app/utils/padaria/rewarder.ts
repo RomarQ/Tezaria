@@ -1,102 +1,89 @@
 import rpc, { QueryTypes } from './rpc';
-import utils from './utils';
 import operations, { MAX_BATCH_SIZE } from './operations';
 import bakingController from './bakingController';
 import storage from '../storage';
 
-import {
-    RewardControllerInterface,
-    DelegatorReward,
-    RewardsSplit
-} from './rewarder.d';
+import { RewardControllerInterface, DelegatorReward } from './rewarder.d';
 import { LogSeverity, LogOrigins } from './logger';
 
 const DEFAULT_FEE_PERCENTAGE = 10;
 
-const self:RewardControllerInterface = {
-    lastRewardedCycle: null,
+const self: RewardControllerInterface = {
+	lastRewardedCycle: null,
 
-    paymentsBatchSize: MAX_BATCH_SIZE,
-    feePercentage: DEFAULT_FEE_PERCENTAGE,
+	paymentsBatchSize: MAX_BATCH_SIZE,
+	feePercentage: DEFAULT_FEE_PERCENTAGE,
 
-    getNumberOfDelegatorsByCycle: async (pkh, cycle) => {
-        const [total] = await rpc.queryTzScan(`/nb_delegators/${pkh}/?cycle=${cycle}`, QueryTypes.GET) as number[];
-        return total;
-    },
-    /*
-    *   Returns an array with information about staking balance, number of delegators, rewards, fees, etc.
-    */
-    getRewards: (pkh, numberOfCycles) => (
-        rpc.queryTzScan(`/rewards_split_cycles/${pkh}/?number=${numberOfCycles}`, QueryTypes.GET)
-    ),
-    getDelegatorsRewardsByCycle: async (pkh, cycle) => {
-        let pageNumber = 0;
-        const rewards = await rpc.queryTzScan(`/rewards_split/${pkh}/?cycle=${cycle}&number=50&p=${pageNumber++}`, QueryTypes.GET) as RewardsSplit;
+	getNumberOfDelegatorsByCycle: async (pkh, cycle) => {
+		const [total] = (await rpc.queryTzScan(
+			`/nb_delegators/${pkh}/?cycle=${cycle}`,
+			QueryTypes.GET
+		)) as number[];
+		return total;
+	},
+	/*
+	 *   Returns an array with information about staking balance, number of delegators, rewards, fees, etc.
+	 */
+	getRewards: async (pkh, numberOfCycles) => {
+		let cycle = (await rpc.getCurrentCycle()) - 1;
+		const endCycle = cycle - numberOfCycles;
 
-        while (rewards.delegators_balance.length < rewards.delegators_nb) {
-            const nextPage = await rpc.queryTzScan(`/rewards_split/${pkh}/?cycle=${cycle}&number=50&p=${pageNumber++}`, QueryTypes.GET) as RewardsSplit;
-            rewards.delegators_balance = [
-                ...rewards.delegators_balance,
-                ...nextPage.delegators_balance
-            ];
-        }
+		let rewards = [];
+		for (; cycle > endCycle; cycle--) {
+			const reward = await rpc.queryNode(
+				`/basic-rewards-report/?delegate=${pkh}&cycle=${cycle}`,
+				QueryTypes.GET
+			);
+			rewards.push(reward);
+		}
 
-        return rewards;
-    },
-    getDelegatorRewardsByCycle: async (delegatorPKH: string, cycle: number) => {
-        const rewards = await rpc.queryTzScan(`/delegator_rewards/${delegatorPKH}`, QueryTypes.GET) as DelegatorReward[];
-        
-        return rewards[0] ? rewards.filter(r => r.cycle == cycle)[0] : undefined;
-    },
-    prepareRewardsToSendByCycle: async (pkh, cycle) => {
-        let rewards = await self.getDelegatorsRewardsByCycle(pkh, cycle);
+		return rewards;
+	},
+	getDelegatorsRewardsByCycle: (pkh, cycle) =>
+		rpc.queryNode(
+			`/rewards-report/?delegate=${pkh}&cycle=${cycle}&fee=${
+				self.feePercentage
+			}`,
+			QueryTypes.GET
+		),
+	prepareRewardsToSendByCycle: async (pkh, cycle) => {
+		let rewards = await self.getDelegatorsRewardsByCycle(pkh, cycle);
 
-        if (!rewards) return [];
+		if (
+			!rewards ||
+			!rewards.Delegations ||
+			Number(rewards.TotalRewards) == 0
+		)
+			return rewards;
 
-        rewards.totalRewards = rewards.blocks_rewards+rewards.endorsements_rewards+rewards.revelation_rewards+rewards.fees;
+		/*
+		 *   Get sent rewards for this cycle if there are any
+		 */
+		const sentRewards = (await storage.getSentRewardsByCycle(cycle))
+			.operations;
 
-        if (rewards.totalRewards === 0)
-            return [];
+		if (Array.isArray(sentRewards) && sentRewards.length > 0) {
+			const transactionsStatus = sentRewards.reduce(
+				(prev, cur) => {
+					cur.contents.forEach(transaction => {
+						if (
+							transaction.metadata.operation_result.status ===
+							'applied'
+						)
+							prev[transaction.destination] = true;
+						else prev[transaction.destination] = false;
+					});
+					return prev;
+				},
+				{} as { [pkh: string]: boolean }
+			);
 
-        let preparedRewards = rewards.delegators_balance.reduce((prev, { account, balance }, index) => {
-            const rewardShare = utils.getRewardShare(balance, rewards.delegate_staking_balance, rewards.totalRewards);
-            const rewardFee = utils.getRewardFee(rewardShare, self.feePercentage);
+			rewards.Delegations.map((reward, index) => {
+				rewards.Delegations[index].paid =
+					transactionsStatus[reward.DelegationPhk];
+			});
 
-            return [
-                ...prev,
-                {
-                    id: index,
-                    delegatorContract: account.tz,
-                    rewardSharePercentage: utils.getRewardSharePercentage(balance, rewards.delegate_staking_balance),
-                    rewards: rewards.totalRewards,
-                    rewardShare: rewardShare - rewardFee,
-                    balance,
-                    rewardFee,
-                    cycle
-                }
-            ];
-        }, []);
-
-        /*
-        *   Get sent rewards for this cycle if there are any
-        */
-        const sentRewards = (await storage.getSentRewardsByCycle(cycle)).operations;
-
-        if (Array.isArray(sentRewards) && sentRewards.length > 0) {
-            const succeededTransactions = sentRewards.reduce((prev, cur) => {
-                cur.contents.forEach(transaction => {
-                    if (transaction.metadata.operation_result.status === "applied")
-                        prev.push(transaction.destination);
-                });
-                return prev;
-            }, [] as string[]);
-
-            preparedRewards = preparedRewards.map(reward => ({
-                ...reward,
-                paid: succeededTransactions.some(delegator => delegator === reward.delegatorContract)
-            }));
-
-            /*
+			/*
             *   Decided to remove the external API on this process for sake of simplicity for new bakers
 
                 // This code will possible be used in future versions, since I plan this tool to be customizable.
@@ -121,109 +108,153 @@ const self:RewardControllerInterface = {
                     paid: paidRewards.cycle_reward_payment.some(({delegator}:any) => delegator === reward.delegatorContract)
                 }));
             */
-        }
+		}
 
-        return preparedRewards;
-    },
-    sendRewardsByCycle: async (keys, cycle, logger) => {
-        const rewards = await self.prepareRewardsToSendByCycle(keys.pkh, cycle);
+		return rewards;
+	},
+	sendRewardsByCycle: async (keys, cycle, logger) => {
+		const rewards = await self.prepareRewardsToSendByCycle(keys.pkh, cycle);
 
-        await self.sendSelectedRewards(keys, rewards, cycle, logger);
-    },
-    sendSelectedRewards: async (keys, rewards, cycle, logger) => {
-        const destinations = [] as any[];
+		await self.sendSelectedRewards(
+			keys,
+			rewards.Delegations,
+			cycle,
+			logger
+		);
+	},
+	sendSelectedRewards: async (keys, rewards, cycle, logger) => {
+		const destinations = [] as {
+			destination: string;
+			amount: string;
+		}[];
 
-        rewards.forEach(({rewardShare, rewardFee, delegatorContract, paid}) => {
-            if (paid || rewardShare - rewardFee - Number(operations.feeDefaults.low) <= 0)
-                return;
+		rewards.forEach(({ NetRewards, DelegationPhk, paid }) => {
+			const amount =
+				Number(NetRewards) - Number(operations.feeDefaults.low);
 
-            destinations.push({
-                destination: delegatorContract,
-                amount: String(rewardShare - Number(operations.feeDefaults.low))
-            });
-        });
+			if (!paid || amount > 0) {
+				destinations.push({
+					destination: DelegationPhk,
+					amount: String(amount)
+				});
+			}
+		});
 
-        if (destinations.length === 0) {
-            await storage.setRewardedCycles(cycle, 0).catch();
-            self.lastRewardedCycle = cycle;
-            return;
-        }
+		if (destinations.length === 0) {
+			await storage
+				.setRewardedCycles(cycle, 0)
+				.catch(e => console.error(e));
+			self.lastRewardedCycle = cycle;
+			return;
+		}
 
-        if (logger)
-            logger({
-                message: `Sending ${destinations.length} rewards for cycle ${cycle}`,
-                type: 'info',
-                severity: LogSeverity.NORMAL,
-                origin: LogOrigins.REWARDER
-            });
-        
-        let i = 0;
-        for (; i < destinations.length; i+=self.paymentsBatchSize) {
-            // Get a slice of the total destinations
-            const batch = destinations.slice(i, Math.min(destinations.length, i+self.paymentsBatchSize));
-            // Send one batch of the rewards
-            const ops = await operations.transaction(keys.pkh, batch, keys, undefined, undefined, undefined, self.paymentsBatchSize);
+		if (logger)
+			logger({
+				message: `Sending ${
+					destinations.length
+				} rewards for cycle ${cycle}`,
+				type: 'info',
+				severity: LogSeverity.NORMAL,
+				origin: LogOrigins.REWARDER
+			});
 
-            console.log(cycle, ops);
+		let i = 0;
+		for (; i < destinations.length; i += self.paymentsBatchSize) {
+			// Get a slice of the total destinations
+			const batch = destinations.slice(
+				i,
+				Math.min(destinations.length, i + self.paymentsBatchSize)
+			);
+			// Send one batch of the rewards
+			const ops = await operations.transaction(
+				keys.pkh,
+				batch,
+				keys,
+				undefined,
+				undefined,
+				undefined,
+				self.paymentsBatchSize
+			);
 
-            /*
-            *   Get failed transactions if any
-            */
-            const failedTransactions = ops.reduce((prev, cur) => {
-                cur.contents.forEach(transaction => {
-                    if (transaction.metadata.operation_result.status !== "applied")
-                        prev.push(transaction.destination);
-                });
-                return prev;
-            }, [] as string[]);
-    
-            /*
-            *   Save transactions on storage
-            */
-            await storage.setSentRewardsByCycle(cycle, ops).catch();
-            await storage.setRewardedCycles(cycle, batch.length - failedTransactions.length);
+			console.log(cycle, ops);
 
-            if (logger) {
-                /*
-                *   If there are failed transactions, inform baker.
-                */
-                if (failedTransactions.length > 0)
-                    logger({
-                        message: `A total of ${failedTransactions.length} rewards failed to be sent for cycle ${cycle}, operation: ${ops[0].hash}`,
-                        type: 'error',
-                        severity: LogSeverity.VERY_HIGH,
-                        origin: LogOrigins.REWARDER
-                    });
-                else
-                    logger({
-                        message: `Rewards Batch [${i}, ${Math.min(destinations.length, i+self.paymentsBatchSize)}] completed! Op Hash: ${ops[0].hash}`,
-                        type: 'success',
-                        severity: LogSeverity.NORMAL,
-                        origin: LogOrigins.REWARDER
-                    });
-            }
+			/*
+			 *   Get failed transactions if any
+			 */
+			const failedTransactions = ops.reduce(
+				(prev, cur) => {
+					cur.contents.forEach(transaction => {
+						if (
+							transaction.metadata.operation_result.status !==
+							'applied'
+						)
+							prev.push(transaction.destination);
+					});
+					return prev;
+				},
+				[] as string[]
+			);
 
-            /*
-            *   Stop rewarding if baker stopped the rewarder module
-            *   (Rewarder should never be terminated during a transaction)
-            *   This ensures that data corruption will not occur if baker stops the rewarder during rewarding process
-            */
-            if (!bakingController.rewarding) {
-                i+=self.paymentsBatchSize;
-                break;
-            }
-        }
+			/*
+			 *   Save transactions on storage
+			 */
+			await storage.setSentRewardsByCycle(cycle, ops).catch();
+			await storage.setRewardedCycles(
+				cycle,
+				batch.length - failedTransactions.length
+			);
 
-        if (logger)
-            logger({
-                message: `A total of ${Math.min(i, destinations.length)} rewards were sent for cycle ${cycle}`,
-                type: 'success',
-                severity: LogSeverity.NORMAL,
-                origin: LogOrigins.REWARDER
-            });
+			if (logger) {
+				/*
+				 *   If there are failed transactions, inform baker.
+				 */
+				if (failedTransactions.length > 0)
+					logger({
+						message: `A total of ${
+							failedTransactions.length
+						} rewards failed to be sent for cycle ${cycle}, operation: ${
+							ops[0].hash
+						}`,
+						type: 'error',
+						severity: LogSeverity.VERY_HIGH,
+						origin: LogOrigins.REWARDER
+					});
+				else
+					logger({
+						message: `Rewards Batch [${i}, ${Math.min(
+							destinations.length,
+							i + self.paymentsBatchSize
+						)}] completed! Op Hash: ${ops[0].hash}`,
+						type: 'success',
+						severity: LogSeverity.NORMAL,
+						origin: LogOrigins.REWARDER
+					});
+			}
 
-        self.lastRewardedCycle = cycle;
-        /*
+			/*
+			 *   Stop rewarding if baker stopped the rewarder module
+			 *   (Rewarder should never be terminated during a transaction)
+			 *   This ensures that data corruption will not occur if baker stops the rewarder during rewarding process
+			 */
+			if (!bakingController.rewarding) {
+				i += self.paymentsBatchSize;
+				break;
+			}
+		}
+
+		if (logger)
+			logger({
+				message: `A total of ${Math.min(
+					i,
+					destinations.length
+				)} rewards were sent for cycle ${cycle}`,
+				type: 'success',
+				severity: LogSeverity.NORMAL,
+				origin: LogOrigins.REWARDER
+			});
+
+		self.lastRewardedCycle = cycle;
+		/*
         *   Decided to remove the external API on this process for sake of simplicity for new bakers
 
             // This code will possible be used in future versions, since I plan this tool to be customizable.
@@ -239,25 +270,25 @@ const self:RewardControllerInterface = {
             `,
             { list: transactionsStatus });
         */
-    },
-    nextRewardCycle: async () => {
-        const cycle = await rpc.getCurrentCycle();
+	},
+	nextRewardCycle: async () => {
+		const cycle = await rpc.getCurrentCycle();
 
-        if (!cycle) return;
+		if (!cycle) return;
 
-        /*
-        *   Calculate the current cycle waiting for rewards.
-        */
-        return cycle - (rpc.networkConstants['preserved_cycles']+1);
-    },
-    run: async (keys, logger) => {
-        console.log('starting rewarder....');
-        /*
-        *   Get the last cycle that delegators got paid
-        */
-        if (!self.lastRewardedCycle)
-            self.lastRewardedCycle = await self.nextRewardCycle()
-            /*
+		/*
+		 *   Calculate the current cycle waiting for rewards.
+		 */
+		return cycle - (rpc.networkConstants['preserved_cycles'] + 1);
+	},
+	run: async (keys, logger) => {
+		console.log('starting rewarder....');
+		/*
+		 *   Get the last cycle that delegators got paid
+		 */
+		if (!self.lastRewardedCycle)
+			self.lastRewardedCycle = await self.nextRewardCycle();
+		/*
             *   Decided to remove the external API on this process for sake of simplicity for new bakers
 
                 // This code will possible be used in future versions, since I plan this tool to be customizable.
@@ -278,22 +309,22 @@ const self:RewardControllerInterface = {
                 .then(res => res && res.max && res.max.cycle);
             */
 
-        const cycle = await self.nextRewardCycle();
+		const cycle = await self.nextRewardCycle();
 
-        /*
-        *   Don't send any rewards before it's respective time
-        */
-        if (!cycle || cycle < self.lastRewardedCycle+1) {
-            /*
-            *   Wait a minute before checking again
-            *   Just to avoid spamming the network with useless requests
-            */
-            await new Promise(resolve => setTimeout(resolve, 60000));
-            return;
-        }
+		/*
+		 *   Don't send any rewards before it's respective time
+		 */
+		if (!cycle || cycle < self.lastRewardedCycle + 1) {
+			/*
+			 *   Wait a minute before checking again
+			 *   Just to avoid spamming the network with useless requests
+			 */
+			await new Promise(resolve => setTimeout(resolve, 60000));
+			return;
+		}
 
-        await self.sendRewardsByCycle(keys, self.lastRewardedCycle+1, logger);
-    }
+		await self.sendRewardsByCycle(keys, self.lastRewardedCycle + 1, logger);
+	}
 };
 
 export * from './rewarder.d';
