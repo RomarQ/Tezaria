@@ -1,4 +1,5 @@
 import rpc, { QueryTypes } from './rpc';
+import utils from './utils';
 import operations, { MAX_BATCH_SIZE } from './operations';
 import bakingController from './bakingController';
 import storage from '../storage';
@@ -59,29 +60,21 @@ const self: RewardControllerInterface = {
 		/*
 		 *   Get sent rewards for this cycle if there are any
 		 */
-		const sentRewards = (await storage.getSentRewardsByCycle(cycle))
-			.operations;
+		const sentRewards = (await storage.getSentRewardsByCycle(cycle)).operations;
+        
+        let transactionsStatus: { [index:string]: boolean } = {};
 
 		if (Array.isArray(sentRewards) && sentRewards.length > 0) {
-			const transactionsStatus = sentRewards.reduce(
+			transactionsStatus = sentRewards.reduce(
 				(prev, cur) => {
 					cur.contents.forEach(transaction => {
-						if (
-							transaction.metadata.operation_result.status ===
-							'applied'
-						)
+						if (transaction.metadata.operation_result.status === 'applied')
 							prev[transaction.destination] = true;
-						else prev[transaction.destination] = false;
 					});
 					return prev;
 				},
 				{} as { [pkh: string]: boolean }
 			);
-
-			rewards.Delegations.map((reward, index) => {
-				rewards.Delegations[index].paid =
-					transactionsStatus[reward.DelegationPhk];
-			});
 
 			/*
             *   Decided to remove the external API on this process for sake of simplicity for new bakers
@@ -108,7 +101,13 @@ const self: RewardControllerInterface = {
                     paid: paidRewards.cycle_reward_payment.some(({delegator}:any) => delegator === reward.delegatorContract)
                 }));
             */
-		}
+        }
+
+        rewards.Delegations.map((reward, index) => {
+            rewards.Delegations[index].paid =
+                !!transactionsStatus[reward.DelegationPhk];
+        });
+
 
 		return rewards;
 	},
@@ -122,7 +121,7 @@ const self: RewardControllerInterface = {
 			logger
 		);
 	},
-	sendSelectedRewards: async (keys, rewards, cycle, logger) => {
+	sendSelectedRewards: async (keys, rewards, cycle, logger, manual=false) => {
 		const destinations = [] as {
 			destination: string;
 			amount: string;
@@ -132,23 +131,24 @@ const self: RewardControllerInterface = {
 			const amount =
 				Number(NetRewards) - Number(operations.feeDefaults.low);
 
-			if (!paid || amount > 0) {
+			if (!paid && amount > 0) {
 				destinations.push({
 					destination: DelegationPhk,
 					amount: String(amount)
 				});
 			}
-		});
+        });
 
 		if (destinations.length === 0) {
 			await storage
 				.setRewardedCycles(cycle, 0)
-				.catch(e => console.error(e));
+                .catch(e => console.error(e));
+                
 			self.lastRewardedCycle = cycle;
 			return;
 		}
 
-		if (logger)
+		if (logger) {
 			logger({
 				message: `Sending ${
 					destinations.length
@@ -156,7 +156,8 @@ const self: RewardControllerInterface = {
 				type: 'info',
 				severity: LogSeverity.NORMAL,
 				origin: LogOrigins.REWARDER
-			});
+            });
+        }
 
 		let i = 0;
 		for (; i < destinations.length; i += self.paymentsBatchSize) {
@@ -164,7 +165,8 @@ const self: RewardControllerInterface = {
 			const batch = destinations.slice(
 				i,
 				Math.min(destinations.length, i + self.paymentsBatchSize)
-			);
+            );
+            
 			// Send one batch of the rewards
 			const ops = await operations.transaction(
 				keys.pkh,
@@ -208,7 +210,7 @@ const self: RewardControllerInterface = {
 				/*
 				 *   If there are failed transactions, inform baker.
 				 */
-				if (failedTransactions.length > 0)
+				if (failedTransactions.length > 0) {
 					logger({
 						message: `A total of ${
 							failedTransactions.length
@@ -218,8 +220,9 @@ const self: RewardControllerInterface = {
 						type: 'error',
 						severity: LogSeverity.VERY_HIGH,
 						origin: LogOrigins.REWARDER
-					});
-				else
+                    });
+                }
+				else {
 					logger({
 						message: `Rewards Batch [${i}, ${Math.min(
 							destinations.length,
@@ -228,7 +231,8 @@ const self: RewardControllerInterface = {
 						type: 'success',
 						severity: LogSeverity.NORMAL,
 						origin: LogOrigins.REWARDER
-					});
+                    });
+                }
 			}
 
 			/*
@@ -236,13 +240,13 @@ const self: RewardControllerInterface = {
 			 *   (Rewarder should never be terminated during a transaction)
 			 *   This ensures that data corruption will not occur if baker stops the rewarder during rewarding process
 			 */
-			if (!bakingController.rewarding) {
+			if (!bakingController.rewarding && !manual) {
 				i += self.paymentsBatchSize;
 				break;
 			}
 		}
 
-		if (logger)
+		if (logger) {
 			logger({
 				message: `A total of ${Math.min(
 					i,
@@ -252,6 +256,7 @@ const self: RewardControllerInterface = {
 				severity: LogSeverity.NORMAL,
 				origin: LogOrigins.REWARDER
 			});
+        }
 
 		self.lastRewardedCycle = cycle;
 		/*

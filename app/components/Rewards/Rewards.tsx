@@ -56,7 +56,7 @@ const styles = ({ typography, palette }: Theme) =>
 		}
 	});
 
-type Props = {
+interface Props extends WithStyles<typeof styles> {
 	pkh: string;
 	rewards: RewardsReportWithoutDelegations[];
 	handleRewardsPayment: (
@@ -64,7 +64,7 @@ type Props = {
 		cycle: number,
 		updateRewards: () => void
 	) => void;
-} & WithStyles<typeof styles>;
+};
 
 const Component: React.FC<Props> = props => {
 	const [expanded, setExpanded] = React.useState(undefined);
@@ -85,8 +85,8 @@ const Component: React.FC<Props> = props => {
 			className: classes.status3,
 			label: 'Rewards Pending'
 		};
-	};
-	console.log(rewards);
+    };
+    
 	return rewards ? (
 		<div className={classes.root}>
 			<div style={{ width: '100%' }}>

@@ -209,10 +209,9 @@ const self: OperationsInterface = {
         const ops = [];
         for (const batch of operations) {
 
-            console.log(`START: ${new Date().toJSON()}`)
             const op = await self.sendOperation(source, keys, batch);
             // The result operation hash needs to be a string, otherwise is a error
-            if (typeof op.hash !== 'string') {
+            if (op && typeof op.hash !== 'string') {
                 console.error('Operation Failed', op);
                 continue;
             }
@@ -280,8 +279,8 @@ const self: OperationsInterface = {
                     signedOperationContents: signed.signedBytes
                 });
 
-                if (typeof injectedOp.hash != 'string') {
-                    console.error(injectedOp.hash);
+                if (!injectedOp || typeof injectedOp.hash != 'string') {
+                    console.error("Error -> ", injectedOp);
                     self.awaitingLock[source] = false;
                     continue;
                 }
@@ -341,8 +340,6 @@ const self: OperationsInterface = {
                 op.counter = String(++counter);
             }
         });
-
-        console.log(operations)
 
         return rpc.forgeOperation(header, {
             branch: header.hash,

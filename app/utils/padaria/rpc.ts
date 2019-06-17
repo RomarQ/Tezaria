@@ -348,20 +348,23 @@ const self: RPCInterface = {
 		)) as UnsignedOperationProps[];
 
 		if (!Array.isArray(preappliedOps))
-			throw Error('[RPC] - Error on preapplying operations.');
+			throw new Error('[RPC] - Error on preapplying operations.');
 
 		if (
 			preappliedOps.some(
-				({ contents }) =>
+				({ contents }) => (
 					contents &&
 					contents.some(
-						({ metadata: { operation_result } }) =>
+						({ metadata: { operation_result } }) => (
 							operation_result &&
-							operation_result.status === 'failed'
-					)
+                            operation_result.status === 'failed'
+                        )
+                    )
+                )
 			)
 		) {
-			throw Error(`[RPC] - Failed to preapply operations.`);
+            console.error(preappliedOps);
+			throw new Error(`[RPC] - Failed to preapply operations`);
 		}
 
 		return preappliedOps;

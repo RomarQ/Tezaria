@@ -11,28 +11,28 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import EnhancedTableToolbar from '../Table/EnhancedTableToolbar';
 import EnhancedTableHead from '../Table/EnhancedTableHead';
 
-const styles = () =>
-	createStyles({
-		root: {
-			width: '100%',
-			display: 'flex',
-			flexDirection: 'column',
-			alignContent: 'center'
-		},
-		table: {
-			minWidth: 1020
-		},
-		tableWrapper: {
-			overflowX: 'auto'
-		},
-		progress: {
-			alignSelf: 'center',
-			margin: 40
-		}
-	});
+const styles = () => createStyles({
+    root: {
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignContent: 'center'
+    },
+    table: {
+        minWidth: 1020
+    },
+    tableWrapper: {
+        overflowX: 'auto'
+    },
+    progress: {
+        alignSelf: 'center',
+        margin: 40
+    }
+});
 
 interface Props extends WithStyles<typeof styles> {
-	tableTitle: string;
+    tableTitle: string;
+    selectionFieldName: string;
 	columnNames: {
 		id: string;
 		numeric?: boolean;
@@ -40,17 +40,12 @@ interface Props extends WithStyles<typeof styles> {
 		label?: string;
 		orderWith: string;
 	}[];
-	selected: any[];
+	selected: (string|number)[];
 	data: any[];
 	handleSelectAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
-	handleSelect: (
-		event: React.MouseEvent<HTMLElement, MouseEvent>,
-		id: number | string
-	) => void;
 	getRow: (
 		row: any,
-		isItemSelected: boolean,
-		handleClick: any
+		isItemSelected: boolean
 	) => React.ReactChild;
 	getActions: (numSelected: number) => React.ReactChild;
 	className: string;
@@ -77,18 +72,28 @@ const Component: React.FC<Props> = props => {
 		className,
 		getActions,
 		handleSelectAll,
-		handleSelect,
 		handleSortRequest,
 		direction = 'asc',
 		orderBy,
-		customHead
+        customHead,
+        selectionFieldName
 	} = props;
 
-	const stableSort = () =>
-		data.sort((a, b) => (direction === 'desc' ? desc(a, b) : -desc(a, b)));
+	const stableSort = () => {
+        return data.sort((a, b) => (direction === 'desc' ? desc(a, b) : -desc(a, b)))
+    };
 
-	const desc = (a: any, b: any) =>
-		Number(a[orderBy]) < Number(b[orderBy]) ? 1 : -1;
+	const desc = (a: any, b: any) => {
+        if (a[orderBy] === b[orderBy]) {
+            return data.indexOf(a) - data.indexOf(b);
+        }
+        if (Number(a[orderBy]) < Number(b[orderBy]))
+            return 1;
+        if (Number(a[orderBy]) > Number(b[orderBy]))
+            return -1;
+
+        return 0;
+    };
 
 	const handleChangePage = (
 		event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -103,12 +108,11 @@ const Component: React.FC<Props> = props => {
 		setRowsPerPage(Number(event.target.value));
 	};
 
-	const isSelected = (id: string) => selected.indexOf(id) !== -1;
+	const isSelected = (key: string | number) => selected.indexOf(key) !== -1;
+    
+	const emptyRows = rowsPerPage - Math.min(rowsPerPage, data ? data.length - page * rowsPerPage : 0);
 
-	const emptyRows =
-		rowsPerPage -
-		Math.min(rowsPerPage, data ? data.length - page * rowsPerPage : 0);
-
+    console.log("reload")
 	return (
 		<Paper className={className || classes.root}>
 			{!data ? (
@@ -125,9 +129,7 @@ const Component: React.FC<Props> = props => {
 							className={classes.table}
 							aria-labelledby="tableTitle"
 						>
-							{customHead ? (
-								customHead
-							) : (
+							{customHead ? (customHead) : (
 								<EnhancedTableHead
 									columnNames={columnNames}
 									numSelected={selected.length}
@@ -139,18 +141,15 @@ const Component: React.FC<Props> = props => {
 								/>
 							)}
 							<TableBody>
-								{stableSort()
-									.slice(
-										page * rowsPerPage,
-										page * rowsPerPage + rowsPerPage
-									)
-									.map(row =>
-										getRow(
-											row,
-											isSelected(row.id),
-											handleSelect
-										)
-									)}
+								{stableSort().slice(
+                                    page * rowsPerPage,
+                                    page * rowsPerPage + rowsPerPage
+                                ).map(row => (
+                                    getRow(
+                                        row,
+                                        isSelected(row[selectionFieldName])
+                                    )
+                                ))}
 								{emptyRows > 0 && (
 									<TableRow
 										style={{ height: 49 * emptyRows }}

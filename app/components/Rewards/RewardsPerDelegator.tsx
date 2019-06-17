@@ -64,31 +64,31 @@ const columnNames = [
 	{
 		id: 'delegator',
 		label: 'Delegator',
-		orderWith: 'pkh'
+		orderWith: 'DelegationPhk'
 	},
 	{
 		id: 'balance',
 		label: 'Balance',
 		numeric: true,
-		orderWith: 'balance'
+		orderWith: 'Balance'
 	},
 	{
 		id: 'share',
 		label: 'Share',
 		numeric: true,
-		orderWith: 'balance'
+		orderWith: 'Balance'
 	},
 	{
 		id: 'rewards_share',
 		label: 'Rewards Share',
 		numeric: true,
-		orderWith: 'balance'
+		orderWith: 'Balance'
 	},
 	{
 		id: 'rewards_fee',
 		label: 'Rewards Fee',
 		numeric: true,
-		orderWith: 'balance'
+		orderWith: 'Balance'
 	}
 ];
 
@@ -112,7 +112,7 @@ const Component: React.FC<Props> = ({
 }) => {
 	const isMounted = React.useRef(true);
 	const [selected, setSelected] = React.useState([] as string[]);
-	const [orderBy, setOrderBy] = React.useState('balance');
+	const [orderBy, setOrderBy] = React.useState('Balance');
 	const [direction, setDirection] = React.useState('desc' as 'asc' | 'desc');
 	const [rewards, setRewards] = React.useState(null as DelegatorReward[]);
 
@@ -143,27 +143,25 @@ const Component: React.FC<Props> = ({
 
 	const handleRewardsPayment = () => {
 		if (paymentsAllowed) {
-			setRewards(null);
 			props.handleRewardsPayment(
 				rewards.filter(r => selected.includes(r.DelegationPhk)),
 				cycle,
 				updateRewards
-			);
+            );
+            setRewards(null);
 			setSelected([]);
 		}
 	};
 
 	const getRow = (
 		row: DelegatorReward,
-		isItemSelected: boolean,
-		handleClick: any
+		isItemSelected: boolean
 	) => (
 		<TableRow
 			hover
-			onClick={event => handleClick(event, row.DelegationPhk)}
+			onClick={() => handleSelect(row.DelegationPhk)}
 			role="checkbox"
 			aria-checked={isItemSelected}
-			tabIndex={-1}
 			key={row.DelegationPhk}
 			selected={isItemSelected}
 		>
@@ -201,14 +199,14 @@ const Component: React.FC<Props> = ({
 			<TableCell align="right">
 				<Typography variant="caption">
 					{utils.parseTEZWithSymbol(
-						Math.floor(Number(row.NetRewards) * utils.TEZ.unit)
+						Number(row.NetRewards)
 					)}
 				</Typography>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">
 					{utils.parseTEZWithSymbol(
-						Math.floor(Number(row.Fee) * utils.TEZ.unit)
+						Number(row.Fee)
 					)}
 				</Typography>
 			</TableCell>
@@ -230,35 +228,29 @@ const Component: React.FC<Props> = ({
 				<Typography variant="h6" color="secondary">
 					Rewards not ready yet!
 				</Typography>
-			) : (
-				undefined
-			)}
+			) : null}
 		</div>
 	);
 
 	const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
 		if (event.target.checked) {
 			setSelected(
-				rewards.reduce(
-					(prev, cur) =>
-						!cur.paid ? [...prev, cur.DelegationPhk] : prev,
-					[]
-				)
+				rewards.reduce((prev, cur) => (
+                    !cur.paid ? [...prev, cur.DelegationPhk] : prev
+                ), [])
 			);
 		} else setSelected([]);
 	};
 
-	const handleSelect = (
-		event: React.MouseEvent<HTMLElement, MouseEvent>,
-		id: string
-	) => {
-		if (rewards.some(r => r.DelegationPhk === id && r.paid)) return;
-
-		const selectedIndex = selected.indexOf(id);
+	const handleSelect = (key: string) => {
+        //return;
+        if (rewards.some(r => r.DelegationPhk === key && r.paid)) return;
+        
+		const selectedIndex = selected.indexOf(key);
 		let newSelected: string[];
 
 		if (selectedIndex < 0) {
-			newSelected = [...selected, id];
+			newSelected = [...selected, key];
 		} else if (selectedIndex === 0) {
 			newSelected = selected.slice(1);
 		} else if (selectedIndex === selected.length - 1) {
@@ -268,8 +260,8 @@ const Component: React.FC<Props> = ({
 				...selected.slice(0, selectedIndex),
 				...selected.slice(selectedIndex + 1)
 			];
-		}
-
+        }
+        
 		setSelected(newSelected);
 	};
 
@@ -277,7 +269,7 @@ const Component: React.FC<Props> = ({
 		<EnhancedTableHead
 			columnNames={columnNames}
 			numSelected={selected.length}
-			direction={direction}
+            direction={direction}
 			orderBy={orderBy}
 			onSelectAll={handleSelectAll}
 			onSortRequest={handleSortRequest}
@@ -293,9 +285,9 @@ const Component: React.FC<Props> = ({
 			data={rewards}
 			customHead={CustomEnhancedTableHead}
 			selected={selected}
-			getRow={getRow}
+            getRow={getRow}
+            selectionFieldName="DelegationPhk"
 			getActions={getActions}
-			handleSelect={handleSelect}
 			handleSelectAll={handleSelectAll}
 			handleSortRequest={handleSortRequest}
 			direction={direction}

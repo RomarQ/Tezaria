@@ -25,16 +25,17 @@ export interface RewardControllerInterface {
 	sendRewardsByCycle: (
 		keys: KeysType,
 		cycle: number,
-		logger?: (log: LogProps) => void
+		logger?: (log: LoggerActionProps) => void
 	) => Promise<void>;
 	sendSelectedRewards: (
 		keys: KeysType,
 		selected: DelegatorReward[],
 		cycle: number,
-		logger?: (log: LogProps) => void
+        logger?: (log: LoggerActionProps) => void,
+        manual?: boolean // For Manual Payments
 	) => Promise<void>;
 	nextRewardCycle: () => Promise<number>;
-	run: (keys: KeysType, logger?: (log: LogProps) => void) => Promise<void>;
+	run: (keys: KeysType, logger?: (log: LoggerActionPropss) => void) => Promise<void>;
 }
 
 export type RewardsInfo = {
