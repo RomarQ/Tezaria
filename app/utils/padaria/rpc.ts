@@ -407,7 +407,6 @@ const self: RPCInterface = {
 				? new https.Agent(options)
 				: new http.Agent(options);
 
-		console.log(options);
 		return self.queryStreamRequest(options, callback);
 	},
 	monitorValidBlocks: (chainId, callback) => {

@@ -13,12 +13,15 @@ import {
     BakingControllerProps,
     BakingControllerStartOptions
 } from './bakingController.d';
+import { workers } from 'cluster';
 
 const self:BakingControllerProps = {
     //
     // States
     //
     delegate: {},
+
+    monitoring: false,
 
     running: false,
     baking: false,
@@ -200,12 +203,16 @@ const self:BakingControllerProps = {
 
         while (self.running) {
             try {
+                if (self.monitoring) return true;
+
+                self.monitoring = true;
                 await rpc.monitorHeads('main', (header, resolve) => {
                     console.log("Block received,", header)
                     self.running
                         ? self.run(keys, options.logger)
                         : resolve();
                 });
+                self.monitoring = false;
             }
             catch(e) {
                 console.error(e);
