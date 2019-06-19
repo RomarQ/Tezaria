@@ -98,8 +98,14 @@ const Component: React.FC<Props> = props => {
 						<Typography className={classes.heading}>
 							Delegators
 						</Typography>
+                        <Typography className={classes.heading}>
+							Staking Balance
+						</Typography>
 						<Typography className={classes.heading}>
 							Rewards
+						</Typography>
+                        <Typography className={classes.heading}>
+							Fees
 						</Typography>
 						<Typography className={classes.heading}>
 							Status
@@ -120,14 +126,24 @@ const Component: React.FC<Props> = props => {
 									expandIcon={<ExpandMoreIcon />}
 								>
 									<Typography className={classes.heading}>
-										{r.Cycle}
+										{r.cycle}
 									</Typography>
 									<Typography className={classes.heading}>
-										{r.TotalDelegations}
+										{r.total_delegators}
+									</Typography>
+                                    <Typography className={classes.heading}>
+                                        {utils.parseTEZWithSymbol(
+                                            Number(r.staking_balance)
+                                        )}
 									</Typography>
 									<Typography className={classes.heading}>
 										{utils.parseTEZWithSymbol(
-											Number(r.CycleRewards)
+											Number(r.rewards)
+										)}
+									</Typography>
+                                    <Typography className={classes.heading}>
+										{utils.parseTEZWithSymbol(
+											Number(r.fees)
 										)}
 									</Typography>
 									<Typography className={status.className}>
@@ -142,7 +158,7 @@ const Component: React.FC<Props> = props => {
 											}
 											paymentsAllowed={index > 5}
 											pkh={pkh}
-											cycle={r.Cycle}
+											cycle={r.cycle}
 										/>
 									) : (
 										<span />

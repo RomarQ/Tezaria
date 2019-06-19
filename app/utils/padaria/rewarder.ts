@@ -15,17 +15,10 @@ const self: RewardControllerInterface = {
 	paymentsBatchSize: MAX_BATCH_SIZE,
 	feePercentage: DEFAULT_FEE_PERCENTAGE,
 
-	getNumberOfDelegatorsByCycle: async (pkh, cycle) => {
-		const [total] = (await rpc.queryTzScan(
-			`/nb_delegators/${pkh}/?cycle=${cycle}`,
-			QueryTypes.GET
-		)) as number[];
-		return total;
-	},
 	/*
 	 *   Returns an array with information about staking balance, number of delegators, rewards, fees, etc.
 	 */
-	getRewards: async (pkh, numberOfCycles) => {
+	getRewards: async (pkh, numberOfCycles, cb) => {
 		let cycle = (await rpc.getCurrentCycle()) - 1;
 		const endCycle = cycle - numberOfCycles;
 
@@ -34,7 +27,11 @@ const self: RewardControllerInterface = {
 			const reward = await rpc.queryNode(
 				`/basic-rewards-report/?delegate=${pkh}&cycle=${cycle}`,
 				QueryTypes.GET
-			);
+            );
+            
+            // If a callback is provided, then call it
+            cb && cb(reward);
+
 			rewards.push(reward);
 		}
 
@@ -105,7 +102,7 @@ const self: RewardControllerInterface = {
 
         rewards.Delegations.map((reward, index) => {
             rewards.Delegations[index].paid =
-                !!transactionsStatus[reward.DelegationPhk];
+                !!transactionsStatus[reward.delegation_pkh];
         });
 
 
@@ -127,13 +124,13 @@ const self: RewardControllerInterface = {
 			amount: string;
 		}[];
 
-		rewards.forEach(({ NetRewards, DelegationPhk, paid }) => {
+		rewards.forEach(({ net_rewards, delegation_pkh, paid }) => {
 			const amount =
-				Number(NetRewards) - Number(operations.feeDefaults.low);
+				Number(net_rewards) - Number(operations.feeDefaults.low);
 
 			if (!paid && amount > 0) {
 				destinations.push({
-					destination: DelegationPhk,
+					destination: delegation_pkh,
 					amount: String(amount)
 				});
 			}

@@ -6,13 +6,10 @@ export interface RewardControllerInterface {
 	feePercentage: number;
 
 	// Methods
-	getNumberOfDelegatorsByCycle: (
-		pkh: string,
-		cycle: number
-	) => Promise<number>;
 	getRewards: (
 		pkh: string,
-		numberOfCycles: number
+        numberOfCycles: number,
+        cb?: (cycleRewards) => void
 	) => Promise<RewardsReportWithoutDelegations[]>;
 	getDelegatorsRewardsByCycle: (
 		pkh: string,
@@ -61,29 +58,35 @@ export type RewardsInfo = {
 };
 
 interface DelegatorReward {
-	DelegationPhk: string;
-	Fee: string;
-	GrossRewards: string;
-	NetRewards: string;
-	Share: number;
-	Balance: number;
+    delegation_pkh: string;
+	fee: string;
+	gross_rewards: string;
+	net_rewards: string;
+	share: number;
+	balance: number;
 	// Custom
 	paid?: boolean;
 }
 
 export type RewardsReport = {
-	Cycle: number;
-	CycleRewards: string;
-	DelegatePhk: string;
+	rewards: string;
+    delegate_pkh: string;
+    cycle: number;
 	Delegations: DelegatorReward[];
 	SelfBakedRewards: string;
 	TotalFeeRewards: string;
-	TotalRewards: string;
+    TotalRewards: string;
+	fees: string;
+	total_fee_rewards: string;
+	self_rewards: string;
+	total_rewards: string;
 };
 
 export interface RewardsReportWithoutDelegations {
-	Cycle: number;
-	CycleRewards: string;
-	DelegatePhk: string;
-	TotalDelegations: number;
+    delegate_pkh: string;
+    cycle: number;
+    total_delegators: number;
+    rewards: string;
+    fees: string;
+    staking_balance: string;
 }

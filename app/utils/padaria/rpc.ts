@@ -1,5 +1,6 @@
 import https from 'https';
 import http from 'http';
+import { GraphQLClient } from 'graphql-request';
 
 import utils, { Prefix } from './utils';
 import rewarder from './rewarder';
@@ -19,7 +20,7 @@ export enum QueryTypes {
 
 export const DEFAULT_NODE_ADDRESS = 'rpc.tezaria.com';
 export const DEFAULT_NODE_PORT = 80;
-export const DEFAULT_API_ADDRESS = 'http://67.207.68.241:8080/v1alpha1/graphql';
+export const DEFAULT_API_ADDRESS = 'http://tezaria.com:8080/v1alpha1/graphql';
 export const DEFAULT_TZSCAN_API_ADDRESS = 'api.zeronet.tzscan.io';
 
 const self: RPCInterface = {
@@ -40,16 +41,11 @@ const self: RPCInterface = {
 			(rewarder.paymentsBatchSize = options.rewardsBatchSize);
 		options.delegatorFee && (rewarder.feePercentage = options.delegatorFee);
 
-		/*
         if (options.apiAddress) {
             self.apiAddress = options.apiAddress;
-            self.apiClient = new GraphQLClient(options.apiAddress, {
-                headers: {
-                    "X-Hasura-Admin-Secret": 'myadminsecretkey'
-                }
-            });
+            self.apiClient = new GraphQLClient(options.apiAddress);
         }
-        */
+
 		(window as any).getDelegatorsRewardsByCycle =
 			rewarder.getDelegatorsRewardsByCycle;
 
@@ -133,7 +129,7 @@ const self: RPCInterface = {
 		const options = {
 			hostname: self.nodeAddress,
 			port: self.nodePort,
-			timeout: 3000, // 1min
+			timeout: 3000, // 3 secs
 			path,
 			method,
 			headers: {

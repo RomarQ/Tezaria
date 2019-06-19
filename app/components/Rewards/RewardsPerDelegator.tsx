@@ -64,31 +64,31 @@ const columnNames = [
 	{
 		id: 'delegator',
 		label: 'Delegator',
-		orderWith: 'DelegationPhk'
+		orderWith: 'delegation_pkh'
 	},
 	{
 		id: 'balance',
 		label: 'Balance',
 		numeric: true,
-		orderWith: 'Balance'
+		orderWith: 'balance'
 	},
 	{
 		id: 'share',
 		label: 'Share',
 		numeric: true,
-		orderWith: 'Balance'
+		orderWith: 'balance'
 	},
 	{
 		id: 'rewards_share',
 		label: 'Rewards Share',
 		numeric: true,
-		orderWith: 'Balance'
+		orderWith: 'balance'
 	},
 	{
 		id: 'rewards_fee',
 		label: 'Rewards Fee',
 		numeric: true,
-		orderWith: 'Balance'
+		orderWith: 'balance'
 	}
 ];
 
@@ -112,7 +112,7 @@ const Component: React.FC<Props> = ({
 }) => {
 	const isMounted = React.useRef(true);
 	const [selected, setSelected] = React.useState([] as string[]);
-	const [orderBy, setOrderBy] = React.useState('Balance');
+	const [orderBy, setOrderBy] = React.useState('balance');
 	const [direction, setDirection] = React.useState('desc' as 'asc' | 'desc');
 	const [rewards, setRewards] = React.useState(null as DelegatorReward[]);
 
@@ -144,7 +144,7 @@ const Component: React.FC<Props> = ({
 	const handleRewardsPayment = () => {
 		if (paymentsAllowed) {
 			props.handleRewardsPayment(
-				rewards.filter(r => selected.includes(r.DelegationPhk)),
+				rewards.filter(r => selected.includes(r.delegation_pkh)),
 				cycle,
 				updateRewards
             );
@@ -159,10 +159,10 @@ const Component: React.FC<Props> = ({
 	) => (
 		<TableRow
 			hover
-			onClick={() => handleSelect(row.DelegationPhk)}
+			onClick={() => handleSelect(row.delegation_pkh)}
 			role="checkbox"
 			aria-checked={isItemSelected}
-			key={row.DelegationPhk}
+			key={row.delegation_pkh}
 			selected={isItemSelected}
 		>
 			<TableCell padding="checkbox">
@@ -174,24 +174,24 @@ const Component: React.FC<Props> = ({
 			<TableCell>
 				<a className={classes.delegatorLink}>
 					<Blockies
-						seed={row.DelegationPhk}
+						seed={row.delegation_pkh}
 						className={classes.blockie}
 					/>
 					<Typography variant="caption">
-						{row.DelegationPhk}
+						{row.delegation_pkh}
 					</Typography>
 				</a>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">
 					{utils.parseTEZWithSymbol(
-						Math.floor(row.Balance * utils.TEZ.unit)
+						row.balance
 					)}
 				</Typography>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">{`${(
-					row.Share * 100
+					row.share * 100
 				).toLocaleString('fullwide', {
 					maximumFractionDigits: 2
 				})}%`}</Typography>
@@ -199,14 +199,14 @@ const Component: React.FC<Props> = ({
 			<TableCell align="right">
 				<Typography variant="caption">
 					{utils.parseTEZWithSymbol(
-						Number(row.NetRewards)
+						Number(row.net_rewards)
 					)}
 				</Typography>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">
 					{utils.parseTEZWithSymbol(
-						Number(row.Fee)
+						Number(row.fee)
 					)}
 				</Typography>
 			</TableCell>
@@ -236,7 +236,7 @@ const Component: React.FC<Props> = ({
 		if (event.target.checked) {
 			setSelected(
 				rewards.reduce((prev, cur) => (
-                    !cur.paid ? [...prev, cur.DelegationPhk] : prev
+                    !cur.paid ? [...prev, cur.delegation_pkh] : prev
                 ), [])
 			);
 		} else setSelected([]);
@@ -244,7 +244,7 @@ const Component: React.FC<Props> = ({
 
 	const handleSelect = (key: string) => {
         //return;
-        if (rewards.some(r => r.DelegationPhk === key && r.paid)) return;
+        if (rewards.some(r => r.delegation_pkh === key && r.paid)) return;
         
 		const selectedIndex = selected.indexOf(key);
 		let newSelected: string[];
@@ -286,7 +286,7 @@ const Component: React.FC<Props> = ({
 			customHead={CustomEnhancedTableHead}
 			selected={selected}
             getRow={getRow}
-            selectionFieldName="DelegationPhk"
+            selectionFieldName="delegation_pkh"
 			getActions={getActions}
 			handleSelectAll={handleSelectAll}
 			handleSortRequest={handleSortRequest}

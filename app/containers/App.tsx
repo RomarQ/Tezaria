@@ -105,8 +105,6 @@ const App: React.FC<Props> = props => {
 
 		return () => {
 			isMounted.current = false;
-			//window.removeEventListener('online', handleConnectionStateChange);
-			//window.removeEventListener('offline', handleConnectionStateChange);
 		};
 	}, [connectionStatus]);
 
