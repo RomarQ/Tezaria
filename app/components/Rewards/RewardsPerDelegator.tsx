@@ -20,6 +20,7 @@ import EnhancedTableHead from '../Table/EnhancedTableHead';
 
 import utils from '../../utils/padaria/utils';
 import rewarder, { DelegatorReward } from '../../utils/padaria/rewarder';
+import bakingController from '../../utils/padaria/bakingController';
 
 const styles = ({ palette }: Theme) =>
 	createStyles({
@@ -226,7 +227,11 @@ const Component: React.FC<Props> = ({
 				</Tooltip>
 			) : numSelected > 0 ? (
 				<Typography variant="h6" color="secondary">
-					Rewards not ready yet!
+					{
+                        bakingController.rewarding 
+                            ? 'Auto rewarder is enabled'
+                            : 'Rewards not ready yet!'
+                    }
 				</Typography>
 			) : null}
 		</div>

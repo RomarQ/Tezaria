@@ -155,7 +155,7 @@ const self:UtilsInterface = {
         (Math.floor(level/rpc.networkConstants['blocks_per_cycle']) * rpc.networkConstants['blocks_per_cycle']) + 1
     ),
     lastCycleLevel: (level:number) => (
-        self.firstCycleLevel(level) + rpc.networkConstants['blocks_per_cycle']
+        self.firstCycleLevel(level) + rpc.networkConstants['blocks_per_cycle'] - 1
     ),
     hexToBuffer: (hex:string) => new Uint8Array(
         hex.match(/[\da-f]{2}/gi).map((h) => parseInt(h, 16))

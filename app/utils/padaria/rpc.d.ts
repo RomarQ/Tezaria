@@ -23,10 +23,6 @@ export interface RPCInterface extends TezariaSettingsProps {
     queryRequest: (options:RequestOptions, args?:any) => Promise<any>;
     queryStreamRequest: (options:RequestOptions, cb:(res:any, resolve:()=>void) => void) => Promise<any>;
     getBalance: (pkh:string) => Promise<number>;
-    simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
-    forgeOperation: (head:BlockHeaderProps, operation:UnsignedOperationProps, verify?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
-    preapplyOperations: (operation:UnsignedOperationProps[]) => Promise<UnsignedOperationProps[]>;
-    injectOperation: (operation:UnsignedOperationProps) => Promise<UnsignedOperationProps>;
     getContract: (pkh:string) => Promise<{
         manager: string;
         balance: string;

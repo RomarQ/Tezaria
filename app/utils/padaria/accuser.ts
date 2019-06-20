@@ -27,7 +27,6 @@ const self:AccuserInterface = {
 
         self.running = true;
         while (self.running) {
-            console.log("accuser...");
             try {
                 await rpc.monitorValidBlocks('main', async (block, resolve) => {
                     if (!self.running) {
@@ -42,8 +41,6 @@ const self:AccuserInterface = {
                         await rpc.getBlock(block.hash),
                         ...self.blocks.filter(b => b.header.level > self.highestLevelEncountered - self.preservedLevels)
                     ];
-
-                    console.log(self.blocks);
 
                     self.blocks.reduce((prev, cur) => {
                         const evidenceIndex = prev.findIndex(b => b.header.level == cur.header.level && b.metadata.baker == cur.metadata.baker);

@@ -288,96 +288,14 @@ const self: RPCInterface = {
 			`/chains/main/blocks/head/context/contracts/${contract}/manager_key`,
 			QueryTypes.GET
 		),
-	getBalance: async pkh =>
+	getBalance: async pkh => (
 		Number(
 			await self.queryNode(
 				`/chains/main/blocks/head/context/contracts/${pkh}/balance`,
 				QueryTypes.GET
 			)
-		),
-	simulateOperation: async (from, keys, operation) => {
-		const {
-			forgedConfirmation,
-			...verifiedOp
-		} = await operations.prepareOperations(from, keys, [operation]);
-
-		return await self.queryNode(
-			'/chains/main/blocks/head/helpers/scripts/run_operation',
-			QueryTypes.POST,
-			verifiedOp
-		);
-	},
-	forgeOperation: async (metadata, operation, verify = true) => {
-		const forgedOperation = await self.queryNode(
-			`/chains/main/blocks/head/helpers/forge/operations`,
-			QueryTypes.POST,
-			operation
-		);
-
-		if (!forgedOperation) return;
-
-		const forgedConfirmation = operation.contents.reduce((prev, cur) => {
-			return (prev += operations.forgeOperationLocally(cur));
-		}, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
-
-		if (forgedOperation !== forgedConfirmation) {
-			console.log(forgedOperation);
-			console.log(forgedConfirmation);
-
-			if (verify)
-				throw Error(
-					'[RPC] - Validation error on operation forge verification.'
-				);
-		}
-
-		return {
-			...operation,
-			protocol: metadata.protocol,
-			forgedConfirmation: forgedOperation
-		};
-	},
-	preapplyOperations: async operations => {
-		const preappliedOps = (await self.queryNode(
-			'/chains/main/blocks/head/helpers/preapply/operations',
-			QueryTypes.POST,
-			operations
-		)) as UnsignedOperationProps[];
-
-		if (!Array.isArray(preappliedOps))
-			throw new Error('[RPC] - Error on preapplying operations.');
-
-		if (
-			preappliedOps.some(
-				({ contents }) => (
-					contents &&
-					contents.some(
-						({ metadata: { operation_result } }) => (
-							operation_result &&
-                            operation_result.status === 'failed'
-                        )
-                    )
-                )
-			)
-		) {
-            console.error(preappliedOps);
-			throw new Error(`[RPC] - Failed to preapply operations`);
-		}
-
-		return preappliedOps;
-	},
-	injectOperation: async ({ signedOperationContents, ...rest }) => {
-		const [preappliedOp] = await self.preapplyOperations([rest]);
-		const operationHash = (await self.queryNode(
-			'/injection/operation',
-			QueryTypes.POST,
-			signedOperationContents
-		)) as string;
-
-		return {
-			hash: operationHash,
-			...preappliedOp
-		};
-	},
+		)
+    ),
 	monitorOperations: callback => {
 		const options = {
 			hostname: self.nodeAddress,

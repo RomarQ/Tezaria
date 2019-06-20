@@ -91,7 +91,6 @@ const self:EndorderInterface = {
         } catch(e) { console.error("Not able to get Incoming Endorsings."); }
     },
     run: async (pkh, header, logger) => {
-        console.log("endorser...")
         const { level } = header;
 
         if (self.endorsedBlocks.indexOf(level) < 0) {

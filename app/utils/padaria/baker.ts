@@ -70,7 +70,7 @@ const self:BakerInterface = {
             let bakingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${metadata.level.cycle}&max_priority=5`, QueryTypes.GET) as BakingRight[];
 
             bakingRights = bakingRights.filter(right => !!right.estimated_time);
-            
+
             return {
                 hasData: true,
                 cycle: metadata.level.cycle,
@@ -87,7 +87,6 @@ const self:BakerInterface = {
         ];
     },
     run: async (pkh, header, logger) => {
-        console.log("baker...")
         self.levelWaterMark = header.level+1;
 
         try {

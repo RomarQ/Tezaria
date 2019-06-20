@@ -87,42 +87,45 @@ const self:BakingControllerProps = {
         return self.delegate;
     },
     revealNonces: async header => {
-        const nonces:NonceType[] = [];
+        await self.loadNoncesFromStorage();
         
-        await self.noncesToReveal.forEach(async (nonce:NonceType) => {
-            const revealStart = utils.firstCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
-            const revealEnd = utils.lastCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
+
+        const nonces:NonceType[] = [];
+
+        self.noncesToReveal.forEach(async (nonce:NonceType) => {
+
+            const revealStart = 
+                utils.firstCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
+            const revealEnd = 
+                utils.lastCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
 
             console.log(revealStart, nonce.level, revealEnd);
 
             if (header.level > revealEnd) {
-                console.log("End of Reveal, cycle is OVER!");
+                console.log("Time to Reveal has passed, cycle is OVER!");
                 return;
             } 
             else if (header.level >= revealStart) {
                 console.log("Revealing nonce ", nonce);
-                return await operations.revealNonce(header, nonce)
-                    .then(res => {
-                        console.log(res);
-                    })
-                    .catch(e => {
-                        console.error(e);
-                    });
+                try {
+                    await operations.revealNonce(header, nonce);
+                    return;
+                } catch(e) {
+                    console.error(e);
+                }
             }
 
             nonces.push(nonce);
         });
 
-        if (nonces.length != self.noncesToReveal.length){
-            self.noncesToReveal = nonces;
-            storage.setBakerNonces(self.noncesToReveal);
+        if (nonces.length != self.noncesToReveal.length) {
+            storage.setBakerNonces(nonces);
         }
     },
     loadNoncesFromStorage: async () => {
         self.noncesToReveal = await storage.getBakerNonces();
     },
     addNonce: async (nonce: NonceType) => {
-        self.noncesToReveal.push(nonce);
         await storage.setBakerNonces(self.noncesToReveal);
     },
     run: async (keys, logger) => {

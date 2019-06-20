@@ -47,6 +47,10 @@ export interface OperationsInterface {
         Promise<UnsignedOperationProps & {forgedConfirmation: string}>
     )
     forgeOperationLocally: (operation:OperationProps) => string;
+    simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
+    forgeOperation: (head:BlockHeaderProps, operation:UnsignedOperationProps, verify?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
+    preapplyOperations: (operation:UnsignedOperationProps[]) => Promise<UnsignedOperationProps[]>;
+    injectOperation: (operation:UnsignedOperationProps) => Promise<UnsignedOperationProps>;
     operationRequiresSource: (operationType:OperationType) => boolean;
     operationRequiresCounter: (operationType:OperationType) => boolean;
     classifyOperations: (operations:UnsignedOperationProps[][], protocol:string) => Promise<UnsignedOperationProps[][]>;

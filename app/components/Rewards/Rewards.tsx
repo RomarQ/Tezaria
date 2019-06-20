@@ -17,6 +17,7 @@ import {
 	RewardsReportWithoutDelegations,
 	DelegatorReward
 } from '../../utils/padaria/rewarder';
+import bakingController from '../../utils/padaria/bakingController';
 
 const styles = ({ typography, palette }: Theme) =>
 	createStyles({
@@ -156,7 +157,7 @@ const Component: React.FC<Props> = props => {
 											handleRewardsPayment={
 												handleRewardsPayment
 											}
-											paymentsAllowed={index > 5}
+											paymentsAllowed={index > 4 && !bakingController.rewarding}
 											pkh={pkh}
 											cycle={r.cycle}
 										/>

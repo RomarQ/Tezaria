@@ -119,6 +119,9 @@ const self: RewardControllerInterface = {
 		);
 	},
 	sendSelectedRewards: async (keys, rewards, cycle, logger, manual=false) => {
+        if (manual && bakingController.rewarding)
+            return;
+
 		const destinations = [] as {
 			destination: string;
 			amount: string;
@@ -256,22 +259,6 @@ const self: RewardControllerInterface = {
         }
 
 		self.lastRewardedCycle = cycle;
-		/*
-        *   Decided to remove the external API on this process for sake of simplicity for new bakers
-
-            // This code will possible be used in future versions, since I plan this tool to be customizable.
-
-            await rpc.queryAPI(`
-                mutation insertRewards($list: [cycle_reward_payment_insert_input!]!) {
-                    insert_cycle_reward_payment (
-                        objects: $list
-                    ) {
-                        affected_rows
-                    }
-                }
-            `,
-            { list: transactionsStatus });
-        */
 	},
 	nextRewardCycle: async () => {
 		const cycle = await rpc.getCurrentCycle();
