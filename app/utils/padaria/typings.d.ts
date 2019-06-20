@@ -17,6 +17,17 @@ declare interface LoggerActionProps {
 	origin?: string;
 }
 
+declare interface ContractProps {
+    manager: string;
+    balance: string;
+    spendable: boolean;
+    delegate: {
+        setable: boolean;
+        value: string;
+    };
+    counter: number;
+}
+
 declare interface TezosUnitType {
 	char: string;
 	unit: number;

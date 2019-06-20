@@ -6,5 +6,6 @@
   "REWARDS": "/rewards",
   "SETTINGS": "/settings",
   "PROTECT_ACCOUNT": "/protect-account",
+  "MAKE_TRANSACTION": "/make-trasaction",
   "LOGS": "/logs"
 }

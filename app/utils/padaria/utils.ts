@@ -140,13 +140,13 @@ const self:UtilsInterface = {
         Math.floor(Number(stakingBalance)/Number(rpc.networkConstants['tokens_per_roll']))
     ),
     parseTEZWithSymbol: value => {
-        if (value > self.MTEZ.unit) {
+        if (value >= self.MTEZ.unit) {
             return self.convertUnitWithSymbol(value, self.MTEZ);
-        } else if (value > self.KTEZ.unit) {
+        } else if (value >= self.KTEZ.unit) {
             return self.convertUnitWithSymbol(value, self.KTEZ);
-        } else if (value > self.TEZ.unit) {
+        } else if (value >= self.TEZ.unit) {
             return self.convertUnitWithSymbol(value, self.TEZ);
-        } else if (value > self.mTEZ.unit) {
+        } else if (value >= self.mTEZ.unit) {
             return self.convertUnitWithSymbol(value, self.mTEZ);
         }
         else return self.convertUnitWithSymbol(value, self.uTEZ);

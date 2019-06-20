@@ -209,7 +209,7 @@ const self: OperationsInterface = {
         const ops = [];
         for (const batch of operations) {
 
-            const op = await self.sendOperation(source, keys, batch);
+            const op = await self.sendOperation(source, keys, batch, true);
             // The result operation hash needs to be a string, otherwise is a error
             if (op && typeof op.hash !== 'string') {
                 console.error('Operation Failed', op);
@@ -228,7 +228,8 @@ const self: OperationsInterface = {
             storage_limit: String(self.delegationStorage),
             delegate: keys.pkh
         };
-        return self.sendOperation(keys.pkh, keys, [operation]);
+        console.log("1")
+        return self.sendOperation(keys.pkh, keys, [operation], true);
     },
     activateAccount: (keys, secret) => {
         const operation = {
@@ -236,10 +237,10 @@ const self: OperationsInterface = {
             secret,
             pkh: keys.pkh
         };
-        return self.sendOperation(keys.pkh, keys, [operation]);
+        return self.sendOperation(keys.pkh, keys, [operation], true, true);
     },
     awaitForOperationToBeIncluded: async (opHash, prevHeadHash) => {
-        // Wait 2 seconds before checking if the operation was inlcuded
+        // Wait 5 seconds before checking if the operation was inlcuded
         await new Promise(resolve => setTimeout(resolve, 5000));
 
         const headHash = await rpc.getBlockHash('head');
@@ -256,10 +257,13 @@ const self: OperationsInterface = {
 
         return await self.awaitForOperationToBeIncluded(opHash, headHash);
     },
-    sendOperation: async (source, keys, operation, skipReveal = false) => {
+    sendOperation: async (source, keys, operation, shouldWait=false, skipReveal = false) => {
         while (true) {
             // Wait for operation turn
-            if (self.awaitingLock[source]) continue;
+            if (self.awaitingLock[source]) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+            }
             // Cannot run more than one counter operation from the same source at the same time, 
             // otherwise the next operation will be rejected because counter will be too high
             self.awaitingLock[source] = true;
@@ -287,7 +291,8 @@ const self: OperationsInterface = {
 
                 console.log(injectedOp);
                 // Wait for operation to be included
-                await self.awaitForOperationToBeIncluded(injectedOp.hash, '');
+                if (shouldWait)
+                    await self.awaitForOperationToBeIncluded(injectedOp.hash, '');
 
                 self.awaitingLock[source] = false;
                 return injectedOp;
@@ -308,26 +313,21 @@ const self: OperationsInterface = {
         }
 
         let counter = await rpc.getCounter(source);
-
         /*
         *   Prepare reveal operation if required
         */
         if (!self.contractManagers[source].key && !skipReveal) {
-            self.awaitingLock[source] = false;
-            await self.sendOperation(
-                source,
-                keys,
-                [{
+            operations = [
+                {
                     kind: OperationTypes.reveal.type,
                     fee: String(self.feeDefaults.low),
                     public_key: keys.pk,
                     source,
-                    counter: String(++counter),
                     gas_limit: String(self.revealGasCost),
                     storage_limit: String(self.revealStorage)
-                }],
-                true
-            );
+                },
+                ...operations
+            ];
         }
 
         operations.forEach(op => {
@@ -340,6 +340,8 @@ const self: OperationsInterface = {
                 op.counter = String(++counter);
             }
         });
+
+        console.log(operations)
 
         return self.forgeOperation(header, {
             branch: header.hash,

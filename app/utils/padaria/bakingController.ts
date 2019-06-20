@@ -13,7 +13,6 @@ import {
     BakingControllerProps,
     BakingControllerStartOptions
 } from './bakingController.d';
-import { workers } from 'cluster';
 
 const self:BakingControllerProps = {
     //
@@ -45,23 +44,24 @@ const self:BakingControllerProps = {
     // Functions
     //
     load: async keys => {
-        if (!signer) return;
+        if (!signer) return self.delegate;
 
         try {
             const manager = await rpc.getManager(keys.pkh);
 
             self.delegate.revealed = !!manager.key;
-            if (!manager.key) {
+            if (!self.delegate.revealed) {
                 self.delegate.balance = await rpc.getBalance(keys.pkh);
-                return self.delegate;
+
+                /*
+                *   Return if balance is not enough to reveal and register as delegate
+                *   User can do it himself later
+                */
+                if (self.delegate.balance < (Number(operations.feeDefaults.low)*2) )
+                    return self.delegate;
             }
 
-            const delegate = await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET)
-                .catch(async () => {
-                    await operations.registerDelegate(keys);
-                    self.delegate.waitingForRights = true;
-                    return self.delegate;
-                });
+            const delegate = await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET);
 
             if (Array.isArray(delegate)) return self.delegate;
 
@@ -72,18 +72,19 @@ const self:BakingControllerProps = {
                     ...delegate
                 }
 
-                delegate.deactivated &&
-                    await operations.registerDelegate(keys) && (self.delegate.waitingForRights = true);
-        
+                if (delegate.deactivated) {
+                    await operations.registerDelegate(keys);
+                    self.delegate.waitingForRights = true;
+                }
+                
                 return self.delegate;
             }
-
-            self.delegate.waitingForRights = true;
-            await operations.registerDelegate(keys);
         } catch(e) {
             console.log(e);
         }
-     
+
+        self.delegate.waitingForRights = true;
+        await operations.registerDelegate(keys);
         return self.delegate;
     },
     revealNonces: async header => {
@@ -153,14 +154,7 @@ const self:BakingControllerProps = {
         //Endorser
         if (self.endorsing) {
             await endorser.run(keys.pkh, header, logger);
-        }/* 
-        (async () => {
-            if (self.endorsing && !self.locks.endorser) {
-                self.locks.endorser = true;
-                await endorser.run(keys.pkh, header, logger);
-                self.locks.endorser = false;
-            }
-        })(); */
+        }
         // Baker
         if (self.baking) {
             baker.run(keys.pkh, header, logger);
