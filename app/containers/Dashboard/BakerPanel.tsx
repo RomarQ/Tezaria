@@ -4,6 +4,7 @@ import BakerPanel from '../../components/Dashboard/BakerPanel';
 
 import rpc from '../../utils/padaria/rpc';
 import utils from '../../utils/padaria/utils';
+import operations from '../../utils/padaria/operations';
 import bakingController, {
 	DelegateProps
 } from '../../utils/padaria/bakingController';
@@ -15,18 +16,20 @@ interface Props {
 export default ({ userData }: Props) => {
 	const isMounted = React.useRef(true);
 	const [tezosCommits, setTezosCommits] = React.useState(null);
-	const [bakerInfo, setBakerInfo] = React.useState(userData as UserDataProps &
-		DelegateProps);
+    const [bakerInfo, setBakerInfo] =
+        React.useState(userData as UserDataProps & DelegateProps);
+
+    React.useEffect(() => {
+        isMounted.current = true;
+        // Update info on first render
+        updateInfo();
+
+        return () => isMounted.current = false;;
+    }, []);
+    
 
 	React.useEffect(() => {
-		isMounted.current = true;
-
-		if (typeof bakerInfo.revealed == 'undefined') {
-			// Update info on first render
-			updateInfo();
-			return () => (isMounted.current = false);
-		}
-
+        console.log(bakerInfo)
 		// Update time interval, on every new block or 10mins
 		const delay =
 			rpc.networkConstants['time_between_blocks'] &&
@@ -36,10 +39,7 @@ export default ({ userData }: Props) => {
 
 		const timeoutId = setTimeout(updateInfo, delay);
 
-		return () => {
-			clearTimeout(timeoutId);
-			isMounted.current = false;
-		};
+		return () => clearTimeout(timeoutId);
 	}, [tezosCommits, bakerInfo]);
 
 	const updateInfo = () => {
@@ -58,7 +58,24 @@ export default ({ userData }: Props) => {
 					setBakerInfo({ ...userData, ...delegate });
 			})
 			.catch(e => console.error(e));
-	};
+    };
+    
+    const activateDelegate = async () => {
+        try {
+            await operations.registerDelegate(bakerInfo.keys);
+        } 
+        catch(e) {
+            console.error(e);
+        }
 
-	return <BakerPanel bakerInfo={bakerInfo} nodeInfo={tezosCommits} />;
+        updateInfo();
+    }
+
+	return (
+        <BakerPanel
+            bakerInfo={bakerInfo}
+            nodeInfo={tezosCommits}
+            activateDelegate={activateDelegate}
+        />
+    );
 };

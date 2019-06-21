@@ -24,6 +24,7 @@ const self:CryptoInterface = {
         self.signer = new Signer(sk);
                 
         (window as any).signer = self.signer;
+        (window as any).hexNonce = self.hexNonce;
     },
     mnemonicToSeed: (mnemonic, passphrase = "") => {
         if (!bip39.validateMnemonic(mnemonic)) throw new Error('Crypto: Mnemonic is Invalid.');
@@ -169,14 +170,9 @@ const self:CryptoInterface = {
     seedHash: (seed:string) => (
         sodium.crypto_generichash(32, utils.hexToBuffer(seed))
     ),
-    hexNonce: (size:number) => {
-        const chars = '0123456789abcedf';
-        let hex = '';
-        while (size--) {
-            hex += chars[(Math.random() * 16) | 0];
-        }
-        return hex;
-    },
+    hexNonce: (size:number) => (
+        sodium.randombytes_buf(size, "hex")
+    ),
     nonceHash: (nonce:Uint8Array) => (
         utils.b58encode(nonce, Prefix.nce)
     ),

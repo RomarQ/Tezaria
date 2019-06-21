@@ -1,14 +1,12 @@
 import rpc, { QueryTypes } from './rpc';
-import utils, { Prefix } from './utils';
-import crypto from './crypto';
 
 import {
     EndorderInterface,
-    CompletedEndorsingFromServer,
     CompletedEndorsing,
     EndorsingRight,
 } from './endorser.d';
-import operations, { OperationTypes } from './operations';
+import operations from './operations';
+import utils from './utils';
 import { LogSeverity, LogOrigins } from './logger';
 
 const self:EndorderInterface = {
@@ -21,32 +19,42 @@ const self:EndorderInterface = {
     */
     getCompletedEndorsings: async (pkh:string):Promise<CompletedEndorsing[]> => {
         try {
-            const res = await rpc.queryTzScan(`/bakings_endorsement/${pkh}`, QueryTypes.GET) as CompletedEndorsingFromServer[];
+            const completedEndorsings: {endorsing_resume: CompletedEndorsing[]} = 
+                await rpc.queryAPI(`
+                    query completedBakings($delegate: String!) {
+                        endorsing_resume (
+                            where: {
+                                delegate_pkh: {_eq: $delegate},
+                            },
+                            limit: 50,
+                            order_by: { level: desc }
+                        )
+                        {
+                            level,
+                            total_slots,
+                            delegate_pkh,
+                            timestamp,
+                            slots,
+                            reward,
+                            cycle,
+                            endorsed
+                        }
+                    }
+                `, { delegate : pkh });
 
-            return res.reduce((prev, cur, i):any => {
-                if(!cur) return;
+            if (completedEndorsings && completedEndorsings.endorsing_resume) {
+                completedEndorsings.endorsing_resume.forEach(endorsing => (
+                    endorsing.reward = utils.parseTEZWithSymbol(Number(endorsing.reward))
+                ));
                 
-                if(!cur.timestamp) {
-                    prev.push({
-                        rewards: "0ꜩ",
-                        level: cur.level,
-                        lr_nslot: cur.lr_nslot
-                    });
-                } else {
-                    prev.push({
-                        rewards: `${((cur.lr_nslot*2)/(cur.priority+1)).toLocaleString('fullwide', {maximumFractionDigits:2})}ꜩ`,
-                        level: cur.level,
-                        cycle: cur.cycle,
-                        priority: cur.priority,
-                        lr_nslot: cur.lr_nslot,
-                        timestamp: cur.timestamp
-                    });
-                }
+                return completedEndorsings.endorsing_resume;
+            }
 
-                return prev;
-            }, []);
-
-        } catch(e) { console.error(e); }
+            return [];
+        }
+        catch(e) {
+            throw new Error(`Not able to get Completed Endorsings - ${e}`);
+        };
     },
     getIncomingEndorsings: async pkh => {
         try {
@@ -91,7 +99,6 @@ const self:EndorderInterface = {
         } catch(e) { console.error("Not able to get Incoming Endorsings."); }
     },
     run: async (pkh, header, logger) => {
-        console.log("endorser...")
         const { level } = header;
 
         if (self.endorsedBlocks.indexOf(level) < 0) {

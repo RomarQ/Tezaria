@@ -140,13 +140,13 @@ const self:UtilsInterface = {
         Math.floor(Number(stakingBalance)/Number(rpc.networkConstants['tokens_per_roll']))
     ),
     parseTEZWithSymbol: value => {
-        if (value > self.MTEZ.unit) {
+        if (value >= self.MTEZ.unit) {
             return self.convertUnitWithSymbol(value, self.MTEZ);
-        } else if (value > self.KTEZ.unit) {
+        } else if (value >= self.KTEZ.unit) {
             return self.convertUnitWithSymbol(value, self.KTEZ);
-        } else if (value > self.TEZ.unit) {
+        } else if (value >= self.TEZ.unit) {
             return self.convertUnitWithSymbol(value, self.TEZ);
-        } else if (value > self.mTEZ.unit) {
+        } else if (value >= self.mTEZ.unit) {
             return self.convertUnitWithSymbol(value, self.mTEZ);
         }
         else return self.convertUnitWithSymbol(value, self.uTEZ);
@@ -155,7 +155,7 @@ const self:UtilsInterface = {
         (Math.floor(level/rpc.networkConstants['blocks_per_cycle']) * rpc.networkConstants['blocks_per_cycle']) + 1
     ),
     lastCycleLevel: (level:number) => (
-        self.firstCycleLevel(level) + rpc.networkConstants['blocks_per_cycle']
+        self.firstCycleLevel(level) + rpc.networkConstants['blocks_per_cycle'] - 1
     ),
     hexToBuffer: (hex:string) => new Uint8Array(
         hex.match(/[\da-f]{2}/gi).map((h) => parseInt(h, 16))

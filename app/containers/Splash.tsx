@@ -36,13 +36,27 @@ interface Props extends WithStyles<typeof styles> {
 
 const Splash: React.FC<Props> = ({ classes, waitingFor }) => (
     <div className={classes.root}>
-        <Typography variant="h1" color="primary">
-            {info.productName}
-        </Typography>
+        {
+            waitingFor && waitingFor.length > 0
+            ? (
+                <Typography variant="h1" color="primary">
+                    {info.productName}
+                </Typography>
+            ) : null
+        }
         <div className={classes.loaderImg}>
             <CircularProgress size={100} thickness={5} className={classes.loader} color="secondary" />
         </div>
-        {waitingFor && waitingFor.length > 0 ? <Chip color="secondary" variant="outlined" label={`Loading ${waitingFor}...`} /> : null}
+        {
+            waitingFor && waitingFor.length > 0 
+            ? (
+                <Chip 
+                    color="secondary"
+                    variant="outlined"
+                    label={`Loading ${waitingFor}...`}
+                />
+            ) : null
+        }
     </div>
 );
 

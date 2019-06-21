@@ -100,10 +100,10 @@ const self: OperationsInterface = {
             }]
         };
 
-        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, false);
+        const {forgedConfirmation, ...verifiedOp} = await self.forgeOperation(header, operation, false);
 
         const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
-        return await rpc.injectOperation({
+        return await self.injectOperation({
             ...verifiedOp,
             signature: signed.edsig,
             signedOperationContents: signed.signedBytes
@@ -121,10 +121,10 @@ const self: OperationsInterface = {
             }]
         };
 
-        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, false);
+        const {forgedConfirmation, ...verifiedOp} = await self.forgeOperation(header, operation, false);
         
         const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
-        return await rpc.injectOperation({
+        return await self.injectOperation({
             ...verifiedOp,
             signature: signed.edsig,
             signedOperationContents: signed.signedBytes
@@ -140,10 +140,10 @@ const self: OperationsInterface = {
             }]
         };
 
-        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation, true);
+        const {forgedConfirmation, ...verifiedOp} = await self.forgeOperation(header, operation, true);
         
         const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
-        return rpc.injectOperation({
+        return self.injectOperation({
             ...verifiedOp,
             signature: signed.edsig,
             signedOperationContents: signed.signedBytes
@@ -161,11 +161,11 @@ const self: OperationsInterface = {
         rpc.network === 'ZERONET' &&
             (operation.contents[0].slot = slots[0]);
 
-        const {forgedConfirmation, ...verifiedOp} = await rpc.forgeOperation(header, operation);
+        const {forgedConfirmation, ...verifiedOp} = await self.forgeOperation(header, operation);
 
         const signed = crypto.sign(forgedConfirmation, utils.mergeBuffers(utils.watermark.endorsement, utils.b58decode(header.chain_id, Prefix.chainId)));
 
-        return rpc.injectOperation({
+        return self.injectOperation({
             ...verifiedOp,
             signature: signed.edsig,
             signedOperationContents: signed.signedBytes
@@ -209,10 +209,9 @@ const self: OperationsInterface = {
         const ops = [];
         for (const batch of operations) {
 
-            console.log(`START: ${new Date().toJSON()}`)
-            const op = await self.sendOperation(source, keys, batch);
+            const op = await self.sendOperation(source, keys, batch, true);
             // The result operation hash needs to be a string, otherwise is a error
-            if (typeof op.hash !== 'string') {
+            if (op && typeof op.hash !== 'string') {
                 console.error('Operation Failed', op);
                 continue;
             }
@@ -229,7 +228,8 @@ const self: OperationsInterface = {
             storage_limit: String(self.delegationStorage),
             delegate: keys.pkh
         };
-        return self.sendOperation(keys.pkh, keys, [operation]);
+        console.log("1")
+        return self.sendOperation(keys.pkh, keys, [operation], true);
     },
     activateAccount: (keys, secret) => {
         const operation = {
@@ -237,10 +237,10 @@ const self: OperationsInterface = {
             secret,
             pkh: keys.pkh
         };
-        return self.sendOperation(keys.pkh, keys, [operation]);
+        return self.sendOperation(keys.pkh, keys, [operation], true, true);
     },
     awaitForOperationToBeIncluded: async (opHash, prevHeadHash) => {
-        // Wait 2 seconds before checking if the operation was inlcuded
+        // Wait 5 seconds before checking if the operation was inlcuded
         await new Promise(resolve => setTimeout(resolve, 5000));
 
         const headHash = await rpc.getBlockHash('head');
@@ -257,10 +257,13 @@ const self: OperationsInterface = {
 
         return await self.awaitForOperationToBeIncluded(opHash, headHash);
     },
-    sendOperation: async (source, keys, operation, skipReveal = false) => {
+    sendOperation: async (source, keys, operation, shouldWait=false, skipReveal = false) => {
         while (true) {
             // Wait for operation turn
-            if (self.awaitingLock[source]) continue;
+            if (self.awaitingLock[source]) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+            }
             // Cannot run more than one counter operation from the same source at the same time, 
             // otherwise the next operation will be rejected because counter will be too high
             self.awaitingLock[source] = true;
@@ -274,21 +277,22 @@ const self: OperationsInterface = {
                 
                 const signed = crypto.sign(forgedConfirmation, utils.watermark.genericOperation);
 
-                const injectedOp = await rpc.injectOperation({
+                const injectedOp = await self.injectOperation({
                     ...verifiedOp,
                     signature: signed.edsig,
                     signedOperationContents: signed.signedBytes
                 });
 
-                if (typeof injectedOp.hash != 'string') {
-                    console.error(injectedOp.hash);
+                if (!injectedOp || typeof injectedOp.hash != 'string') {
+                    console.error("Error -> ", injectedOp);
                     self.awaitingLock[source] = false;
                     continue;
                 }
 
                 console.log(injectedOp);
                 // Wait for operation to be included
-                await self.awaitForOperationToBeIncluded(injectedOp.hash, '');
+                if (shouldWait)
+                    await self.awaitForOperationToBeIncluded(injectedOp.hash, '');
 
                 self.awaitingLock[source] = false;
                 return injectedOp;
@@ -309,26 +313,21 @@ const self: OperationsInterface = {
         }
 
         let counter = await rpc.getCounter(source);
-
         /*
         *   Prepare reveal operation if required
         */
         if (!self.contractManagers[source].key && !skipReveal) {
-            self.awaitingLock[source] = false;
-            await self.sendOperation(
-                source,
-                keys,
-                [{
+            operations = [
+                {
                     kind: OperationTypes.reveal.type,
                     fee: String(self.feeDefaults.low),
                     public_key: keys.pk,
                     source,
-                    counter: String(++counter),
                     gas_limit: String(self.revealGasCost),
                     storage_limit: String(self.revealStorage)
-                }],
-                true
-            );
+                },
+                ...operations
+            ];
         }
 
         operations.forEach(op => {
@@ -344,7 +343,7 @@ const self: OperationsInterface = {
 
         console.log(operations)
 
-        return rpc.forgeOperation(header, {
+        return self.forgeOperation(header, {
             branch: header.hash,
             contents: operations
         });
@@ -453,6 +452,89 @@ const self: OperationsInterface = {
         }
         return forgeResult;
     },
+    simulateOperation: async (from, keys, operation) => {
+		const {
+			forgedConfirmation,
+			...verifiedOp
+		} = await self.prepareOperations(from, keys, [operation]);
+
+		return await rpc.queryNode(
+			'/chains/main/blocks/head/helpers/scripts/run_operation',
+			QueryTypes.POST,
+			verifiedOp
+		);
+	},
+	forgeOperation: async (metadata, operation, verify = true) => {
+		const forgedOperation = await rpc.queryNode(
+			`/chains/main/blocks/head/helpers/forge/operations`,
+			QueryTypes.POST,
+			operation
+		);
+
+		if (!forgedOperation) return;
+
+		const forgedConfirmation = operation.contents.reduce((prev, cur) => {
+			return (prev += self.forgeOperationLocally(cur));
+		}, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
+
+		if (forgedOperation !== forgedConfirmation) {
+			console.log(forgedOperation);
+			console.log(forgedConfirmation);
+
+			if (verify)
+				throw Error(
+					'[RPC] - Validation error on operation forge verification.'
+				);
+		}
+
+		return {
+			...operation,
+			protocol: metadata.protocol,
+			forgedConfirmation: forgedOperation
+		};
+	},
+	preapplyOperations: async operations => {
+		const preappliedOps = await rpc.queryNode(
+			'/chains/main/blocks/head/helpers/preapply/operations',
+			QueryTypes.POST,
+			operations
+		) as UnsignedOperationProps[];
+
+		if (!Array.isArray(preappliedOps))
+			throw new Error('[RPC] - Error on preapplying operations.');
+
+		if (
+			preappliedOps.some(
+				({ contents }) => (
+					contents &&
+					contents.some(
+						({ metadata: { operation_result } }) => (
+							operation_result &&
+                            operation_result.status === 'failed'
+                        )
+                    )
+                )
+			)
+		) {
+            console.error(preappliedOps);
+			throw new Error(`[RPC] - Failed to preapply operations`);
+		}
+
+		return preappliedOps;
+	},
+	injectOperation: async ({ signedOperationContents, ...rest }) => {
+		const [preappliedOp] = await self.preapplyOperations([rest]);
+		const operationHash = await rpc.queryNode(
+			'/injection/operation',
+			QueryTypes.POST,
+			signedOperationContents
+		) as string;
+
+		return {
+			hash: operationHash,
+			...preappliedOp
+		};
+	},
     /*
     *   We classify operations, sort managers operation by interest and add bad ones at the end
     *   Hypothesis : we suppose that the received manager operations have a valid gas_limit

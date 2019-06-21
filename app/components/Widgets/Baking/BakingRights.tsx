@@ -104,8 +104,8 @@ const completed_bakings_columns = [
     {
         width: 1,
         flexGrow: 1,
-        label: 'Rewards',
-        dataKey: 'rewards',
+        label: 'Fees',
+        dataKey: 'fees',
         numeric: true
     },
     {

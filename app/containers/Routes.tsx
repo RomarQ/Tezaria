@@ -14,6 +14,7 @@ import Logs from './Logs';
 import { LoaderPrototype } from '../actions/loader';
 import { UserDataActionsPrototypes } from '../actions/userData';
 import { LoggerActionsPrototypes } from '../actions/logger';
+import MakeTransaction from './Account/MakeTransaction';
 
 interface Props {
 	loader: LoaderPrototype;
@@ -67,6 +68,12 @@ export default ({ loader, history, userData, logger, userDataFunc }: Props) => (
 			userData={userData}
 			path={routes.REWARDS}
 			render={() => <Rewards userData={userData} />}
+		/>
+        <AuthRoute
+			exact
+			userData={userData}
+			path={routes.MAKE_TRANSACTION}
+			render={() => <MakeTransaction userData={userData} />}
 		/>
 		<AuthRoute
 			exact

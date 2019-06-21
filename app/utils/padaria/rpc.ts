@@ -1,5 +1,6 @@
 import https from 'https';
 import http from 'http';
+import { GraphQLClient } from 'graphql-request';
 
 import utils, { Prefix } from './utils';
 import rewarder from './rewarder';
@@ -19,14 +20,12 @@ export enum QueryTypes {
 
 export const DEFAULT_NODE_ADDRESS = 'rpc.tezaria.com';
 export const DEFAULT_NODE_PORT = 80;
-export const DEFAULT_API_ADDRESS = 'http://67.207.68.241:8080/v1alpha1/graphql';
-export const DEFAULT_TZSCAN_API_ADDRESS = 'api.zeronet.tzscan.io';
+export const DEFAULT_API_ADDRESS = 'http://tezaria.com:8080/v1alpha1/graphql';
 
 const self: RPCInterface = {
 	ready: false,
 	nodeAddress: DEFAULT_NODE_ADDRESS,
 	nodePort: DEFAULT_NODE_PORT,
-	tzScanAddress: DEFAULT_TZSCAN_API_ADDRESS,
 	apiAddress: DEFAULT_API_ADDRESS,
 	apiClient: null,
 	network: '',
@@ -35,21 +34,14 @@ const self: RPCInterface = {
 	load: async options => {
 		options.nodeAddress && (self.nodeAddress = options.nodeAddress);
 		options.nodePort && (self.nodePort = options.nodePort);
-		options.tzScanAddress && (self.tzScanAddress = options.tzScanAddress);
 		options.rewardsBatchSize &&
 			(rewarder.paymentsBatchSize = options.rewardsBatchSize);
 		options.delegatorFee && (rewarder.feePercentage = options.delegatorFee);
 
-		/*
         if (options.apiAddress) {
             self.apiAddress = options.apiAddress;
-            self.apiClient = new GraphQLClient(options.apiAddress, {
-                headers: {
-                    "X-Hasura-Admin-Secret": 'myadminsecretkey'
-                }
-            });
+            self.apiClient = new GraphQLClient(options.apiAddress);
         }
-        */
 
 		await self.setNetworkConstants();
 		await self.setCurrentNetwork();
@@ -131,7 +123,7 @@ const self: RPCInterface = {
 		const options = {
 			hostname: self.nodeAddress,
 			port: self.nodePort,
-			timeout: 3000, // 1min
+			timeout: 3000, // 3 secs
 			path,
 			method,
 			headers: {
@@ -144,16 +136,6 @@ const self: RPCInterface = {
 				? new https.Agent(options)
 				: new http.Agent(options);
 
-		return self.queryRequest(options, args);
-	},
-	queryTzScan: (path, method = QueryTypes.GET, args) => {
-		const options = {
-			hostname: self.tzScanAddress,
-			port: 80,
-			//timeout: 60000, // 1min
-			path: `/v3${path}`,
-			method
-		};
 		return self.queryRequest(options, args);
 	},
 	// GraphQL
@@ -209,6 +191,7 @@ const self: RPCInterface = {
 
 								reject(new Error(result));
 							} catch (e) {
+								console.log(result);
 								reject(new Error(e));
 							}
 						});
@@ -289,93 +272,14 @@ const self: RPCInterface = {
 			`/chains/main/blocks/head/context/contracts/${contract}/manager_key`,
 			QueryTypes.GET
 		),
-	getBalance: async pkh =>
+	getBalance: async pkh => (
 		Number(
 			await self.queryNode(
 				`/chains/main/blocks/head/context/contracts/${pkh}/balance`,
 				QueryTypes.GET
 			)
-		),
-	simulateOperation: async (from, keys, operation) => {
-		const {
-			forgedConfirmation,
-			...verifiedOp
-		} = await operations.prepareOperations(from, keys, [operation]);
-
-		return await self.queryNode(
-			'/chains/main/blocks/head/helpers/scripts/run_operation',
-			QueryTypes.POST,
-			verifiedOp
-		);
-	},
-	forgeOperation: async (metadata, operation, verify = true) => {
-		const forgedOperation = await self.queryNode(
-			`/chains/main/blocks/head/helpers/forge/operations`,
-			QueryTypes.POST,
-			operation
-		);
-
-		if (!forgedOperation) return;
-
-		const forgedConfirmation = operation.contents.reduce((prev, cur) => {
-			return (prev += operations.forgeOperationLocally(cur));
-		}, utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash)));
-
-		if (forgedOperation !== forgedConfirmation) {
-			console.log(forgedOperation);
-			console.log(forgedConfirmation);
-
-			if (verify)
-				throw Error(
-					'[RPC] - Validation error on operation forge verification.'
-				);
-		}
-
-		return {
-			...operation,
-			protocol: metadata.protocol,
-			forgedConfirmation: forgedOperation
-		};
-	},
-	preapplyOperations: async operations => {
-		const preappliedOps = (await self.queryNode(
-			'/chains/main/blocks/head/helpers/preapply/operations',
-			QueryTypes.POST,
-			operations
-		)) as UnsignedOperationProps[];
-
-		if (!Array.isArray(preappliedOps))
-			throw Error('[RPC] - Error on preapplying operations.');
-
-		if (
-			preappliedOps.some(
-				({ contents }) =>
-					contents &&
-					contents.some(
-						({ metadata: { operation_result } }) =>
-							operation_result &&
-							operation_result.status === 'failed'
-					)
-			)
-		) {
-			throw Error(`[RPC] - Failed to preapply operations.`);
-		}
-
-		return preappliedOps;
-	},
-	injectOperation: async ({ signedOperationContents, ...rest }) => {
-		const [preappliedOp] = await self.preapplyOperations([rest]);
-		const operationHash = (await self.queryNode(
-			'/injection/operation',
-			QueryTypes.POST,
-			signedOperationContents
-		)) as string;
-
-		return {
-			hash: operationHash,
-			...preappliedOp
-		};
-	},
+		)
+    ),
 	monitorOperations: callback => {
 		const options = {
 			hostname: self.nodeAddress,
@@ -405,7 +309,6 @@ const self: RPCInterface = {
 				? new https.Agent(options)
 				: new http.Agent(options);
 
-		console.log(options);
 		return self.queryStreamRequest(options, callback);
 	},
 	monitorValidBlocks: (chainId, callback) => {

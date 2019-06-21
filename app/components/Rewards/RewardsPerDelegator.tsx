@@ -20,6 +20,7 @@ import EnhancedTableHead from '../Table/EnhancedTableHead';
 
 import utils from '../../utils/padaria/utils';
 import rewarder, { DelegatorReward } from '../../utils/padaria/rewarder';
+import bakingController from '../../utils/padaria/bakingController';
 
 const styles = ({ palette }: Theme) =>
 	createStyles({
@@ -64,11 +65,11 @@ const columnNames = [
 	{
 		id: 'delegator',
 		label: 'Delegator',
-		orderWith: 'pkh'
+		orderWith: 'delegation_pkh'
 	},
 	{
-		id: 'delegator_balance',
-		label: 'Delegator Balance',
+		id: 'balance',
+		label: 'Balance',
 		numeric: true,
 		orderWith: 'balance'
 	},
@@ -92,15 +93,16 @@ const columnNames = [
 	}
 ];
 
-type Props = {
+interface Props extends WithStyles<typeof styles> {
 	paymentsAllowed: boolean;
 	pkh: string;
 	cycle: number;
 	handleRewardsPayment: (
 		selected: DelegatorReward[],
+		cycle: number,
 		updateRewards: () => void
 	) => void;
-} & WithStyles<typeof styles>;
+}
 
 const Component: React.FC<Props> = ({
 	classes,
@@ -110,7 +112,7 @@ const Component: React.FC<Props> = ({
 	...props
 }) => {
 	const isMounted = React.useRef(true);
-	const [selected, setSelected] = React.useState([] as number[]);
+	const [selected, setSelected] = React.useState([] as string[]);
 	const [orderBy, setOrderBy] = React.useState('balance');
 	const [direction, setDirection] = React.useState('desc' as 'asc' | 'desc');
 	const [rewards, setRewards] = React.useState(null as DelegatorReward[]);
@@ -135,34 +137,33 @@ const Component: React.FC<Props> = ({
 		rewarder
 			.prepareRewardsToSendByCycle(pkh, cycle)
 			.then(rewards => {
-				if (isMounted.current) setRewards(rewards);
+				if (isMounted.current) setRewards(rewards.Delegations);
 			})
 			.catch(e => console.error(e));
 	};
 
 	const handleRewardsPayment = () => {
 		if (paymentsAllowed) {
-			setRewards(null);
 			props.handleRewardsPayment(
-				rewards.filter(r => selected.includes(r.id)),
+				rewards.filter(r => selected.includes(r.delegation_pkh)),
+				cycle,
 				updateRewards
-			);
+            );
+            setRewards(null);
 			setSelected([]);
 		}
 	};
 
 	const getRow = (
 		row: DelegatorReward,
-		isItemSelected: boolean,
-		handleClick: any
+		isItemSelected: boolean
 	) => (
 		<TableRow
 			hover
-			onClick={event => handleClick(event, Number(row.id))}
+			onClick={() => handleSelect(row.delegation_pkh)}
 			role="checkbox"
 			aria-checked={isItemSelected}
-			tabIndex={-1}
-			key={row.id}
+			key={row.delegation_pkh}
 			selected={isItemSelected}
 		>
 			<TableCell padding="checkbox">
@@ -174,32 +175,40 @@ const Component: React.FC<Props> = ({
 			<TableCell>
 				<a className={classes.delegatorLink}>
 					<Blockies
-						seed={row.delegatorContract}
+						seed={row.delegation_pkh}
 						className={classes.blockie}
 					/>
 					<Typography variant="caption">
-						{row.delegatorContract}
+						{row.delegation_pkh}
 					</Typography>
 				</a>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">
-					{utils.parseTEZWithSymbol(row.balance)}
+					{utils.parseTEZWithSymbol(
+						row.balance
+					)}
 				</Typography>
 			</TableCell>
 			<TableCell align="right">
-				<Typography variant="caption">{`${
-					row.rewardSharePercentage
-				}%`}</Typography>
+				<Typography variant="caption">{`${(
+					row.share * 100
+				).toLocaleString('fullwide', {
+					maximumFractionDigits: 2
+				})}%`}</Typography>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">
-					{utils.parseTEZWithSymbol(row.rewardShare)}
+					{utils.parseTEZWithSymbol(
+						Number(row.net_rewards)
+					)}
 				</Typography>
 			</TableCell>
 			<TableCell align="right">
 				<Typography variant="caption">
-					{utils.parseTEZWithSymbol(row.rewardFee)}
+					{utils.parseTEZWithSymbol(
+						Number(row.fee)
+					)}
 				</Typography>
 			</TableCell>
 		</TableRow>
@@ -218,36 +227,35 @@ const Component: React.FC<Props> = ({
 				</Tooltip>
 			) : numSelected > 0 ? (
 				<Typography variant="h6" color="secondary">
-					Rewards not ready yet!
+					{
+                        bakingController.rewarding 
+                            ? 'Auto rewarder is enabled'
+                            : 'Rewards not ready yet!'
+                    }
 				</Typography>
-			) : (
-				undefined
-			)}
+			) : null}
 		</div>
 	);
 
 	const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
 		if (event.target.checked) {
 			setSelected(
-				rewards.reduce(
-					(prev, cur) => (!cur.paid ? [...prev, cur.id] : prev),
-					[]
-				)
+				rewards.reduce((prev, cur) => (
+                    !cur.paid ? [...prev, cur.delegation_pkh] : prev
+                ), [])
 			);
 		} else setSelected([]);
 	};
 
-	const handleSelect = (
-		event: React.MouseEvent<HTMLElement, MouseEvent>,
-		id: number
-	) => {
-		if (rewards.some(r => r.id === id && r.paid)) return;
-
-		const selectedIndex = selected.indexOf(id);
-		let newSelected: number[];
+	const handleSelect = (key: string) => {
+        //return;
+        if (rewards.some(r => r.delegation_pkh === key && r.paid)) return;
+        
+		const selectedIndex = selected.indexOf(key);
+		let newSelected: string[];
 
 		if (selectedIndex < 0) {
-			newSelected = [...selected, id];
+			newSelected = [...selected, key];
 		} else if (selectedIndex === 0) {
 			newSelected = selected.slice(1);
 		} else if (selectedIndex === selected.length - 1) {
@@ -257,8 +265,8 @@ const Component: React.FC<Props> = ({
 				...selected.slice(0, selectedIndex),
 				...selected.slice(selectedIndex + 1)
 			];
-		}
-
+        }
+        
 		setSelected(newSelected);
 	};
 
@@ -266,7 +274,7 @@ const Component: React.FC<Props> = ({
 		<EnhancedTableHead
 			columnNames={columnNames}
 			numSelected={selected.length}
-			direction={direction}
+            direction={direction}
 			orderBy={orderBy}
 			onSelectAll={handleSelectAll}
 			onSortRequest={handleSortRequest}
@@ -282,9 +290,9 @@ const Component: React.FC<Props> = ({
 			data={rewards}
 			customHead={CustomEnhancedTableHead}
 			selected={selected}
-			getRow={getRow}
+            getRow={getRow}
+            selectionFieldName="delegation_pkh"
 			getActions={getActions}
-			handleSelect={handleSelect}
 			handleSelectAll={handleSelectAll}
 			handleSortRequest={handleSortRequest}
 			direction={direction}

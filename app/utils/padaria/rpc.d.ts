@@ -18,25 +18,11 @@ export interface RPCInterface extends TezariaSettingsProps {
     getBlockMetadata: (blockId:string) => Promise<BlockMetadataProps>;
     getBakingRights: (pkh:string, level:number, maxPriority?:number, chainId?:string, blockId?:string) => Promise<BakingRight[]>;
     queryNode: (path:string, mothod:QueryType, args?:any) => Promise<any>;
-    queryTzScan: (path:string, mothod:QueryType, args?:any) => Promise<any>;
     queryAPI: (query:string, variables?:Object<any>) => Promise<any>;
     queryRequest: (options:RequestOptions, args?:any) => Promise<any>;
     queryStreamRequest: (options:RequestOptions, cb:(res:any, resolve:()=>void) => void) => Promise<any>;
     getBalance: (pkh:string) => Promise<number>;
-    simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
-    forgeOperation: (head:BlockHeaderProps, operation:UnsignedOperationProps, verify?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
-    preapplyOperations: (operation:UnsignedOperationProps[]) => Promise<UnsignedOperationProps[]>;
-    injectOperation: (operation:UnsignedOperationProps) => Promise<UnsignedOperationProps>;
-    getContract: (pkh:string) => Promise<{
-        manager: string;
-        balance: string;
-        spendable: boolean;
-        delegate: {
-            setable: boolean;
-            value: string;
-        };
-        counter: number;
-    }>;
+    getContract: (pkh:string) => Promise<ContractProps>;
     getManager: (contract:string) => Promise<{key:string, manager:string}>;
     getCounter: (pkh:string) => Promise<number>;
     getEndorsementOperations: (blockId:string) => Promise<UnsignedOperationProps[]>;

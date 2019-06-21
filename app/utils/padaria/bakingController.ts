@@ -20,6 +20,8 @@ const self:BakingControllerProps = {
     //
     delegate: {},
 
+    monitoring: false,
+
     running: false,
     baking: false,
     endorsing: false,
@@ -42,23 +44,24 @@ const self:BakingControllerProps = {
     // Functions
     //
     load: async keys => {
-        if (!signer) return;
+        if (!signer) return self.delegate;
 
         try {
             const manager = await rpc.getManager(keys.pkh);
 
             self.delegate.revealed = !!manager.key;
-            if (!manager.key) {
+            if (!self.delegate.revealed) {
                 self.delegate.balance = await rpc.getBalance(keys.pkh);
-                return self.delegate;
+
+                /*
+                *   Return if balance is not enough to reveal and register as delegate
+                *   User can do it himself later
+                */
+                if (self.delegate.balance < (Number(operations.feeDefaults.low)*2) )
+                    return self.delegate;
             }
 
-            const delegate = await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET)
-                .catch(async () => {
-                    await operations.registerDelegate(keys);
-                    self.delegate.waitingForRights = true;
-                    return self.delegate;
-                });
+            const delegate = await rpc.queryNode(`/chains/main/blocks/head/context/delegates/${keys.pkh}`, QueryTypes.GET);
 
             if (Array.isArray(delegate)) return self.delegate;
 
@@ -69,57 +72,61 @@ const self:BakingControllerProps = {
                     ...delegate
                 }
 
-                delegate.deactivated &&
-                    await operations.registerDelegate(keys) && (self.delegate.waitingForRights = true);
-        
+                if (delegate.deactivated) {
+                    await operations.registerDelegate(keys);
+                    self.delegate.waitingForRights = true;
+                }
+                
                 return self.delegate;
             }
-
-            self.delegate.waitingForRights = true;
-            await operations.registerDelegate(keys);
         } catch(e) {
             console.log(e);
         }
-     
+
+        self.delegate.waitingForRights = true;
+        await operations.registerDelegate(keys);
         return self.delegate;
     },
     revealNonces: async header => {
-        const nonces:NonceType[] = [];
+        await self.loadNoncesFromStorage();
         
-        await self.noncesToReveal.forEach(async (nonce:NonceType) => {
-            const revealStart = utils.firstCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
-            const revealEnd = utils.lastCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
+
+        const nonces:NonceType[] = [];
+
+        self.noncesToReveal.forEach(async (nonce:NonceType) => {
+
+            const revealStart = 
+                utils.firstCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
+            const revealEnd = 
+                utils.lastCycleLevel(nonce.level) + rpc.networkConstants["blocks_per_cycle"];
 
             console.log(revealStart, nonce.level, revealEnd);
 
             if (header.level > revealEnd) {
-                console.log("End of Reveal, cycle is OVER!");
+                console.log("Time to Reveal has passed, cycle is OVER!");
                 return;
             } 
             else if (header.level >= revealStart) {
                 console.log("Revealing nonce ", nonce);
-                return await operations.revealNonce(header, nonce)
-                    .then(res => {
-                        console.log(res);
-                    })
-                    .catch(e => {
-                        console.error(e);
-                    });
+                try {
+                    await operations.revealNonce(header, nonce);
+                    return;
+                } catch(e) {
+                    console.error(e);
+                }
             }
 
             nonces.push(nonce);
         });
 
-        if (nonces.length != self.noncesToReveal.length){
-            self.noncesToReveal = nonces;
-            storage.setBakerNonces(self.noncesToReveal);
+        if (nonces.length != self.noncesToReveal.length) {
+            storage.setBakerNonces(nonces);
         }
     },
     loadNoncesFromStorage: async () => {
         self.noncesToReveal = await storage.getBakerNonces();
     },
     addNonce: async (nonce: NonceType) => {
-        self.noncesToReveal.push(nonce);
         await storage.setBakerNonces(self.noncesToReveal);
     },
     run: async (keys, logger) => {
@@ -147,14 +154,7 @@ const self:BakingControllerProps = {
         //Endorser
         if (self.endorsing) {
             await endorser.run(keys.pkh, header, logger);
-        }/* 
-        (async () => {
-            if (self.endorsing && !self.locks.endorser) {
-                self.locks.endorser = true;
-                await endorser.run(keys.pkh, header, logger);
-                self.locks.endorser = false;
-            }
-        })(); */
+        }
         // Baker
         if (self.baking) {
             baker.run(keys.pkh, header, logger);
@@ -200,12 +200,16 @@ const self:BakingControllerProps = {
 
         while (self.running) {
             try {
+                if (self.monitoring) return true;
+
+                self.monitoring = true;
                 await rpc.monitorHeads('main', (header, resolve) => {
                     console.log("Block received,", header)
                     self.running
                         ? self.run(keys, options.logger)
                         : resolve();
                 });
+                self.monitoring = false;
             }
             catch(e) {
                 console.error(e);

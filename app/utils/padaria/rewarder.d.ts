@@ -1,78 +1,92 @@
 import { UnsignedOperationProps } from './operations';
 
 export interface RewardControllerInterface {
-    lastRewardedCycle: number;
-    paymentsBatchSize: number;
-    feePercentage: number;
+	lastRewardedCycle: number;
+	paymentsBatchSize: number;
+	feePercentage: number;
 
-    // Methods
-    getNumberOfDelegatorsByCycle: (pkh:string, cycle:number) => Promise<number>;
-    getRewards: (pkh:string, numberOfCycles:number) => Promise<RewardsInfo>;
-    getDelegatorsRewardsByCycle: (pkh:string, cycle:number) => Promise<RewardsSplit>;
-    getDelegatorRewardsByCycle: (phk:string, cycle:number) => Promise<DelegatorReward>;
-    prepareRewardsToSendByCycle: (pkh:string, cycle: number) => Promise<DelegatorReward[]>;
-    sendRewardsByCycle: (keys:KeysType, cycle: number, logger?: (log:LogProps) => void) => Promise<void>;
-    sendSelectedRewards: (keys:KeysType, selected:DelegatorReward[], cycle:number, logger?: (log:LogProps) => void) => Promise<void>;
-    nextRewardCycle: () => Promise<number>;
-    run: (keys:KeysType, logger?: (log:LogProps) => void) => Promise<void>;
+	// Methods
+	getRewards: (
+		pkh: string,
+        numberOfCycles: number,
+        cb?: (cycleRewards) => void
+	) => Promise<RewardsReportWithoutDelegations[]>;
+	getDelegatorsRewardsByCycle: (
+		pkh: string,
+		cycle: number
+	) => Promise<RewardsReport>;
+	prepareRewardsToSendByCycle: (
+		pkh: string,
+		cycle: number
+	) => Promise<RewardsReport>;
+	sendRewardsByCycle: (
+		keys: KeysType,
+		cycle: number,
+		logger?: (log: LoggerActionProps) => void
+	) => Promise<void>;
+	sendSelectedRewards: (
+		keys: KeysType,
+		selected: DelegatorReward[],
+		cycle: number,
+        logger?: (log: LoggerActionProps) => void,
+        manual?: boolean // For Manual Payments
+	) => Promise<void>;
+	nextRewardCycle: () => Promise<number>;
+	run: (keys: KeysType, logger?: (log: LoggerActionPropss) => void) => Promise<void>;
 }
 
 export type RewardsInfo = {
-    lost_revelation_fees: number;
-    lost_revelation_rewards: number;
-    revelation_rewards: number;
-    lost_fees_denounciation: number;
-    lost_rewards_denounciation: number;
-    lost_deposit_from_denounciation: number;
-    gain_from_denounciation: number;
-    future_endorsing_rewards: number;
-    future_baking_rewards: number;
-    fees: number;
-    endorsements_rewards: number;
-    blocks_rewards: number;
-    delegated_balance: number;
-    delegators_nb: number;
-    delegate_staking_balance: number;
-    cycle: number;
-    status: {
-        status: string;
-    };
-}
-
-export type RewardsSplit = {
-    // Custom parameters
-    totalRewards?: number;
-    // Response parameters
-    lost_revelation_fees: number;
-    lost_revelation_rewards: number;
-    revelation_rewards: number;
-    lost_fees_denounciation: number;
-    lost_rewards_denounciation: number;
-    lost_deposit_from_denounciation: number;
-    gain_from_denounciation: number;
-    future_endorsements_rewards: number;
-    future_blocks_rewards: number;
-    fees: number;
-    endorsements_rewards: number;
-    blocks_rewards: number;
-    delegators_nb: number;
-    delegate_staking_balance: number;
-    delegators_balance: {
-        balance: number;
-        account: {
-            tz: string;
-            alias?: string;
-        };
-    }[];
+	lost_revelation_fees: number;
+	lost_revelation_rewards: number;
+	revelation_rewards: number;
+	lost_fees_denounciation: number;
+	lost_rewards_denounciation: number;
+	lost_deposit_from_denounciation: number;
+	gain_from_denounciation: number;
+	future_endorsing_rewards: number;
+	future_baking_rewards: number;
+	fees: number;
+	endorsements_rewards: number;
+	blocks_rewards: number;
+	delegated_balance: number;
+	delegators_nb: number;
+	delegate_staking_balance: number;
+	cycle: number;
+	status: {
+		status: string;
+	};
 };
 
-export type DelegatorReward = {
-    id: number; 
-    delegatorContract: string;
-    rewardShare: number;
-    rewardSharePercentage: number;
-    rewardFee: number;
-    balance: number;
+interface DelegatorReward {
+    delegation_pkh: string;
+	fee: string;
+	gross_rewards: string;
+	net_rewards: string;
+	share: number;
+	balance: number;
+	// Custom
+	paid?: boolean;
+}
+
+export type RewardsReport = {
+	rewards: string;
+    delegate_pkh: string;
     cycle: number;
-    paid?: boolean;
+	Delegations: DelegatorReward[];
+	SelfBakedRewards: string;
+	TotalFeeRewards: string;
+    TotalRewards: string;
+	fees: string;
+	total_fee_rewards: string;
+	self_rewards: string;
+	total_rewards: string;
+};
+
+export interface RewardsReportWithoutDelegations {
+    delegate_pkh: string;
+    cycle: number;
+    total_delegators: number;
+    rewards: string;
+    fees: string;
+    staking_balance: string;
 }
