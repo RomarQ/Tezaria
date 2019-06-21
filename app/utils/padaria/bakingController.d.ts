@@ -1,6 +1,8 @@
 export interface BakingControllerProps {
     delegate: DelegateProps;
 
+    monitoring: boolean;
+
     running: boolean;
     baking: boolean;
     endorsing: boolean;

@@ -40,13 +40,17 @@ export interface OperationsInterface {
     registerDelegate: (keys:KeysType) => Promise<UnsignedOperationProps>;
     activateAccount: (keys:KeysType, secret:string) => Promise<UnsignedOperationProps>;
     awaitForOperationToBeIncluded: (hash:string, prevHeadHash:string) => Promise<boolean>;
-    sendOperation: (source:string, keys:KeysType, operation:OperationProps[], skipReveal?:boolean) => (
+    sendOperation: (source:string, keys:KeysType, operation:OperationProps[], shouldWait?:boolean, skipReveal?:boolean) => (
         Promise<UnsignedOperationProps>
     )
     prepareOperations: (source:string, keys:KeysType, operations:OperationProps[], skipReveal?:boolean) => (
         Promise<UnsignedOperationProps & {forgedConfirmation: string}>
     )
     forgeOperationLocally: (operation:OperationProps) => string;
+    simulateOperation: (from:string, keys:KeysType, operation:OperationProps) => Promise<OperationProps[]>;
+    forgeOperation: (head:BlockHeaderProps, operation:UnsignedOperationProps, verify?:boolean) => Promise<UnsignedOperationProps & {forgedConfirmation: string}>;
+    preapplyOperations: (operation:UnsignedOperationProps[]) => Promise<UnsignedOperationProps[]>;
+    injectOperation: (operation:UnsignedOperationProps) => Promise<UnsignedOperationProps>;
     operationRequiresSource: (operationType:OperationType) => boolean;
     operationRequiresCounter: (operationType:OperationType) => boolean;
     classifyOperations: (operations:UnsignedOperationProps[][], protocol:string) => Promise<UnsignedOperationProps[][]>;

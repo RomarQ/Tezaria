@@ -6,7 +6,6 @@ const defaultState = {
     settings: {
         nodePort: rpc.nodePort,
         nodeAddress: rpc.nodeAddress,
-        tzScanAddress: rpc.tzScanAddress,
         apiAddress: rpc.apiAddress,
         delegatorFee: rewarder.feePercentage,
         rewardsBatchSize: rewarder.paymentsBatchSize
@@ -46,7 +45,6 @@ export default (state: UserDataProps = defaultState, action: UserDataActions) =>
         case UserDataActionTypes.SET_SETTINGS:
             action.settings.nodePort && (rpc.nodePort = action.settings.nodePort);
             action.settings.nodeAddress && (rpc.nodeAddress = action.settings.nodeAddress);
-            action.settings.tzScanAddress && (rpc.tzScanAddress = action.settings.tzScanAddress);
             action.settings.apiAddress && (rpc.apiAddress = action.settings.apiAddress);
             action.settings.delegatorFee && (rewarder.feePercentage = action.settings.delegatorFee);
             action.settings.rewardsBatchSize && (rewarder.paymentsBatchSize = action.settings.rewardsBatchSize);

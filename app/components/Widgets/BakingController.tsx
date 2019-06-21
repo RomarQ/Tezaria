@@ -86,17 +86,22 @@ const BakingController: React.FC<Props> = ({
 		isMounted.current = true;
 		rewarder.nextRewardCycle().then(cycle => {
 			isMounted.current && setRewarderStartCycle(cycle);
-		});
+        })
+        .catch(e => {
+            logger.add({
+                message: e.message,
+                type: LogTypes.ERROR,
+                origin: LogOrigins.REWARDER,
+                severity: LogSeverity.MEDIUM
+            });
+        });
 
-		storage
-			.getRewardedCycles()
-			.then(cycles => {
+		storage.getRewardedCycles().then(cycles => {
 				isMounted.current && setRewardedCycles(cycles);
 			})
 			.catch(e => {
 				logger.add({
-					message:
-						'Not able to get rewarded cycles, rewarder will be disabled.',
+					message: 'Not able to get rewarded cycles, rewarder will be disabled.',
 					type: LogTypes.ERROR,
 					origin: LogOrigins.REWARDER,
 					severity: LogSeverity.VERY_HIGH

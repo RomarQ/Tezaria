@@ -23,25 +23,15 @@ type IncomingBakings = {
 }
 
 type CompletedBaking = {
-    reward?: string;
+    delegate_pkh: string;
     level: number;
     cycle: number;
     priority: number;
-    missed_priority?: number;
-    bake_time: number;
     baked: boolean;
     timestamp: string;
+    fees: string;
+    reward: string;
 }
-
-type CompletedBakingsFromServer = {
-    block_hash: string;
-    baker_hash: {
-        tz: string;
-        alias?: string;
-    };
-    distance_level: number;
-    fees: number;
-} & CompletedBaking;
 
 export interface BakerInterface {
     //

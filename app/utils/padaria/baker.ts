@@ -12,11 +12,9 @@ import {
 import {
     BakerInterface,
     CompletedBaking,
-    CompletedBakingsFromServer,
     BakingRight
 } from './baker.d';
 import { PendingOperations } from './operations';
-import { UnsignedOperationProps } from './operations';
 
 const self:BakerInterface = {
     /*
@@ -31,29 +29,45 @@ const self:BakerInterface = {
     //
     // Functions
     //
-    getCompletedBakings: async (pkh:string):Promise<CompletedBaking[]> => {
+    getCompletedBakings: async pkh => {
         try {
-            const res = await rpc.queryTzScan(`/bakings/${pkh}`, QueryTypes.GET) as CompletedBakingsFromServer[];
+            const completedBakings: {baking_resume: CompletedBaking[]} = 
+                await rpc.queryAPI(`
+                    query completedBakings($delegate: String!) {
+                        baking_resume (
+                            where: {
+                                delegate_pkh: {_eq: $delegate},
+                            },
+                            limit: 50,
+                            order_by: { level: desc }
+                        )
+                        {
+                            delegate_pkh,
+                            baked,
+                            timestamp,
+                            priority,
+                            level,
+                            cycle,
+                            fees,
+                            reward
+                        }
+                    }
+                `, { delegate : pkh });
 
-            return res.reduce((prev, cur) => {
-                if(!cur) return;
-                
-                prev.push({
-                    rewards: utils.parseTEZWithSymbol(Number(rpc.networkConstants['block_reward'])),
-                    level: cur.level,
-                    cycle: cur.cycle,
-                    priority: cur.priority,
-                    missed_priority: cur.missed_priority,
-                    bake_time: cur.bake_time,
-                    baked: cur.baked,
-                    timestamp: cur.timestamp
-                });
-
-                return prev;
-            }, []);
-
+                if (completedBakings && completedBakings.baking_resume) {
+                    completedBakings.baking_resume.forEach(baking => {
+                        baking.reward = utils.parseTEZWithSymbol(Number(baking.reward));
+                        baking.fees = utils.parseTEZWithSymbol(Number(baking.fees));
+                    });
+                    
+                    return completedBakings.baking_resume;
+                }
+    
+                return [];
         }
-        catch(e) { throw "Not able to get Completed Bakings."; };
+        catch(e) {
+            throw new Error(`Not able to get Completed Bakings - ${e}`);
+        };
     },
     getIncomingBakings: async pkh => {
         try {
@@ -65,26 +79,6 @@ const self:BakerInterface = {
             let bakingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${metadata.level.cycle}&max_priority=5`, QueryTypes.GET) as BakingRight[];
 
             bakingRights = bakingRights.filter(right => !!right.estimated_time);
-                
-            /*
-            *   Decided to remove the custom API call on this process for sake of simplicity for new bakers
-
-                // This code will possible be used in future versions, since I plan this tool to be customizable.
-
-                const res = await rpc.queryNode(`/incoming_bakings/?delegate=${pkh}`, QueryTypes.GET) as IncomingBakingsFromServer;
-                const cycle = res.current_cycle;
-
-                let bakings = res.bakings.reduce((prev, cur, i):any => {
-                    
-                    cur.map(obj => {
-                        if(obj.estimated_time && new Date(obj.estimated_time) > new Date()) {
-                            prev.push({ cycle: cycle+i, ...obj });
-                        }
-                    })
-
-                    return prev;
-                }, [] as BakingRight[]);
-            */
 
             return {
                 hasData: true,
@@ -241,7 +235,7 @@ const self:BakerInterface = {
                 origin: LogOrigins.BAKER
             });
 
-            operationArgs.seed = crypto.hexNonce(64);
+            operationArgs.seed = crypto.hexNonce(32);
             operationArgs.seedHash = crypto.seedHash(operationArgs.seed);
             operationArgs.nonceHash = utils.b58encode(operationArgs.seedHash, Prefix.nce);
             operationArgs.seedHex = utils.bufferToHex(operationArgs.seedHash);

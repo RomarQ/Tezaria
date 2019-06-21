@@ -4,10 +4,10 @@ import { connect } from 'react-redux';
 import { withSnackbar, withSnackbarProps, OptionsObject } from 'notistack';
 import Button from '@material-ui/core/Button';
 import LoggerActions, { LogTypes, LoggerActionsPrototypes } from '../actions/logger';
-import { LoggerProps } from '../reducers/logger';
+import { LogProps, LoggerProps } from '../reducers/logger';
 
 type Props = {
-    logs: LoggerActionProps[];
+    logs: LogProps[];
     loggerActions: LoggerActionsPrototypes;
 } & withSnackbarProps & OptionsObject;
 
@@ -21,15 +21,15 @@ const Container: React.FC<Props> = ({ logs, enqueueSnackbar, loggerActions }) =>
                 enqueueSnackbar(String(log.message), {
                     variant: log.type,
                     anchorOrigin: {
-                        vertical: ['error', 'success'].includes(log.type) ? 'top' : 'bottom',
-                        horizontal: 'center'
+                        vertical: 'bottom',
+                        horizontal: 'right'
                     },
                     preventDuplicate: true,
                     persist: log.type === LogTypes.ERROR,
                     action: (
                         <Button size="small">{'Dismiss'}</Button>
                     ),
-                    onExited: () => log.type != 'error' && loggerActions.remove(log)
+                    onExited: () => log.type != 'error' && loggerActions.remove(log.key)
                 });
             });
     });

@@ -83,6 +83,13 @@ const completed_endorsings_columns = [
     {
         width: 1,
         flexGrow: 1,
+        label: 'Cycle',
+        dataKey: 'cycle',
+        numeric: true
+    },
+    {
+        width: 1,
+        flexGrow: 1,
         label: 'Level',
         dataKey: 'level',
         numeric: true
@@ -91,21 +98,14 @@ const completed_endorsings_columns = [
         width: 1,
         flexGrow: 1,
         label: 'Slots',
-        dataKey: 'lr_nslot',
+        dataKey: 'total_slots',
         numeric: true
     },
     {
         width: 1,
         flexGrow: 1,
-        label: 'Priority',
-        dataKey: 'priority',
-        numeric: true
-    },
-    {
-        width: 1,
-        flexGrow: 1,
-        label: 'Rewards',
-        dataKey: 'rewards',
+        label: 'Reward',
+        dataKey: 'reward',
         numeric: true
     },
     {
@@ -166,7 +166,7 @@ const Component: React.SFC<Props> = props => {
                         cellClassName={classes.tableCell}
                         rowClassName={({ index }:any) => 
                             completedEndorsings[index] 
-                            && completedEndorsings[index].timestamp ? classes.tableRow : classes.tableRowMiss
+                            && completedEndorsings[index].endorsed ? classes.tableRow : classes.tableRowMiss
                         }
                         sortBy="level"
                         rowCount={!!completedEndorsings ? completedEndorsings.length : 0}

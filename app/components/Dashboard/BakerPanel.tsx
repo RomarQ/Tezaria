@@ -66,9 +66,10 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
 type Props = {
     bakerInfo: DelegateProps & UserDataProps;
     nodeInfo: TezosCommitProps;
+    activateDelegate: () => void;
 } & WithStyles<typeof styles>;
 
-const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
+const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo, activateDelegate }) => {
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [open, setOpen] = React.useState(null);
 
@@ -110,6 +111,7 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
             </div>
             <div className={classes.divider} />
             <div className={classes.margin}>
+            {/*
                 {nodeInfo ? (
                     <div
                         id="node-commits"
@@ -177,11 +179,17 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo }) => {
                         </Popover>
                     </div>
                 ) : null
-                }
+                }*/}
                 {
                     bakerInfo.revealed != undefined && !bakerInfo.revealed ? (
-                        <Button type="button" variant="contained" color="secondary" disabled={bakerInfo.balance == 0}>
-                        {"Reveal Account"}
+                        <Button 
+                            type="button"
+                            variant="contained"
+                            color="secondary"
+                            disabled={bakerInfo.balance == 0}
+                            onClick={activateDelegate}
+                        >
+                            {"Reveal Account"}
                         </Button>
                     ) : (
                         <React.Fragment>

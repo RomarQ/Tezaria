@@ -89,6 +89,9 @@ const Component: React.FC<Props> = props => {
                 <ButtonLink color="inherit" to={routes.REWARDS} className={classes.grow}>
                     Reward System
                 </ButtonLink>
+                <ButtonLink color="inherit" to={routes.MAKE_TRANSACTION} className={classes.grow}>
+                    Make a Transaction
+                </ButtonLink>
                 <IconButton color="inherit" aria-label="Settings" onClick={() => history.push(routes.SETTINGS)}>
                     <SettingsIcon />
                 </IconButton>

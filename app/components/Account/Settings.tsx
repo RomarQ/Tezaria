@@ -117,30 +117,15 @@ const Component: React.FC<Props> = ({ userData: { settings: currentSettings }, .
                         }}
                     />
                 </div>
-{/*                 <TextField
+                <TextField
                     style={{ marginBottom: 10 }}
                     id="apiAddress"
                     required
-                    label="API Address"
+                    label="Tezplorer API Address"
                     type="text"
                     onChange={handleChange}
                     value={settings.apiAddress || ''}
-                    placeholder="API Address"
-                    fullWidth
-                    variant="outlined"
-                    InputLabelProps={{
-                        shrink: true
-                    }}
-                /> */}
-                <TextField
-                    style={{ marginBottom: 10 }}
-                    id="tzScanAddress"
-                    required
-                    label="TzScan Address"
-                    type="text"
-                    onChange={handleChange}
-                    value={settings.tzScanAddress || ''}
-                    placeholder="TzScan Address"
+                    placeholder="Tezplorer API Address"
                     fullWidth
                     variant="outlined"
                     InputLabelProps={{

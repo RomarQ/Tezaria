@@ -13,13 +13,22 @@ export enum LoggerActionTypes {
     CLEAR_ALL   = 'CLEAR_LOGS'
 }
 
-export interface LoggerAction {
+interface BaseAction {
     type: LoggerActionTypes;
-    log?: LoggerActionProps
 };
 
+interface AddAction extends BaseAction {
+    log: LoggerActionProps;
+};
+
+interface RemoveAction extends BaseAction {
+    key: number;
+};
+
+export type LoggerActions = AddAction & RemoveAction;
+
 export type LoggerAddPrototype = (logProps:LoggerActionProps) => void;
-export type LoggerRemovePrototype = (logProps:LoggerActionProps) => void;
+export type LoggerRemovePrototype = (key:number) => void;
 export type LoggerClearAllPrototype = () => void;
 
 export interface LoggerActionsPrototypes extends ActionCreatorsMapObject {
@@ -28,21 +37,29 @@ export interface LoggerActionsPrototypes extends ActionCreatorsMapObject {
     clearAll:   LoggerClearAllPrototype;
 }
 
-const action = (actionType: LoggerActionTypes, logProps?:LoggerActionProps):LoggerAction => (
-    logProps ? { type: actionType, log: logProps } : { type: actionType }
+const add:LoggerAddPrototype = (logProps) => (
+    (dispatch: Dispatch<AddAction>) => (
+        dispatch({
+            type: LoggerActionTypes.ADD,
+            log: logProps
+        })
+    )
 );
 
-const add:LoggerAddPrototype = (logProps) => 
-    (dispatch: Dispatch<LoggerAction>) => 
-        dispatch( action(LoggerActionTypes.ADD, logProps) );
+const remove:LoggerRemovePrototype = (key) => (
+    (dispatch: Dispatch<RemoveAction>) => (
+        dispatch({
+            type: LoggerActionTypes.REMOVE,
+            key
+        })
+    )
+);
 
-const remove:LoggerRemovePrototype = (logProps) => 
-    (dispatch: Dispatch<LoggerAction>) => 
-        dispatch( action(LoggerActionTypes.REMOVE, logProps) );
-
-const clearAll:LoggerClearAllPrototype = () =>
-    (dispatch: Dispatch<LoggerAction>) =>
-        dispatch( action(LoggerActionTypes.CLEAR_ALL ) );
+const clearAll:LoggerClearAllPrototype = () => (
+    (dispatch: Dispatch<BaseAction>) => (
+        dispatch({ type: LoggerActionTypes.CLEAR_ALL })
+    )
+);
 
 export default { 
     add,
