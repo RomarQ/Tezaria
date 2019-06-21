@@ -57,7 +57,6 @@ const App: React.FC<Props> = props => {
 		await rpc.load({
 				nodePort: settings.nodePort,
 				nodeAddress: settings.nodeAddress,
-				tzScanAddress: settings.tzScanAddress,
 				apiAddress: settings.apiAddress,
 				delegatorFee: settings.delegatorFee,
 				rewardsBatchSize: settings.rewardsBatchSize

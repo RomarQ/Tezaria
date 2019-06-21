@@ -95,7 +95,6 @@ const setBakerSettings = (settings: TezariaSettingsProps) => (dispatch: Dispatch
 		return rpc.load({
             nodePort: settings.nodePort,
             nodeAddress: settings.nodeAddress,
-            tzScanAddress: settings.tzScanAddress,
             apiAddress: settings.apiAddress,
             delegatorFee: settings.delegatorFee,
             rewardsBatchSize: settings.rewardsBatchSize

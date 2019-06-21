@@ -4,7 +4,6 @@ declare module 'electron-json-storage';
 declare interface TezariaSettingsProps {
 	nodeAddress?: string;
 	nodePort?: number;
-	tzScanAddress?: string;
 	apiAddress?: string;
 	delegatorFee?: number;
 	rewardsBatchSize?: number;

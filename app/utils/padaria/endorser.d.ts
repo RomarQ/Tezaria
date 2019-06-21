@@ -46,21 +46,13 @@ export type IncomingEndorsingsFromServer = {
     endorsings: EndorsingRight[][];
 }
 
-export type CompletedEndorsing  = {
-    rewards?: string;
+export type CompletedEndorsing = {
+    reward: string | number;
     level: number;
-    cycle?: number;
-    priority?: number;
-    slots?: number[];
-    timestamp?: string;
+    cycle: number;
+    slots: number[];
+    timestamp: string;
+    total_slots: number;
+    delegate_pkh: string;
+    endorsed: boolean;
 }
-
-export type CompletedEndorsingFromServer = {
-    block?: string;
-    source?: {
-        tz: string;
-        alias?: string;
-    };
-    distance_level?: number;
-    lr_nslot: number;
-} & CompletedEndorsing;

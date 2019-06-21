@@ -21,13 +21,11 @@ export enum QueryTypes {
 export const DEFAULT_NODE_ADDRESS = 'rpc.tezaria.com';
 export const DEFAULT_NODE_PORT = 80;
 export const DEFAULT_API_ADDRESS = 'http://tezaria.com:8080/v1alpha1/graphql';
-export const DEFAULT_TZSCAN_API_ADDRESS = 'api.zeronet.tzscan.io';
 
 const self: RPCInterface = {
 	ready: false,
 	nodeAddress: DEFAULT_NODE_ADDRESS,
 	nodePort: DEFAULT_NODE_PORT,
-	tzScanAddress: DEFAULT_TZSCAN_API_ADDRESS,
 	apiAddress: DEFAULT_API_ADDRESS,
 	apiClient: null,
 	network: '',
@@ -36,7 +34,6 @@ const self: RPCInterface = {
 	load: async options => {
 		options.nodeAddress && (self.nodeAddress = options.nodeAddress);
 		options.nodePort && (self.nodePort = options.nodePort);
-		options.tzScanAddress && (self.tzScanAddress = options.tzScanAddress);
 		options.rewardsBatchSize &&
 			(rewarder.paymentsBatchSize = options.rewardsBatchSize);
 		options.delegatorFee && (rewarder.feePercentage = options.delegatorFee);
@@ -45,9 +42,6 @@ const self: RPCInterface = {
             self.apiAddress = options.apiAddress;
             self.apiClient = new GraphQLClient(options.apiAddress);
         }
-
-		(window as any).getDelegatorsRewardsByCycle =
-			rewarder.getDelegatorsRewardsByCycle;
 
 		await self.setNetworkConstants();
 		await self.setCurrentNetwork();
@@ -142,16 +136,6 @@ const self: RPCInterface = {
 				? new https.Agent(options)
 				: new http.Agent(options);
 
-		return self.queryRequest(options, args);
-	},
-	queryTzScan: (path, method = QueryTypes.GET, args) => {
-		const options = {
-			hostname: self.tzScanAddress,
-			port: 80,
-			//timeout: 60000, // 1min
-			path: `/v3${path}`,
-			method
-		};
 		return self.queryRequest(options, args);
 	},
 	// GraphQL

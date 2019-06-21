@@ -132,21 +132,6 @@ const Component: React.FC<Props> = ({ userData: { settings: currentSettings }, .
                         shrink: true
                     }}
                 />
-                <TextField
-                    style={{ marginBottom: 10 }}
-                    id="tzScanAddress"
-                    required
-                    label="TzScan Address"
-                    type="text"
-                    onChange={handleChange}
-                    value={settings.tzScanAddress || ''}
-                    placeholder="TzScan Address"
-                    fullWidth
-                    variant="outlined"
-                    InputLabelProps={{
-                        shrink: true
-                    }}
-                />
                 <NumberPicker
                     id="delegatorFee"
                     required

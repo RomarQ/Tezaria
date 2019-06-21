@@ -38,7 +38,7 @@ const self:BakerInterface = {
                             where: {
                                 delegate_pkh: {_eq: $delegate},
                             },
-                            limit: 20,
+                            limit: 50,
                             order_by: { level: desc }
                         )
                         {
@@ -54,7 +54,16 @@ const self:BakerInterface = {
                     }
                 `, { delegate : pkh });
 
-            return completedBakings.baking_resume;
+                if (completedBakings && completedBakings.baking_resume) {
+                    completedBakings.baking_resume.forEach(baking => {
+                        baking.reward = utils.parseTEZWithSymbol(Number(baking.reward));
+                        baking.fees = utils.parseTEZWithSymbol(Number(baking.fees));
+                    });
+                    
+                    return completedBakings.baking_resume;
+                }
+    
+                return [];
         }
         catch(e) {
             throw new Error(`Not able to get Completed Bakings - ${e}`);
