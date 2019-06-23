@@ -76,7 +76,7 @@ interface Props extends WithStyles<typeof styles> {
 const Component: React.FC<Props> = ({ contract, updateContract, keys , classes }) => {
     const isMounted = React.useRef(true);
     const [transactions, setTransactions] = React.useState([{}] as TransactionDestination[]);
-    const [operation, setOperation] = React.useState(null as UnsignedOperationProps);
+    const [operationResult, setOperationResult] = React.useState(null as string);
 
     React.useEffect(() => () => isMounted.current = false, []);
 
@@ -98,9 +98,19 @@ const Component: React.FC<Props> = ({ contract, updateContract, keys , classes }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        setOperationResult(null);
+
         try {
-            isMounted.current && setOperation((await operations.transaction(keys.pkh, transactions, keys))[0]);
-            isMounted.current && setTransactions([{}] as TransactionDestination[]);
+            const transaction = (await operations.transaction(keys.pkh, transactions, keys))[0];
+
+            if (!transaction || transaction.contents.some(c => c.metadata.operation_result.status != "applied")) {
+                isMounted.current && setOperationResult("Transaction failed!");
+            }
+            else {
+                isMounted.current && setOperationResult(`Transaction Sucessful: ${transaction.hash}`);
+                isMounted.current && setTransactions([{}] as TransactionDestination[]);
+            }
             updateContract();
         } 
         catch(e) {
@@ -110,7 +120,7 @@ const Component: React.FC<Props> = ({ contract, updateContract, keys , classes }
 
     const handleClear = () => {
         isMounted.current && setTransactions([{}] as TransactionDestination[]);
-        isMounted.current && setOperation(null);
+        isMounted.current && setOperationResult(null);
     }
 
     return (
@@ -119,9 +129,9 @@ const Component: React.FC<Props> = ({ contract, updateContract, keys , classes }
                 <div className={classes.balance}>
                 {`Balance: ${utils.parseTEZWithSymbol(Number(contract.balance))}`}
                 </div>
-                {operation && (
+                {operationResult && (
                     <div className={classes.operation}>
-                    {`Transaction Sucessful: ${operation.hash}`}
+                    {operationResult}
                     </div>
                 )}
                 {

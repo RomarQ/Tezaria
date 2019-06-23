@@ -129,7 +129,7 @@ const self: RewardControllerInterface = {
 
 		rewards.forEach(({ net_rewards, delegation_pkh, paid }) => {
 			const amount =
-				Number(net_rewards) - Number(operations.feeDefaults.low);
+				Number(net_rewards) - Number(operations.feeDefaults.medium);
 
 			if (!paid && amount > 0) {
 				destinations.push({

@@ -82,6 +82,19 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo, activateDele
         setAnchorEl(null);
         setOpen(null);
     }
+
+    const copyToClipboard = () => {
+        const el = document.createElement('textarea');  // Create a <textarea> element
+        el.value = bakerInfo.keys.pkh;                  // Set its value to the string that you want copied
+        el.setAttribute('readonly', '');                // Make it readonly to be tamper-proof
+        el.style.position = 'absolute';                 
+        el.style.left = '-9999px';                      // Move outside the screen to make it invisible
+        document.body.appendChild(el);                  // Append the <textarea> element to the HTML document
+        el.select();                                    // Select the <textarea> content
+        document.execCommand('copy');                   // Copy - only works as a result of a user action (e.g. click events)
+        document.body.removeChild(el);                  // Remove the <textarea> element
+    };
+
     
     return (
         <div className={classes.root}>
@@ -103,6 +116,7 @@ const Component: React.FC<Props> = ({ classes, bakerInfo, nodeInfo, activateDele
                     </div>
                 </div>
                 <Chip
+                    onClick={copyToClipboard}
                     label={bakerInfo.keys.pkh}
                     variant="outlined"
                     color="primary"

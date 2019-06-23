@@ -71,18 +71,34 @@ const self:BakerInterface = {
     },
     getIncomingBakings: async pkh => {
         try {
-            const metadata = await rpc.getBlockMetadata('head');
+            const cycle = (await rpc.getBlockMetadata('head')).level.cycle;
 
-            if (!metadata)
-                return;
+            if (!cycle) return;
             
-            let bakingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${metadata.level.cycle}&max_priority=5`, QueryTypes.GET) as BakingRight[];
+            let bakingRights:BakingRight[] = [];
+
+            for(let i = cycle+1; i < cycle+6; i++) {
+                const rights = await rpc.queryNode(
+                    `/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${i}&max_priority=5`,
+                    QueryTypes.GET
+                ) as BakingRight[];
+                
+                if (Array.isArray(rights) && rights.length > 0) {
+                    bakingRights = [
+                        ...bakingRights,
+                        ...rights
+                    ];
+                }
+
+                if (bakingRights.length > 50)
+                    break;
+            }
 
             bakingRights = bakingRights.filter(right => !!right.estimated_time);
 
             return {
                 hasData: true,
-                cycle: metadata.level.cycle,
+                cycle: cycle,
                 bakings: bakingRights
             };
 
