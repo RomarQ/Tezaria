@@ -1,8 +1,6 @@
 
 <div align="center">
 
-# This project is not yet ready for public usage
-
 ### If you want to know more about this project, you can send me an e-mail to rodrigo_quelhas@hotmail.com
 
 <hr />
@@ -17,12 +15,13 @@
 
 </div>
 
+You can run the application by downloading the binaries from: https://github.com/RomarQ/Tezaria/releases.
 
-I still haven't generated a binary for an easy install, but for now you can run it by following this steps:
+**Or**
 
 ```sh
-git clone https://github.com/romarq/Padaria
-cd Padaria
+git clone https://github.com/romarq/Tezaria
+cd Tezaria
 yarn
 yarn start
 ```
@@ -45,15 +44,16 @@ yarn start
 
 ## TODO
 * [X] Allow key Import/Creation (Only Compatible with ed25519 for now)
-* [X] White List Proxy ( Made a simple server in Go-lang, not included here )
+* [X] White List Proxy ( https://github.com/romarq/tzproxy )
 * [X] Node Configuration: https://github.com/etomknudsen/tezos-baking/tree/master/tezos-node-cpr
 * [X] Baker Module
 * [X] Endorser Module
 * [X] Accuser Module
 * [X] Rewarder Module
-* [X] Operation System to allow multiple operation batches
-* [X] API to store confirmed payments
-* [X] UI Logger ( 70% )
+* [X] Operation system to allow multiple kinds of operations
+* [X] Operation batching
+* [X] Basic block explorer for baking information ( https://github.com/romarq/Tezplorer )
+* [X] UI Logger
 * [ ] Integrate mobile notifications into the logger
 * [ ] Unit tests
 * [ ] CLEAN SPAGHETTI CODE!!!
