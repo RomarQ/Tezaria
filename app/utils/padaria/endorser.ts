@@ -58,41 +58,34 @@ const self:EndorderInterface = {
     },
     getIncomingEndorsings: async pkh => {
         try {
-            const metadata = await rpc.getBlockMetadata('head');
+            const cycle = (await rpc.getBlockMetadata('head')).level.cycle;
 
-            if (!metadata)
-                return;
+            if (!cycle) return;
             
-            let endorsingRights = await rpc.queryNode(`/chains/main/blocks/head/helpers/endorsing_rights?delegate=${pkh}&cycle=${metadata.level.cycle}`, QueryTypes.GET) as EndorsingRight[];
+            let endorsingRights:EndorsingRight[] = [];
+
+            for(let i = cycle+1; i < cycle+6; i++) {
+                const rights = await rpc.queryNode(
+                    `/chains/main/blocks/head/helpers/endorsing_rights?delegate=${pkh}&cycle=${i}`,
+                    QueryTypes.GET
+                ) as EndorsingRight[];
+                
+                if (Array.isArray(rights) && rights.length > 0) {
+                    endorsingRights = [
+                        ...endorsingRights,
+                        ...rights
+                    ];
+                }
+
+                if (endorsingRights.length > 50)
+                    break;
+            }
 
             endorsingRights = endorsingRights.filter(right => !!right.estimated_time);
-                
-            /*
-            *   Decided to remove the custom API call on this process for sake of simplicity for new bakers
-
-                // This code will possible be used in future versions, since I plan this tool to be customizable.
-
-                const res = await rpc.queryNode(`/incoming_endorsings/?delegate=${pkh}`, QueryTypes.GET) as IncomingEndorsingsFromServer;
-                const cycle = res.current_cycle;
-
-                let endorsings:EndorsingRight[] = [];
-
-                endorsings = res.endorsings.reduce((prev, cur, i):any => {
-                    if(!cur || cur.length == 0) { return prev; };
-                    
-                    cur.map(obj => {
-                        if(obj.estimated_time && new Date(obj.estimated_time) > new Date()) {
-                            prev.push({ cycle: cycle+i, ...obj });
-                        }
-                    });
-
-                    return prev;
-                }, endorsings);
-            */
 
             return {
                 hasData: true,
-                cycle: metadata.level.cycle,
+                cycle: cycle,
                 endorsings: endorsingRights
             };
 

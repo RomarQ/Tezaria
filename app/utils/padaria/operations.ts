@@ -77,15 +77,15 @@ const self: OperationsInterface = {
     anonymousIndex: 2,
     managersIndex: 3,
     contractManagers: {},
-    transactionGasCost: '10200',
-    transactionStorage: '0',
+    transactionGasCost: '10600',
+    transactionStorage: '300',
     delegationGasCost: '10000',
     delegationStorage: '0',
     revealGasCost: '10000',
     revealStorage: '0',
     feeDefaults: {
         low: '1179',
-        medium: '1520',
+        medium: '1420',
         high: '3000'
     },
     doubleBakingEvidence: async evidences => {
@@ -171,7 +171,7 @@ const self: OperationsInterface = {
             signedOperationContents: signed.signedBytes
         });
     },
-    transaction: async (source, destinations, keys, fee = self.feeDefaults.low, gasLimit = self.transactionGasCost, storageLimit = self.transactionStorage, batchSize = MAX_BATCH_SIZE) => {
+    transaction: async (source, destinations, keys, fee = self.feeDefaults.medium, gasLimit = self.transactionGasCost, storageLimit = self.transactionStorage, batchSize = MAX_BATCH_SIZE) => {
         
         if (batchSize > MAX_BATCH_SIZE)
             batchSize = MAX_BATCH_SIZE
