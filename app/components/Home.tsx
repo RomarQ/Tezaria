@@ -19,8 +19,7 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        alignContent: 'center',
-        margin: 50
+        alignContent: 'center'
     },
     container: {
         backgroundColor: palette.background.paper,
