@@ -126,11 +126,7 @@ declare interface EndorsementOperationProps {
   chain_id?: string
   protocol?: string
   branch: string
-  contents: {
-    kind: OperationType
-    level: number
-    slot: number
-  }[]
+  contents: OperationContentsWithResult[]
   signature?: string
   hash?: string
 }

@@ -238,13 +238,14 @@ const self: UtilsInterface = {
   },
   endorsingPower: async endorsements =>
     (await Promise.all(
-      endorsements.map(({ chain_id, branch, contents, signature }) =>
-        rpc.getEndorsingPower(chain_id, {
+      endorsements.map(({ chain_id, branch, contents, signature }) => {
+        delete contents[0].metadata
+        return rpc.getEndorsingPower(chain_id, {
           branch,
           contents,
           signature
         })
-      )
+      })
     )).reduce((p, c) => p + c, 0)
 }
 
