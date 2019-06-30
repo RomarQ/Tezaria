@@ -1,5 +1,4 @@
 import React from 'react';
-import { ActionCreatorsMapObject } from 'redux';
 import { createStyles, withStyles, Theme, WithStyles } from '@material-ui/core';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -17,69 +16,75 @@ import InfoIcon from '@material-ui/icons/InfoOutlined';
 import { LoggerActionsPrototypes } from '../actions/logger';
 import { LogProps } from '../reducers/logger';
 
-const styles = ({ spacing }: Theme) => createStyles({
-    root: {
-        margin: 50,
-    },
-    title: {
-        margin: `${spacing.unit * 4}px 0 ${spacing.unit * 2}px`,
-        textAlign: 'center'
-    },
-    listItem: {
-        color: '#FFF',
-        marginBottom: 1
-    },
-    error: {
-        backgroundColor: '#d32f2f'
-    },
-    warning: {
-        backgroundColor: '#ffa000'
-    },
-    success: {
-        backgroundColor: '#43a047'
-    },
-    info: {
-        backgroundColor: '#2979ff'
-    }
-});
+const styles = ({ spacing }: Theme) =>
+	createStyles({
+		root: {
+			margin: 50
+		},
+		title: {
+			margin: `${spacing(4)}px 0 ${spacing(4)}px`,
+			textAlign: 'center'
+		},
+		listItem: {
+			color: '#FFF',
+			marginBottom: 1
+		},
+		error: {
+			backgroundColor: '#d32f2f'
+		},
+		warning: {
+			backgroundColor: '#ffa000'
+		},
+		success: {
+			backgroundColor: '#43a047'
+		},
+		info: {
+			backgroundColor: '#2979ff'
+		}
+	});
 
 const LogIcons = {
-    error:      <ErrorIcon />,
-    warning:    <WarningIcon />,
-    info:       <InfoIcon />,
-    success:    <SuccessIcon />
+	error: <ErrorIcon />,
+	warning: <WarningIcon />,
+	info: <InfoIcon />,
+	success: <SuccessIcon />
 };
 
 type Props = {
-    logs: LogProps[];
-    loggerActions: LoggerActionsPrototypes;
+	logs: LogProps[];
+	loggerActions: LoggerActionsPrototypes;
 } & WithStyles<typeof styles>;
 
-const Component:React.FC<Props> = ({ classes, logs }) => {
-    return (
-        <Grid item xs={12} md={6} className={classes.root}>
-            <div>
-                <List dense>
-                    {logs.map(log => (
-                        <ListItem key={log.key} className={`${classes[log.type]} ${classes.listItem}`}>
-                            <ListItemAvatar>
-                                {LogIcons[log.type] || <WarningIcon />}
-                            </ListItemAvatar>
-                            <ListItemText
-                                primary={log.message || ''}
-                                secondary={log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
-                            />
-                            <ListItemSecondaryAction>
-                                <IconButton aria-label="Delete">
-                                    <DeleteIcon />
-                                </IconButton>
-                            </ListItemSecondaryAction>
-                        </ListItem>
-                    ))}
-                </List>
-            </div>
-        </Grid>
-    );
-};
+const Component: React.FC<Props> = ({ classes, logs }) => (
+	<Grid item xs={12} md={6} className={classes.root}>
+		<div>
+			<List dense>
+				{logs.map(log => (
+					<ListItem
+						key={log.key}
+						className={`${classes[log.type]} ${classes.listItem}`}
+					>
+						<ListItemAvatar>
+							{LogIcons[log.type] || <WarningIcon />}
+						</ListItemAvatar>
+						<ListItemText
+							primary={log.message || ''}
+							secondary={
+								log.timestamp
+									? new Date(log.timestamp).toLocaleString()
+									: ''
+							}
+						/>
+						<ListItemSecondaryAction>
+							<IconButton aria-label="Delete">
+								<DeleteIcon />
+							</IconButton>
+						</ListItemSecondaryAction>
+					</ListItem>
+				))}
+			</List>
+		</div>
+	</Grid>
+);
 
 export default withStyles(styles)(Component);

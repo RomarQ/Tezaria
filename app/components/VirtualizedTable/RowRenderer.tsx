@@ -1,11 +1,10 @@
-/** @flow */
-import React from 'react';
-import { TableRowProps } from 'react-virtualized';
+import React from 'react'
+import { TableRowProps } from 'react-virtualized'
 
 /**
  * Default row renderer for Table.
  */
-export default function defaultRowRenderer({
+export default function defaultRowRenderer ({
   className,
   columns,
   index,
@@ -16,9 +15,9 @@ export default function defaultRowRenderer({
   onRowMouseOver,
   onRowRightClick,
   rowData,
-  style,
-}: TableRowProps & {key:number}) {
-  const a11yProps = {'aria-rowindex': index + 1};
+  style
+}: TableRowProps & { key: number }) {
+  const a11yProps = { 'aria-rowindex': index + 1 }
 
   if (
     onRowClick ||
@@ -27,25 +26,28 @@ export default function defaultRowRenderer({
     onRowMouseOver ||
     onRowRightClick
   ) {
-    a11yProps['aria-label'] = 'row';
-    a11yProps['tabIndex'] = 0;
+    a11yProps['aria-label'] = 'row'
+    a11yProps['tabIndex'] = 0
 
     if (onRowClick) {
-      a11yProps['onClick'] = (event:any) => onRowClick({event, index, rowData});
+      a11yProps['onClick'] = (event: any) =>
+        onRowClick({ event, index, rowData })
     }
     if (onRowDoubleClick) {
-      a11yProps['onDoubleClick'] = (event:any) =>
-        onRowDoubleClick({event, index, rowData});
+      a11yProps['onDoubleClick'] = (event: any) =>
+        onRowDoubleClick({ event, index, rowData })
     }
     if (onRowMouseOut) {
-      a11yProps['onMouseOut'] = (event:any) => onRowMouseOut({event, index, rowData});
+      a11yProps['onMouseOut'] = (event: any) =>
+        onRowMouseOut({ event, index, rowData })
     }
     if (onRowMouseOver) {
-      a11yProps['onMouseOver'] = (event:any) => onRowMouseOver({event, index, rowData});
+      a11yProps['onMouseOver'] = (event: any) =>
+        onRowMouseOver({ event, index, rowData })
     }
     if (onRowRightClick) {
-      a11yProps['onContextMenu'] = (event:any) =>
-        onRowRightClick({event, index, rowData});
+      a11yProps['onContextMenu'] = (event: any) =>
+        onRowRightClick({ event, index, rowData })
     }
   }
 
@@ -55,8 +57,9 @@ export default function defaultRowRenderer({
       className={className}
       key={key}
       role="row"
-      style={style}>
+      style={style}
+    >
       {columns}
     </div>
-  );
+  )
 }

@@ -1,8 +1,8 @@
-import { all } from 'redux-saga/effects';
-import userDataSagas from './userData';
+import { all } from 'redux-saga/effects'
+import userDataSagas from './userData'
 
-export default function* sagas() {
+export default function * sagas () {
   yield all([
     ...userDataSagas
-  ]);
+  ])
 }

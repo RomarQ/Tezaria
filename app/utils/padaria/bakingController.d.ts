@@ -1,59 +1,62 @@
 export interface BakingControllerProps {
-    delegate: DelegateProps;
+  delegate: DelegateProps
 
-    monitoring: boolean;
+  monitoring: boolean
 
-    running: boolean;
-    baking: boolean;
-    endorsing: boolean;
-    accusing: boolean;
-    rewarding: boolean;
-    levelOnStart: number;
-    noncesToReveal: NonceType[];
-    locked: boolean;
-    forcedLock: boolean;
-    locks: {
-        endorser: boolean;
-        rewarder: boolean;
-    }
+  running: boolean
+  baking: boolean
+  endorsing: boolean
+  accusing: boolean
+  rewarding: boolean
+  levelOnStart: number
+  noncesToReveal: NonceProps[]
+  locked: boolean
+  forcedLock: boolean
+  locks: {
+    endorser: boolean
+    rewarder: boolean
+  }
 
-    load: (keys:KeysType) => Promise<DelegateProps>;
-    revealNonces: (header:BlockHeaderProps) => void;
-    loadNoncesFromStorage: () => void;
-    addNonce: (nonce:NonceType) => void;
-    run: (keys:KeysType, logger: (log:LogProps) => void) => void;
-    start: (keys: KeysType, options: BakingControllerStartOptions) => Promise<boolean>;
-    stop: () => void;
-    checkHashPower: () => Promise<number>;
+  load: (keys: KeysProps) => Promise<DelegateProps>
+  revealNonces: (header: BlockHeaderProps) => void
+  loadNoncesFromStorage: () => void
+  addNonce: (nonce: NonceProps) => void
+  run: (keys: KeysProps, logger: (log: LoggerActionProps) => void) => void
+  start: (
+    keys: KeysProps,
+    options: BakingControllerStartOptions
+  ) => Promise<boolean>
+  stop: () => void
+  checkHashPower: () => Promise<number>
 }
 
-declare interface DelegateProps {
-    // From Request
-    revealed?: boolean;
-    waitingForRights?: boolean;
-    balance?: number | string;
-    frozen_balance?: number | string;
-    frozen_balance_by_cycle?: {
-        cycle: number;
-        deposit: number | string;
-        fees: number | string;
-        rewards: number | string;
-    }[];
-    staking_balance?: number | string;
-    delegated_contracts?: string[];
-    delegated_balance?: number | string;
-    deactivated?: boolean;
-    grace_period?: number;
+export interface DelegateProps {
+  // From Request
+  revealed?: boolean
+  waitingForRights?: boolean
+  balance?: number | string
+  frozen_balance?: number | string
+  frozen_balance_by_cycle?: {
+    cycle: number
+    deposit: number | string
+    fees: number | string
+    rewards: number | string
+  }[]
+  staking_balance?: number | string
+  delegated_contracts?: string[]
+  delegated_balance?: number | string
+  deactivated?: boolean
+  grace_period?: number
 }
 
 export interface BakingControllerStartOptions {
-    baking: boolean;
-    endorsing: boolean;
-    accusing: boolean;
-    rewarding: boolean;
-    logger: (log:LogProps) => void;
+  baking: boolean
+  endorsing: boolean
+  accusing: boolean
+  rewarding: boolean
+  logger: (log: LoggerActionProps) => void
 }
 
-export type BakingControllerState = {
-    active?: boolean;
-} & BakingControllerStartOptions;
+export interface BakingControllerState extends BakingControllerStartOptions {
+  active?: boolean
+}

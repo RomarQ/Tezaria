@@ -1,7 +1,7 @@
-declare module 'react-blockies';
+declare module 'react-blockies'
 
 declare interface UserDataProps {
-	ready?: boolean;
-	keys?: KeysType;
-	settings: TezariaSettingsProps;
+	ready?: boolean
+	keys?: KeysProps
+	settings: TezariaSettingsProps
 }

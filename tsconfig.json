@@ -1,23 +1,22 @@
 {
-    "compilerOptions": {
-        "target": "es5",
-        "module": "es6",
-        "jsx": "react",
-        "moduleResolution": "node",
-        "noUnusedLocals": false,
-        "pretty": true,
-        "sourceMap": true,
-        "resolveJsonModule": true,
-        "lib": ["es2017", "dom"],
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "allowJs": true,
-        "noImplicitAny": true,
-        "suppressImplicitAnyIndexErrors": true,
-        "allowSyntheticDefaultImports": true,
-        "removeComments": true,
-        "skipLibCheck": true
-    },
-    "include": ["**/typings.d.ts", "**/*.d.ts", "**/*.ts", "**/*.tsx"],
-    "exclude": ["node_modules", "**/node_modules/*", "app/dist"]
+  "compilerOptions": {
+    "target": "es5",
+    "module": "es6",
+    "jsx": "react",
+    "moduleResolution": "node",
+    "noUnusedLocals": false,
+    "pretty": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "lib": ["es2017", "dom"],
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowJs": true,
+    "noImplicitAny": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "allowSyntheticDefaultImports": true,
+    "removeComments": true
+  },
+  "include": ["**/typings.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "**/node_modules/*"]
 }

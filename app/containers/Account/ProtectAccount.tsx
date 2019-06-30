@@ -1,3 +1,3 @@
-import Component from '../../components/Account/ProtectAccount';
+import Component from '../../components/Account/ProtectAccount'
 
-export default Component;
+export default Component

@@ -1,3 +1,3 @@
-import NewAccountForm from '../../components/Account/NewAccountForm';
+import NewAccountForm from '../../components/Account/NewAccountForm'
 
-export default NewAccountForm;
+export default NewAccountForm

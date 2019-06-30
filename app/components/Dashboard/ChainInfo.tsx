@@ -6,9 +6,9 @@ import {
     Theme
 } from '@material-ui/core/styles';
 
+import { Typography } from '@material-ui/core';
 import Eta from '../ETA';
 import { BakingRight } from '../../utils/padaria/baker';
-import { Typography } from '@material-ui/core';
 
 
 const styles = ({ palette }: Theme) => createStyles({
@@ -60,8 +60,7 @@ interface Props extends WithStyles<typeof styles> {
     chainInfo: BakingRight;
 }
 
-const Dashboard: React.FC<Props> = ({ classes, chainInfo }) => {
-    return chainInfo.level ? (
+const Dashboard: React.FC<Props> = ({ classes, chainInfo }) => (chainInfo.level ? (
         <div className={classes.root}>
             <div className={`${classes.flexRow}`}>
                 <Typography className={`${classes.flexRow} ${classes.etaCounter} ${classes.startBorder}`}>
@@ -75,7 +74,6 @@ const Dashboard: React.FC<Props> = ({ classes, chainInfo }) => {
                 </Typography>
             </div>
         </div>
-    ) : null;
-};
+    ) : null);
 
 export default withStyles(styles)(Dashboard);
