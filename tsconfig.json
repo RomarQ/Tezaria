@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "module": "es6",
     "jsx": "react",
     "moduleResolution": "node",
     "noUnusedLocals": false,
@@ -15,7 +14,10 @@
     "noImplicitAny": true,
     "suppressImplicitAnyIndexErrors": true,
     "allowSyntheticDefaultImports": true,
-    "removeComments": true
+    "removeComments": true,
+    "baseUrl": "./",
+    "rootDir": "./",
+    "module": "es2015"
   },
   "include": ["**/typings.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "**/node_modules/*"]

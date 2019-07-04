@@ -9,10 +9,16 @@ interface Props extends ButtonProps {
   replace?: boolean
 }
 
-const createLink = (props: LinkProps) => <Link {...props} />
+const ForwardedLink = React.forwardRef<HTMLAnchorElement, LinkProps>(
+  (props, ref) => (
+    // @ts-ignore
+    <Link innerRef={ref} {...props} />
+  )
+)
 
 const Component: React.FC<Props> = props => (
-  <Button {...props} component={createLink as any} />
+  // @ts-ignore
+  <Button {...props} component={ForwardedLink} />
 )
 
 export default Component

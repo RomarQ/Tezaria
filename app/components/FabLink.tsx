@@ -8,10 +8,16 @@ interface Props extends FabProps {
   replace?: boolean
 }
 
-const createLink = (props: LinkProps) => <Link {...props} />
+const ForwardedLink = React.forwardRef<HTMLAnchorElement, LinkProps>(
+  (props, ref) => (
+    // @ts-ignore
+    <Link innerRef={ref} {...props} />
+  )
+)
 
 const Component: React.FC<Props> = props => (
-  <Fab {...props} component={createLink as any} />
+  // @ts-ignore
+  <Fab {...props} component={ForwardedLink} />
 )
 
 export default Component
