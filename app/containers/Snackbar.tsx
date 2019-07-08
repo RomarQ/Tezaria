@@ -3,11 +3,7 @@ import { Dispatch, bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { toast } from 'react-toastify'
 
-import {
-  LoggerActions,
-  LogTypes,
-  LoggerActionsPrototypes
-} from '../actions/logger'
+import { LoggerActions, LoggerActionsPrototypes } from '../actions/logger'
 import { LogProps, LoggerProps } from '../reducers/logger'
 
 interface Props {

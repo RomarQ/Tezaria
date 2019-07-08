@@ -7,10 +7,16 @@ import crypto from './crypto'
 import { LogOrigins, LogSeverity } from './logger'
 
 import { BakerInterface, CompletedBaking, BakingRight } from './baker.d'
+
 ;(window as any).testEP = async () => {
   const head = await rpc.getCurrentHead()
 
+  console.log(head)
   console.log(await utils.endorsingPower(head.operations[0]))
+  console.log(await utils.emmyDelay(0))
+  console.log(
+    await utils.emmyPlusDelay(0, await utils.endorsingPower(head.operations[0]))
+  )
 }
 
 const self: BakerInterface = {
@@ -29,7 +35,7 @@ const self: BakerInterface = {
   getCompletedBakings: async pkh => {
     try {
       const completedBakings: {
-      baking_resume: CompletedBaking[]
+        baking_resume: CompletedBaking[]
       } = await rpc.queryAPI(
         `
           query completedBakings($delegate: String!) {
@@ -232,10 +238,26 @@ const self: BakerInterface = {
     }
   },
   bake: async (header, priority, timestamp, logger) => {
-    const newTimestamp = Math.max(
-      Math.floor(Date.now() / 1000),
-      new Date(timestamp).getTime() / 1000
-    )
+    let newTimestamp = new Date(timestamp).getTime() / 1000
+
+    // Emmy proposal polyfill
+    if (rpc.networkConstants.delay_per_missing_endorsement) {
+      const head = await rpc.getCurrentHead()
+
+      const emmyPlusDelay = await utils.emmyPlusDelay(
+        priority,
+        await utils.endorsingPower(head.operations[0])
+      )
+
+      console.log('emmyPlusDelay', emmyPlusDelay)
+
+      const diffDelay =
+        emmyPlusDelay - Number(rpc.networkConstants.time_between_blocks[0])
+
+      if (diffDelay > 0) {
+        newTimestamp += diffDelay
+      }
+    }
 
     const operationArgs = {} as {
       seed: string
@@ -245,7 +267,7 @@ const self: BakerInterface = {
     }
 
     if (
-      header.level % Number(rpc.networkConstants['blocks_per_commitment']) ===
+      header.level % Number(rpc.networkConstants.blocks_per_commitment) ===
       0
     ) {
       logger({
@@ -277,7 +299,7 @@ const self: BakerInterface = {
      *   Waits for more endorsings if needed
      */
     const endorsementsPerPriority =
-      rpc.networkConstants['minimum_endorsements_per_priority']
+      rpc.networkConstants.minimum_endorsements_per_priority
     const delay =
       Number(rpc.networkConstants.delay_per_missing_endorsement || 10) * 1000
     while (
