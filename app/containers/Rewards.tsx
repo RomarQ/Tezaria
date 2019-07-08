@@ -2,7 +2,7 @@ import React from 'react'
 import { Dispatch, bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 
-import LoggerActions, { LoggerActionsPrototypes } from '../actions/logger'
+import { LoggerActions, LoggerActionsPrototypes } from '../actions/logger'
 import Component from '../components/Rewards/Rewards'
 import rewarder, {
   DelegatorReward,

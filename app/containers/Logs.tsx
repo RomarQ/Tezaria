@@ -1,7 +1,7 @@
 import React from 'react'
 import { Dispatch, bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
-import LoggerActions, { LoggerActionsPrototypes } from '../actions/logger'
+import { LoggerActions, LoggerActionsPrototypes } from '../actions/logger'
 import { LogProps, LoggerProps } from '../reducers/logger'
 
 import Logs from '../components/Logs'

@@ -27,4 +27,4 @@ const loader = (loadType: LoadTypes, done: boolean = false) => (
     loadType
   })
 
-export default { loader }
+export const LoaderActions = { loader }

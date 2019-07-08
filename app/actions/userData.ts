@@ -105,7 +105,7 @@ const setBakerSettings = (settings: TezariaSettingsProps) => (
     })
   })
 
-export default {
+export const UserDataActions = {
   loadUserData,
   clearUserData,
   setBakerKeys,

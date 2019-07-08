@@ -12,7 +12,7 @@ import Chip from '@material-ui/core/Chip'
 
 import { History } from 'history'
 import { Typography } from '@material-ui/core'
-import { crypto, operations } from '../../utils/padaria'
+import { crypto } from '../../utils/padaria'
 
 import routes from '../../constants/routes.json'
 import { SetBakerKeysPrototype } from '../../actions/userData'
@@ -94,8 +94,8 @@ const Component: React.FC<Props> = props => {
       await setBakerKeys(keys)
 
       history.push(routes.PROTECT_ACCOUNT)
-    } catch (e) {
-      console.log(e)
+    } catch (err) {
+      console.log(err)
     }
 
     loader(LoadTypes.USER_DATA, true)
@@ -144,9 +144,9 @@ const Component: React.FC<Props> = props => {
           </div>
 
           <div className={classes.seeds}>
-            {seeds.split(' ').map((seed, index) => (
+            {seeds.split(' ').map(seed => (
               <Chip
-                key={index}
+                key={seed}
                 label={seed}
                 className={classes.chip}
                 color="primary"

@@ -2,7 +2,8 @@ import React from 'react'
 import { bindActionCreators, Dispatch } from 'redux'
 import { connect } from 'react-redux'
 import Component from '../../../components/Widgets/Baking/BakingRights'
-import LoggerActions, {
+import {
+  LoggerActions,
   LoggerActionsPrototypes,
   LogTypes
 } from '../../../actions/logger'
@@ -21,6 +22,18 @@ const Container = ({ pkh, logger }: Props) => {
   const isMounted = React.useRef(true)
   const [incomingBakings, setIB] = React.useState(null as IncomingBakings)
   const [completedBakings, setCB] = React.useState(null as CompletedBaking[])
+
+  const getIncomingBakings = () => {
+    baker.getIncomingBakings(pkh).then((result: IncomingBakings) => {
+      if (isMounted.current && !!result) setIB(result)
+    })
+  }
+  const getCompletedBakings = () => {
+    baker.getCompletedBakings(pkh).then((result: CompletedBaking[]) => {
+      if (isMounted.current && !!result) setCB(result)
+    })
+  }
+
   React.useEffect(() => {
     getIncomingBakings()
     getCompletedBakings()
@@ -44,17 +57,6 @@ const Container = ({ pkh, logger }: Props) => {
       clearInterval(id)
     }
   }, [])
-
-  const getIncomingBakings = () => {
-    baker.getIncomingBakings(pkh).then((result: IncomingBakings) => {
-      if (isMounted.current && !!result) setIB(result)
-    })
-  }
-  const getCompletedBakings = () => {
-    baker.getCompletedBakings(pkh).then((result: CompletedBaking[]) => {
-      if (isMounted.current && !!result) setCB(result)
-    })
-  }
 
   return (
     <Component

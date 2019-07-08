@@ -8,7 +8,8 @@ import {
   CompletedEndorsing
 } from '../../../utils/padaria/endorser.d'
 import endorser from '../../../utils/padaria/endorser'
-import LoggerActions, {
+import {
+  LoggerActions,
   LoggerActionsPrototypes,
   LogTypes
 } from '../../../actions/logger'
@@ -25,6 +26,23 @@ const Container = ({ pkh, logger }: Props) => {
   const [completedEndorsings, setCE] = React.useState(
     null as CompletedEndorsing[]
   )
+
+  const getIncomingEndorsings = async () => {
+    endorser
+      .getIncomingEndorsings(pkh)
+      .then(
+        (result: IncomingEndorsings) =>
+          isMounted.current && !!result && setIE(result)
+      )
+  }
+  const getCompletedEndorsings = async () => {
+    endorser
+      .getCompletedEndorsings(pkh)
+      .then(
+        (result: CompletedEndorsing[]) =>
+          isMounted.current && !!result && setCE(result)
+      )
+  }
 
   React.useEffect(() => {
     isMounted.current = true
@@ -50,23 +68,6 @@ const Container = ({ pkh, logger }: Props) => {
       clearInterval(id)
     }
   }, [])
-
-  const getIncomingEndorsings = async () => {
-    endorser
-      .getIncomingEndorsings(pkh)
-      .then(
-        (result: IncomingEndorsings) =>
-          isMounted.current && !!result && setIE(result)
-      )
-  }
-  const getCompletedEndorsings = async () => {
-    endorser
-      .getCompletedEndorsings(pkh)
-      .then(
-        (result: CompletedEndorsing[]) =>
-          isMounted.current && !!result && setCE(result)
-      )
-  }
 
   return (
     <Component

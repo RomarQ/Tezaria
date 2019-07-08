@@ -59,36 +59,10 @@ export default merge.smart(baseConfig, {
 
   module: {
     rules: [
+      // Extract all .global.css to style.css as is
       {
-        test: /\.global\.css$/,
-        use: [
-          {
-            loader: 'style-loader'
-          },
-          {
-            loader: 'css-loader',
-            options: {
-              sourceMap: true
-            }
-          }
-        ]
-      },
-      {
-        test: /^((?!\.global).)*\.css$/,
-        use: [
-          {
-            loader: 'style-loader'
-          },
-          {
-            loader: 'css-loader',
-            options: {
-              modules: true,
-              sourceMap: true,
-              importLoaders: 1,
-              localIdentName: '[name]__[local]__[hash:base64:5]'
-            }
-          }
-        ]
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader']
       },
       // SASS support - compile all .global.scss files and pipe it to style.css
       {
@@ -190,10 +164,10 @@ export default merge.smart(baseConfig, {
     requiredByDLLConfig
       ? null
       : new webpack.DllReferencePlugin({
-        context: path.join(__dirname, '..', 'dll'),
-        manifest: require(manifest),
-        sourceType: 'var'
-      }),
+          context: path.join(__dirname, '..', 'dll'),
+          manifest: require(manifest),
+          sourceType: 'var'
+        }),
 
     new webpack.HotModuleReplacementPlugin({
       multiStep: true
@@ -247,7 +221,7 @@ export default merge.smart(baseConfig, {
       disableDotRule: true,
       verbose: true
     },
-    before () {
+    before() {
       if (process.env.START_HOT) {
         console.log('Starting Main Process...')
         spawn('npm', ['run', 'start-main-dev'], {

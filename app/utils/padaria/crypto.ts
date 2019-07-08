@@ -1,4 +1,3 @@
-import bip39 from 'bip39'
 import sodium from 'libsodium-wrappers'
 import pbkdf2 from 'pbkdf2'
 
@@ -8,21 +7,26 @@ import utils, { Prefix } from './utils'
 import { CryptoInterface } from './crypto.d'
 import Signer from './signer'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const bip39 = require('bip39')
+
 const DERIVATION_ITERATIONS = 32768
 
 const self: CryptoInterface = {
   /*
-	 *   States
-	 */
+   *   States
+   */
   signer: null,
   /*
-	 *   Functions
-	 */
+   *   Functions
+   */
   loadSigner: (sk: string) => {
     self.signer = new Signer(sk)
   },
   mnemonicToSeed: async (mnemonic, passphrase = '') => {
-    if (!bip39.validateMnemonic(mnemonic)) { throw new Error('Crypto: Mnemonic is Invalid.') }
+    if (!bip39.validateMnemonic(mnemonic)) {
+      throw new Error('Crypto: Mnemonic is Invalid.')
+    }
 
     return (await bip39.mnemonicToSeed(mnemonic, passphrase)).slice(0, 32)
   },
@@ -173,7 +177,7 @@ const self: CryptoInterface = {
   },
   checkHash: (buffer: Uint8Array) =>
     self.stampCheck(sodium.crypto_generichash(32, buffer)) <=
-		Number(rpc.networkConstants.proof_of_work_threshold),
+    Number(rpc.networkConstants.proof_of_work_threshold),
   stampCheck: (hash: Uint8Array) => {
     const size = rpc.networkConstants.proof_of_work_nonce_size
     let value = 0
@@ -201,7 +205,7 @@ const self: CryptoInterface = {
     const maximumCallStackSize = 4000
 
     return new Promise(resolve => {
-      ;(function rec (attempt = 0, call = 0) {
+      ;(function rec(attempt = 0, call = 0) {
         for (let i = powLength - 1; i >= 0; i--) {
           if (hashBuffer[protocolOffset + i] == 255) {
             hashBuffer[protocolOffset + i] = 0

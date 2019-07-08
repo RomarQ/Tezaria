@@ -4,8 +4,10 @@ import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles'
 import blue from '@material-ui/core/colors/blue'
 import { ConnectedRouter } from 'connected-react-router'
 import { ApolloProvider } from 'react-apollo'
-import { SnackbarProvider } from 'notistack'
-
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+// minified version is also included
+// import 'react-toastify/dist/ReactToastify.min.css';
 import { History } from 'history'
 import GQLclient from '../graphql-client'
 import App from './App'
@@ -28,9 +30,8 @@ export default (props: Props) => {
       <Provider store={store}>
         <MuiThemeProvider theme={theme}>
           <ConnectedRouter history={history}>
-            <SnackbarProvider maxSnack={4}>
-              <App />
-            </SnackbarProvider>
+            <ToastContainer />
+            <App />
           </ConnectedRouter>
         </MuiThemeProvider>
       </Provider>

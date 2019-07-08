@@ -3,14 +3,14 @@ import { connect } from 'react-redux'
 
 import Component from '../../components/Widgets/BakingController'
 import { BakingControllerStateProps } from '../../reducers/bakingController'
-import ControllerActions from '../../actions/bakingController'
+import { ControllerActions } from '../../actions/bakingController'
 
-import LoggerActions from '../../actions/logger'
+import { LoggerActions } from '../../actions/logger'
 
 const ControllerProps = ({
   bakingController
 }: {
-bakingController: BakingControllerStateProps
+  bakingController: BakingControllerStateProps
 }) => ({ controllerState: bakingController })
 const ControllerDispatchers = (dispatch: Dispatch) => ({
   controllerFunc: bindActionCreators(ControllerActions, dispatch)

@@ -55,7 +55,7 @@ const clearAll: LoggerClearAllPrototype = () => (
   dispatch: Dispatch<BaseAction>
 ) => dispatch({ type: LoggerActionTypes.CLEAR_ALL })
 
-export default {
+export const LoggerActions = {
   add,
   remove,
   clearAll

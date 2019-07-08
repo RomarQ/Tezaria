@@ -46,4 +46,4 @@ const stopController: StartControllerPrototype = () => {
   }
 }
 
-export default { startController, stopController }
+export const ControllerActions = { startController, stopController }

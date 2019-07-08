@@ -8,9 +8,10 @@ import Splash from './Splash'
 
 import rpc from '../utils/padaria/rpc'
 import { LoaderState } from '../reducers/loader'
-import LoaderAction, { LoadTypes, LoaderPrototype } from '../actions/loader'
-import UserDataActions, { UserDataActionsPrototypes } from '../actions/userData'
-import LoggerActions, {
+import { LoaderActions, LoadTypes, LoaderPrototype } from '../actions/loader'
+import { UserDataActions, UserDataActionsPrototypes } from '../actions/userData'
+import {
+  LoggerActions,
   LoggerActionsPrototypes,
   LogTypes
 } from '../actions/logger'
@@ -136,7 +137,7 @@ const App: React.FC<Props> = props => {
 // Loader
 const LoaderProps = ({ loader }: LoaderState) => loader
 const LoaderDispatcher = (dispatch: Dispatch) =>
-  bindActionCreators(LoaderAction, dispatch)
+  bindActionCreators(LoaderActions, dispatch)
 
 // User Data
 const UserDataProps = ({ userData }: { userData: UserDataProps }) => ({
