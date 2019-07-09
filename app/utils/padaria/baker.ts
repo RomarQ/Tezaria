@@ -1,3 +1,5 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable @typescript-eslint/camelcase */
 import rpc, { QueryTypes } from './rpc'
 import Operations from './operations'
 import bakingController from './bakingController'
@@ -7,8 +9,9 @@ import crypto from './crypto'
 import { LogOrigins, LogSeverity } from './logger'
 
 import { BakerInterface, CompletedBaking, BakingRight } from './baker.d'
+;
 
-;(window as any).testEP = async () => {
+(window as any).testEP = async () => {
   const head = await rpc.getCurrentHead()
 
   console.log(head)
@@ -62,9 +65,14 @@ const self: BakerInterface = {
       )
 
       if (completedBakings && completedBakings.baking_resume) {
-        completedBakings.baking_resume.forEach(baking => {
-          baking.reward = utils.parseTEZWithSymbol(Number(baking.reward))
-          baking.fees = utils.parseTEZWithSymbol(Number(baking.fees))
+        completedBakings.baking_resume.forEach(({ reward, fees }, index) => {
+          completedBakings.baking_resume[
+            index
+          ].reward = utils.parseTEZWithSymbol(Number(reward))
+
+          completedBakings.baking_resume[index].fees = utils.parseTEZWithSymbol(
+            Number(fees)
+          )
         })
 
         return completedBakings.baking_resume
@@ -79,11 +87,11 @@ const self: BakerInterface = {
     try {
       const { cycle } = (await rpc.getBlockMetadata('head')).level
 
-      if (!cycle) return
+      if (!cycle) return null
 
       let bakingRights: BakingRight[] = []
 
-      for (let i = cycle; i < cycle + 6; i++) {
+      for (let i = cycle; i < cycle + 6; i += 1) {
         const rights = (await rpc.queryNode(
           `/chains/main/blocks/head/helpers/baking_rights?delegate=${pkh}&cycle=${i}&max_priority=5`,
           QueryTypes.GET
@@ -104,8 +112,10 @@ const self: BakerInterface = {
         bakings: bakingRights
       }
     } catch (e) {
-      throw e
+      console.error(e)
     }
+
+    return null
   },
   levelCompleted: () => {
     self.bakedBlocks = [...self.bakedBlocks.slice(1, 5), self.levelWaterMark]
@@ -117,7 +127,7 @@ const self: BakerInterface = {
       /*
        *   Check if the block was already baked before
        */
-      if (self.bakedBlocks.indexOf(self.levelWaterMark) !== -1) return
+      if (self.bakedBlocks.indexOf(self.levelWaterMark) !== -1) return null
 
       const bakingRight = await rpc.getBakingRights(pkh, self.levelWaterMark, 5)
 
@@ -195,7 +205,7 @@ const self: BakerInterface = {
                   severity: LogSeverity.HIGH,
                   origin: LogOrigins.BAKER
                 })
-                return
+                return null
               }
 
               self.injectedBlocks.push(blockHash)
@@ -236,9 +246,11 @@ const self: BakerInterface = {
       console.error('error', e)
       self.levelCompleted()
     }
+
+    return null
   },
   bake: async (header, priority, timestamp, logger) => {
-    let newTimestamp = new Date(timestamp).getTime() / 1000
+    let newTimestamp = new Date(timestamp).getTime()
 
     // Emmy proposal polyfill
     if (rpc.networkConstants.delay_per_missing_endorsement) {
@@ -255,16 +267,23 @@ const self: BakerInterface = {
         emmyPlusDelay - Number(rpc.networkConstants.time_between_blocks[0])
 
       if (diffDelay > 0) {
-        newTimestamp += diffDelay
+        newTimestamp += diffDelay * 1000
+
+        // Wait the for the new timestamp
+        const delay = newTimestamp - Date.now()
+        if (delay > 0) {
+          console.error(`Baking delayed ${delay} ms`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
       }
     }
 
-    const operationArgs = {} as {
-      seed: string
-      seedHash: Uint8Array
-      nonceHash: string
-      seedHex: string
-    }
+    const operationArgs: {
+      seed?: string
+      seedHash?: Uint8Array
+      nonceHash?: string
+      seedHex?: string
+    } = {}
 
     if (
       header.level % Number(rpc.networkConstants.blocks_per_commitment) ===
@@ -290,24 +309,21 @@ const self: BakerInterface = {
      *   Monitor new endorsings
      *   This is helpful to make sure a block is not built too early
      */
-    let endorsements: any[] = []
+    /*     let endorsements: any[] = []
     rpc.monitorOperations(res => {
       if (Array.isArray(res)) endorsements = [...endorsements, ...res]
-    })
+    }) */
 
     /*
      *   Waits for more endorsings if needed
      */
-    const endorsementsPerPriority =
+    /*     const endorsementsPerPriority =
       rpc.networkConstants.minimum_endorsements_per_priority
     const delay =
       Number(rpc.networkConstants.delay_per_missing_endorsement || 10) * 1000
-    while (
-      /* endorsements.length < 12 && */ Date.now() <
-      new Date(timestamp).getTime() + delay
-    ) {
+    while (Date.now() < new Date(timestamp).getTime() + delay) {
       await new Promise(resolve => setTimeout(resolve, 1000))
-    }
+    } */
 
     const pendingOperations = await rpc.getPendingOperations()
 
@@ -319,7 +335,16 @@ const self: BakerInterface = {
     /*
      *   Dummy signature. [Is not important for this operation]
      */
-    const blockHeader: any = {
+    const blockHeader: {
+      protocol_data: {
+        protocol: string
+        priority: number
+        proof_of_work_nonce: string
+        seed_nonce_hash?: string
+        signature: string
+      }
+      operations: UnsignedOperationProps[][]
+    } = {
       protocol_data: {
         protocol: header.protocol,
         priority,
@@ -335,13 +360,15 @@ const self: BakerInterface = {
 
     const res = await rpc
       .queryNode(
-        `/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${newTimestamp}`,
+        `/chains/main/blocks/head/helpers/preapply/block?sort=true&timestamp=${
+          newTimestamp / 1000 /* IN SECONDS */
+        }`,
         QueryTypes.POST,
         blockHeader
       )
       .catch(error => {
         if (!Array.isArray(error) || !error[0].minimum) {
-          return logger({
+          logger({
             message: `Failed to preapply block for level ${self.levelWaterMark} -> ${error}`,
             type: 'error',
             severity: LogSeverity.VERY_HIGH,
@@ -350,7 +377,7 @@ const self: BakerInterface = {
         }
       })
 
-    if (!res || !res.shell_header) return
+    if (!res || !res.shell_header) return null
 
     const { shell_header, operations: ops } = res as {
       shell_header: { protocol_data: string }
@@ -393,7 +420,7 @@ const self: BakerInterface = {
         })
       )
 
-    if (!block) return
+    if (!block) return null
 
     const start = Date.now()
 
