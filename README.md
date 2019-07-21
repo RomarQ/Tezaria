@@ -1,6 +1,8 @@
 
 <div align="center">
 
+# Only working with ZERONET (EMMY PROPOSAL)
+
 ### If you want to know more about this project, you can send me an e-mail to rodrigo_quelhas@hotmail.com
 
 <hr />
@@ -8,7 +10,7 @@
 ### Implemented Modules
 
 | Baker | Endorser | Accuser | Rewarder |
-| - |:-:| -:| - |
+| ----- | :------: | ------: | -------- |
 
 
 `It is pre-configured to use my zeronet node, if you want to use your own node instead you need to change the node settings clicking in the cog at the top right corner.`

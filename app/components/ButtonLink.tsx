@@ -1,18 +1,24 @@
 import React from 'react'
-import Button from '@material-ui/core/Button';
-import { Link } from 'react-router-dom';
-import { ButtonProps } from '@material-ui/core/Button';
-import { LocationDescriptor } from 'history';
+import Button, { ButtonProps } from '@material-ui/core/Button'
+import { Link, LinkProps } from 'react-router-dom'
+
+import { LocationDescriptor } from 'history'
 
 interface Props extends ButtonProps {
   to: LocationDescriptor
   replace?: boolean
 }
 
-const createLink = ({innerRef, ...props}: Props) => <Link {...props}/>;
+const ForwardedLink = React.forwardRef<HTMLAnchorElement, LinkProps>(
+  (props, ref) => (
+    // @ts-ignore
+    <Link innerRef={ref} {...props} />
+  )
+)
 
-export default class ButtonLink extends React.PureComponent<Props> {
-  render() {
-    return <Button {...this.props} component={createLink}/>
-  }
-}
+const Component: React.FC<Props> = props => (
+  // @ts-ignore
+  <Button {...props} component={ForwardedLink} />
+)
+
+export default Component

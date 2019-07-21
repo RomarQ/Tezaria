@@ -65,13 +65,16 @@ interface Props extends WithStyles<typeof styles> {
 		cycle: number,
 		updateRewards: () => void
 	) => void;
-};
+}
 
 const Component: React.FC<Props> = props => {
 	const [expanded, setExpanded] = React.useState(undefined);
 	const { classes, rewards, pkh, handleRewardsPayment } = props;
 
-	const handleChange = (panel: any) => (event: any, isExpanded: any) => {
+	const handleChange = (panel: number) => (
+		event: React.ChangeEvent,
+		isExpanded: boolean
+	) => {
 		setExpanded(isExpanded ? panel : false);
 	};
 
@@ -86,8 +89,8 @@ const Component: React.FC<Props> = props => {
 			className: classes.status3,
 			label: 'Rewards Pending'
 		};
-    };
-    
+	};
+
 	return rewards ? (
 		<div className={classes.root}>
 			<div style={{ width: '100%' }}>
@@ -99,13 +102,13 @@ const Component: React.FC<Props> = props => {
 						<Typography className={classes.heading}>
 							Delegators
 						</Typography>
-                        <Typography className={classes.heading}>
+						<Typography className={classes.heading}>
 							Staking Balance
 						</Typography>
 						<Typography className={classes.heading}>
 							Rewards
 						</Typography>
-                        <Typography className={classes.heading}>
+						<Typography className={classes.heading}>
 							Fees
 						</Typography>
 						<Typography className={classes.heading}>
@@ -132,17 +135,17 @@ const Component: React.FC<Props> = props => {
 									<Typography className={classes.heading}>
 										{r.total_delegators}
 									</Typography>
-                                    <Typography className={classes.heading}>
-                                        {utils.parseTEZWithSymbol(
-                                            Number(r.staking_balance)
-                                        )}
+									<Typography className={classes.heading}>
+										{utils.parseTEZWithSymbol(
+											Number(r.staking_balance)
+										)}
 									</Typography>
 									<Typography className={classes.heading}>
 										{utils.parseTEZWithSymbol(
 											Number(r.rewards)
 										)}
 									</Typography>
-                                    <Typography className={classes.heading}>
+									<Typography className={classes.heading}>
 										{utils.parseTEZWithSymbol(
 											Number(r.fees)
 										)}
@@ -157,7 +160,10 @@ const Component: React.FC<Props> = props => {
 											handleRewardsPayment={
 												handleRewardsPayment
 											}
-											paymentsAllowed={index > 4 && !bakingController.rewarding}
+											paymentsAllowed={
+												index > 4 &&
+												!bakingController.rewarding
+											}
 											pkh={pkh}
 											cycle={r.cycle}
 										/>

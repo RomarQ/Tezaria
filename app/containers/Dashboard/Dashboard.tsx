@@ -1,8 +1,8 @@
-import React from 'react';
-import Component from '../../components/Dashboard/Dashboard';
+import React from 'react'
+import Component from '../../components/Dashboard/Dashboard'
 
 interface Props {
-    userData: UserDataProps;
-};
+  userData: UserDataProps
+}
 
-export default (props:Props) => <Component {...props}/>;
+export default (props: Props) => <Component {...props} />

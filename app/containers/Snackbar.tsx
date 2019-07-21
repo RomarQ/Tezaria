@@ -1,47 +1,37 @@
-import React from 'react';
-import { Dispatch, bindActionCreators } from 'redux';
-import { connect } from 'react-redux';
-import { withSnackbar, withSnackbarProps, OptionsObject } from 'notistack';
-import Button from '@material-ui/core/Button';
-import LoggerActions, { LogTypes, LoggerActionsPrototypes } from '../actions/logger';
-import { LogProps, LoggerProps } from '../reducers/logger';
+import React from 'react'
+import { Dispatch, bindActionCreators } from 'redux'
+import { connect } from 'react-redux'
+import { toast } from 'react-toastify'
 
-type Props = {
-    logs: LogProps[];
-    loggerActions: LoggerActionsPrototypes;
-} & withSnackbarProps & OptionsObject;
+import { LoggerActions, LoggerActionsPrototypes } from '../actions/logger'
+import { LogProps, LoggerProps } from '../reducers/logger'
 
-const Container: React.FC<Props> = ({ logs, enqueueSnackbar, loggerActions }) => {
-    const snackCounter = React.useRef(0);
+interface Props {
+  logs: LogProps[]
+  loggerActions: LoggerActionsPrototypes
+}
 
-    React.useEffect(() => {
-        logs.filter(log => log.key > snackCounter.current)
-            .forEach(log => {
-                snackCounter.current++;
-                enqueueSnackbar(String(log.message), {
-                    variant: log.type,
-                    anchorOrigin: {
-                        vertical: 'bottom',
-                        horizontal: 'right'
-                    },
-                    preventDuplicate: true,
-                    persist: log.type === LogTypes.ERROR,
-                    action: (
-                        <Button size="small">{'Dismiss'}</Button>
-                    ),
-                    onExited: () => log.type != 'error' && loggerActions.remove(log.key)
-                });
-            });
-    });
+const Container: React.FC<Props> = ({ logs, loggerActions }) => {
+  const snackCounter = React.useRef(0)
 
-    return null;
-};
+  React.useEffect(() => {
+    logs
+      .filter(log => log.key > snackCounter.current)
+      .forEach(log => {
+        snackCounter.current += 1
+        toast[log.type](String(log.message))
+      })
+  })
 
-const mapLogsToProps = ({ logger }:LoggerProps) => ({ logs: logger });
-const mapDispatchersToProps = (dispatch: Dispatch ) => ({ loggerActions: bindActionCreators(LoggerActions, dispatch) });
+  return null
+}
 
+const mapLogsToProps = ({ logger }: LoggerProps) => ({ logs: logger })
+const mapDispatchersToProps = (dispatch: Dispatch) => ({
+  loggerActions: bindActionCreators(LoggerActions, dispatch)
+})
 
 export default connect(
-    mapLogsToProps,
-    mapDispatchersToProps
-)(withSnackbar(Container));
+  mapLogsToProps,
+  mapDispatchersToProps
+)(Container)
