@@ -49,7 +49,7 @@ const self: BakingControllerProps = {
     try {
       const manager = await rpc.getManager(keys.pkh)
 
-      self.delegate.revealed = !!manager.key
+      self.delegate.revealed = !!manager
       if (!self.delegate.revealed) {
         self.delegate.balance = await rpc.getBalance(keys.pkh)
 
@@ -209,6 +209,7 @@ const self: BakingControllerProps = {
 
         self.monitoring = true
         await rpc.monitorHeads('main', (header, resolve) => {
+          console.log('Block Received', header)
           try {
             self.running ? self.run(keys, options.logger) : resolve()
           } catch (e) {

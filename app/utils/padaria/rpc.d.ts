@@ -1,8 +1,9 @@
+import { GraphQLClient } from 'graphql-request'
 import { BakingRight } from './baker'
 
 export interface RPCInterface extends TezariaSettingsProps {
   ready: boolean
-  apiClient: any
+  apiClient: GraphQLClient
   network: string
   networkEpoch: string
   networkConstants: NetworkConstants
@@ -21,13 +22,23 @@ export interface RPCInterface extends TezariaSettingsProps {
     chainId?: string,
     blockId?: string
   ) => Promise<BakingRight[]>
-  queryNode: (path: string, method: QueryType, args?: any) => Promise<any>
+  queryNode: (
+    path: string,
+    method: QueryType,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    args?: Record<string, any> | string
+  ) => // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Promise<any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   queryAPI: (query: string, variables?: Record<string, any>) => Promise<any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   queryRequest: (options: RequestOptions, args?: any) => Promise<any>
   queryStreamRequest: (
     options: RequestOptions,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cb: (res: any, resolve: () => void) => void
-  ) => Promise<any>
+  ) => // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Promise<any>
   getBalance: (pkh: string) => Promise<number>
   getContract: (pkh: string) => Promise<ContractProps>
   getManager: (contract: string) => Promise<{ key: string; manager: string }>
@@ -68,7 +79,6 @@ interface RequestOptions {
   headers?: {
     [index: string]: string
   }
-  agent?: any
   requestCert?: boolean
   rejectUnauthorized?: boolean
 }
@@ -103,8 +113,8 @@ export interface NetworkConstants {
   tokens_per_roll?: string
   // New Zeronet constants
   delay_per_missing_endorsement?: string
-  endorsement_bonus_intercept?: number
-  endorsement_bonus_slope?: number
-  endorsement_reward_priority_bonus?: string
-  minimum_endorsements_per_priority?: number[]
+  quorum_max?: number
+  quorum_min?: number
+  min_proposal_quorum?: number
+  initial_endorsers?: number
 }

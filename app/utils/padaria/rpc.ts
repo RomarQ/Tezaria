@@ -40,7 +40,9 @@ const self: RPCInterface = {
     await self.setCurrentNetwork()
     await utils.verifyNodeCommits()
 
-    return (self.ready = true)
+    self.ready = true
+
+    return self.ready
   },
   setCurrentNetwork: async () => {
     const versions = (await self.queryNode(
@@ -96,13 +98,13 @@ const self: RPCInterface = {
   ) =>
     pkh
       ? self.queryNode(
-        `/chains/${chainId}/blocks/${blockId}/helpers/baking_rights?delegate=${pkh}&level=${level}&max_priority=${maxPriority}`,
-        QueryTypes.GET
-      )
+          `/chains/${chainId}/blocks/${blockId}/helpers/baking_rights?delegate=${pkh}&level=${level}&max_priority=${maxPriority}`,
+          QueryTypes.GET
+        )
       : self.queryNode(
-        `/chains/${chainId}/blocks/${blockId}/helpers/baking_rights?level=${level}&max_priority=${maxPriority}`,
-        QueryTypes.GET
-      ),
+          `/chains/${chainId}/blocks/${blockId}/helpers/baking_rights?level=${level}&max_priority=${maxPriority}`,
+          QueryTypes.GET
+        ),
   queryNode: (path, method, args) => {
     const options = {
       hostname: self.nodeAddress,
@@ -113,16 +115,13 @@ const self: RPCInterface = {
       headers: {
         'Content-Type': 'application/json'
       }
-    } as any
-
-    options.agent =
-      self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options)
+    }
 
     return self.queryRequest(options, args)
   },
   // GraphQL
   queryAPI: (query, variables) => {
-    if (!self.apiClient) throw 'API configuration missing!'
+    if (!self.apiClient) throw Error('API configuration missing!')
 
     return variables
       ? self.apiClient.request(query, variables)
@@ -269,8 +268,7 @@ const self: RPCInterface = {
       headers: {
         'Content-Type': 'application/json'
       }
-    } as any
-    options.agent = new http.Agent(options)
+    }
 
     return self.queryStreamRequest(options, callback)
   },
@@ -283,9 +281,7 @@ const self: RPCInterface = {
       headers: {
         'Content-Type': 'application/json'
       }
-    } as any
-    options.agent =
-      self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options)
+    }
 
     return self.queryStreamRequest(options, callback)
   },
@@ -310,7 +306,7 @@ const self: RPCInterface = {
       QueryTypes.GET
     )) as PendingOperations
 
-    if (!pendingOperations) return
+    if (!pendingOperations) return null
 
     pendingOperations.branch_delayed.map(op => op[1])
     pendingOperations.unprocessed.map(op => op[1])

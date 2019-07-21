@@ -182,7 +182,7 @@ const self: OperationsInterface = {
     } as any
 
     //  Polyfill for proposal "emmy"
-    rpc.networkConstants['minimum_endorsements_per_priority'] &&
+    rpc.networkConstants.initial_endorsers &&
       (operation.contents[0].slot = slots[0])
 
     const { forgedConfirmation, ...verifiedOp } = await self.forgeOperation(
@@ -370,7 +370,7 @@ const self: OperationsInterface = {
     /*
      *   Prepare reveal operation if required
      */
-    if (!self.contractManagers[source].key && !skipReveal) {
+    if (!self.contractManagers[source] && !skipReveal) {
       operations = [
         {
           kind: OperationTypes.reveal.type,
@@ -416,9 +416,9 @@ const self: OperationsInterface = {
         throw new Error('provided source is invalid')
       }
 
-      if (cleanedSource.length % 44 > 0) {
+      if (cleanedSource.length % 42 > 0) {
         forgeResult +=
-          '0'.repeat(44 - (cleanedSource.length % 44)) + cleanedSource
+          '0'.repeat(42 - (cleanedSource.length % 42)) + cleanedSource
       }
     }
 

@@ -9,18 +9,6 @@ import crypto from './crypto'
 import { LogOrigins, LogSeverity } from './logger'
 
 import { BakerInterface, CompletedBaking, BakingRight } from './baker.d'
-;
-
-(window as any).testEP = async () => {
-  const head = await rpc.getCurrentHead()
-
-  console.log(head)
-  console.log(await utils.endorsingPower(head.operations[0]))
-  console.log(await utils.emmyDelay(0))
-  console.log(
-    await utils.emmyPlusDelay(0, await utils.endorsingPower(head.operations[0]))
-  )
-}
 
 const self: BakerInterface = {
   /*
@@ -85,9 +73,18 @@ const self: BakerInterface = {
   },
   getIncomingBakings: async pkh => {
     try {
-      const { cycle } = (await rpc.getBlockMetadata('head')).level
+      const blockMetadata = await rpc.getBlockMetadata('head')
 
-      if (!cycle) return null
+      if (!blockMetadata) {
+        return {
+          hasData: false,
+          bakings: []
+        }
+      }
+
+      const {
+        level: { cycle }
+      } = blockMetadata
 
       let bakingRights: BakingRight[] = []
 
@@ -97,6 +94,7 @@ const self: BakerInterface = {
           QueryTypes.GET
         )) as BakingRight[]
 
+        console.log(rights)
         if (Array.isArray(rights) && rights.length > 0) {
           bakingRights = [...bakingRights, ...rights]
         }
@@ -253,7 +251,7 @@ const self: BakerInterface = {
     let newTimestamp = new Date(timestamp).getTime()
 
     // Emmy proposal polyfill
-    if (rpc.networkConstants.delay_per_missing_endorsement) {
+    if (rpc.networkConstants.initial_endorsers) {
       const head = await rpc.getCurrentHead()
 
       const emmyPlusDelay = await utils.emmyPlusDelay(
