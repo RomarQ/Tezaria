@@ -1,6 +1,6 @@
+/* eslint-disable no-bitwise */
 import bs58check from 'bs58check'
 
-import rpc, { QueryTypes } from './rpc'
 import { UtilsInterface } from './utils.d'
 
 // https://gitlab.com/tezos/tezos/blob/master/src/lib_crypto/base58.ml
@@ -80,71 +80,31 @@ const self: UtilsInterface = {
   TEZ: { char: 'ꜩ', unit: 1000000 },
   KTEZ: { char: 'Kꜩ', unit: 1000000000 },
   MTEZ: { char: 'Mꜩ', unit: 1000000000000 },
-  setDebugMode: (mode: boolean) => (self.debug = mode),
+  setDebugMode: (mode: boolean) => {
+    self.debug = mode
+  },
   createProtocolData: (priority: number, powHeader = '', pow = '', seed = '') =>
     `${priority.toString(16).padStart(4, '0')}${powHeader.padEnd(
       8,
       '0'
     )}${pow.padEnd(8, '0')}${seed ? `ff${seed.padEnd(64, '0')}` : '00'}`,
-  verifyNodeCommits: async () => {
-    const nodeLastCommit = await rpc.queryNode(
-      '/monitor/commit_hash',
-      QueryTypes.GET
-    )
-    const options = {
-      hostname: 'gitlab.com',
-      port: 443,
-      path: `/api/v4/projects/tezos%2Ftezos/repository/commits/?ref_name=${rpc.network.toLocaleLowerCase()}&per_page=100`,
-      method: 'GET'
-    }
-    const commits = (await rpc.queryRequest(options)) as {
-      id: string
-      author_name: string
-      committed_date: string
-      parent_ids: string[]
-      message: string
-    }[]
-
-    if (!Array.isArray(commits)) return
-
-    let index = 0
-    for (const commit of commits) {
-      if (
-        commit.id === nodeLastCommit ||
-        commit.parent_ids.some(id => id === nodeLastCommit)
-      ) {
-        return {
-          updated: index === 0,
-          currentCommitHash: nodeLastCommit,
-          lastCommitHash: commit.id,
-          commitsBehind: index,
-          author: commit.author_name,
-          date: commit.committed_date,
-          message: commit.message
-        }
-      }
-      index++
-    }
-  },
   convertUnit: (value, to, from = self.uTEZ) =>
     ((value / to.unit) * from.unit).toLocaleString('fullwide', {
       maximumFractionDigits: 3
     }),
   convertUnitWithSymbol: (value, to, from = self.uTEZ) =>
     `${self.convertUnit(value, to, from)} ${to.char}`,
-  getRewardSharePercentage: (balance, staking_balance) =>
+  getRewardSharePercentage: (balance, stakingBalance) =>
     Number(
-      ((balance * 100) / staking_balance).toLocaleString('fullwide', {
+      ((balance * 100) / stakingBalance).toLocaleString('fullwide', {
         maximumFractionDigits: 2
       })
     ),
-  getRewardShare: (balance, staking_balance, rewards) =>
-    Math.floor((balance * rewards) / staking_balance),
+  getRewardShare: (balance, stakingBalance, rewards) =>
+    Math.floor((balance * rewards) / stakingBalance),
   getRewardFee: (reward, rewardFee) => Math.floor(reward * (rewardFee / 100)),
-  getTotalRolls: stakingBalance =>
-    Math.floor(
-      Number(stakingBalance) / Number(rpc.networkConstants.tokens_per_roll)
-    ),
+  getTotalRolls: (stakingBalance, tokensPerRoll) =>
+    Math.floor(Number(stakingBalance) / Number(tokensPerRoll)),
   parseTEZWithSymbol: value => {
     if (value >= self.MTEZ.unit) {
       return self.convertUnitWithSymbol(value, self.MTEZ)
@@ -160,12 +120,10 @@ const self: UtilsInterface = {
     }
     return self.convertUnitWithSymbol(value, self.uTEZ)
   },
-  firstCycleLevel: (level: number) =>
-    Math.floor(level / rpc.networkConstants.blocks_per_cycle) *
-      rpc.networkConstants.blocks_per_cycle +
-    1,
-  lastCycleLevel: (level: number) =>
-    self.firstCycleLevel(level) + rpc.networkConstants.blocks_per_cycle - 1,
+  firstCycleLevel: (level: number, blocksPerCycle: number) =>
+    Math.floor(level / blocksPerCycle) * blocksPerCycle + 1,
+  lastCycleLevel: (level: number, blocksPerCycle: number) =>
+    self.firstCycleLevel(level, blocksPerCycle) + blocksPerCycle - 1,
   hexToBuffer: (hex: string) =>
     new Uint8Array(hex.match(/[\da-f]{2}/gi).map(h => parseInt(h, 16))),
   bufferToHex: (buffer: Uint8Array) =>
@@ -201,52 +159,24 @@ const self: UtilsInterface = {
   int16Buffer: number =>
     new Uint8Array([(number & 0x0000ff00) >> 8, number & 0x000000ff]),
   numberToZarith: (value: number) => {
+    let val = value
     let zarith = ''
 
     while (true) {
-      if (value >= 128) {
-        let mod = value % 128
-        value -= mod
-        value /= 128
+      if (val >= 128) {
+        let mod = val % 128
+        val -= mod
+        val /= 128
         mod += 128
         zarith += mod.toString(16)
       } else {
-        if (value < 16) zarith += '0'
-        zarith += value.toString(16)
+        if (val < 16) zarith += '0'
+        zarith += val.toString(16)
         break
       }
     }
     return zarith
-  },
-  emmyDelay: priority => {
-    const times = rpc.networkConstants.time_between_blocks
-
-    return times.length > 1
-      ? Number(times[0]) + Number(times[1]) * priority
-      : Number(times[0]) * (priority + 1)
-  },
-  emmyPlusDelay: (priority, endorsingPower) => {
-    const emmyDelay = self.emmyDelay(priority)
-    const delayPerMissingEndorsement = Number(
-      rpc.networkConstants.delay_per_missing_endorsement
-    )
-
-    return endorsingPower >= 18
-      ? emmyDelay
-      : emmyDelay +
-          delayPerMissingEndorsement * Math.max(0, 18 - endorsingPower)
-  },
-  endorsingPower: async endorsements =>
-    (await Promise.all(
-      endorsements.map(({ chain_id, branch, contents, signature }) => {
-        delete contents[0].metadata
-        return rpc.getEndorsingPower(chain_id, {
-          branch,
-          contents,
-          signature
-        })
-      })
-    )).reduce((p, c) => p + c, 0)
+  }
 }
 
 export * from './utils.d'

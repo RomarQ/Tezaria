@@ -9,7 +9,6 @@ export interface UtilsInterface {
   MTEZ: TezosUnitProps
 
   setDebugMode: (mode: boolean) => void
-  verifyNodeCommits: () => Promise<TezosCommitProps>
   createProtocolData: (
     priority: number,
     powHeader?: string,
@@ -26,17 +25,20 @@ export interface UtilsInterface {
     to: TezosUnitProps,
     from?: TezosUnitProps
   ) => string
-  getRewardSharePercentage: (balance: number, staking_balance: number) => number
+  getRewardSharePercentage: (balance: number, stakingBalance: number) => number
   getRewardShare: (
     balance: number,
-    staking_balance: number,
+    stakingBalance: number,
     rewards: number
   ) => number
   getRewardFee: (reward: number, rewardFee: number) => number
-  getTotalRolls: (stakingBalance: number | string) => number
+  getTotalRolls: (
+    stakingBalance: number | string,
+    tokensPerRoll: number | string
+  ) => number
   parseTEZWithSymbol: (value: number) => string
-  firstCycleLevel: (level: number) => number
-  lastCycleLevel: (level: number) => number
+  firstCycleLevel: (level: number, blocksPerCycle: number) => number
+  lastCycleLevel: (level: number, blocksPerCycle: number) => number
   hexToBuffer: (hex: string) => Uint8Array
   bufferToHex: (buffer: Uint8Array) => string
   mergeBuffers: (buffer1: Uint8Array, buffer2: Uint8Array) => Uint8Array
@@ -45,9 +47,6 @@ export interface UtilsInterface {
   int32Buffer: (number: number) => Uint8Array
   int16Buffer: (number: number) => Uint8Array
   numberToZarith: (value: number) => string
-  emmyDelay: (priority: number) => number
-  emmyPlusDelay: (priority: number, endorsingPower: number) => number
-  endorsingPower: (endorsements: EndorsementOperationProps[]) => Promise<number>
 }
 
 export interface WaterMarkType {
@@ -59,14 +58,4 @@ export interface WaterMarkType {
 export interface TezosUnitProps {
   char: string
   unit: number
-}
-
-export interface TezosCommitProps {
-  updated: boolean
-  currentCommitHash: string
-  lastCommitHash: string
-  commitsBehind: number
-  author: string
-  date: string
-  message: string
 }

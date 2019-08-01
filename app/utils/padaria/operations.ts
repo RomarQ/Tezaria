@@ -1,28 +1,28 @@
+import utils, { Prefix } from './utils'
 import rpc, { QueryTypes } from './rpc'
 import crypto from './crypto'
-import utils, { Prefix } from './utils'
 import { OperationsInterface } from './operations.d'
 
-export const MAX_BATCH_SIZE = 200
+import config from './baker-config.json'
 
 export const OperationTypes = {
   endorsement: {
     type: 'endorsement' as 'endorsement',
     operationCode: 0
   },
-  seed_nonce_revelation: {
+  seedNonceRevelation: {
     type: 'seed_nonce_revelation' as 'seed_nonce_revelation',
     operationCode: 1
   },
-  double_endorsement_evidence: {
+  doubleEndorsementEvidence: {
     type: 'double_endorsement_evidence' as 'double_endorsement_evidence',
     operationCode: 2
   },
-  double_baking_evidence: {
+  doubleBakingEvidence: {
     type: 'double_baking_evidence' as 'double_baking_evidence',
     operationCode: 3
   },
-  activate_account: {
+  activateAccount: {
     type: 'activate_account' as 'activate_account',
     operationCode: 4
   },
@@ -59,7 +59,6 @@ const self: OperationsInterface = {
    */
   awaitingLock: {},
   awaitingOperations: {},
-  //
   /*
    *   The index of the different components of the protocol's validation passes *)
    *   TODO: ideally, we would like this to be more abstract and possibly part of
@@ -89,7 +88,7 @@ const self: OperationsInterface = {
       branch: header.hash,
       contents: [
         {
-          kind: OperationTypes.double_baking_evidence.type,
+          kind: OperationTypes.doubleBakingEvidence.type,
           bh1: evidences[0],
           bh2: evidences[1]
         }
@@ -106,7 +105,7 @@ const self: OperationsInterface = {
       forgedConfirmation,
       utils.watermark.genericOperation
     )
-    return await self.injectOperation({
+    return self.injectOperation({
       ...verifiedOp,
       signature: signed.edsig,
       signedOperationContents: signed.signedBytes
@@ -119,7 +118,7 @@ const self: OperationsInterface = {
       branch: header.hash,
       contents: [
         {
-          kind: OperationTypes.double_endorsement_evidence.type,
+          kind: OperationTypes.doubleEndorsementEvidence.type,
           op1: evidences[0],
           op2: evidences[1]
         }
@@ -136,7 +135,7 @@ const self: OperationsInterface = {
       forgedConfirmation,
       utils.watermark.genericOperation
     )
-    return await self.injectOperation({
+    return self.injectOperation({
       ...verifiedOp,
       signature: signed.edsig,
       signedOperationContents: signed.signedBytes
@@ -147,7 +146,7 @@ const self: OperationsInterface = {
       branch: header.hash,
       contents: [
         {
-          kind: OperationTypes.seed_nonce_revelation.type,
+          kind: OperationTypes.seedNonceRevelation.type,
           level: nonce.level,
           nonce: nonce.seed
         }
@@ -182,8 +181,10 @@ const self: OperationsInterface = {
     } as any
 
     //  Polyfill for proposal "emmy"
-    rpc.networkConstants.initial_endorsers &&
-      (operation.contents[0].slot = slots[0])
+    if (rpc.networkConstants.initial_endorsers) {
+      // eslint-disable-next-line prefer-destructuring
+      operation.contents[0].slot = slots[0]
+    }
 
     const { forgedConfirmation, ...verifiedOp } = await self.forgeOperation(
       header,
@@ -211,9 +212,12 @@ const self: OperationsInterface = {
     fee = self.feeDefaults.medium,
     gasLimit = self.transactionGasCost,
     storageLimit = self.transactionStorage,
-    batchSize = MAX_BATCH_SIZE
+    customBatchSize = (config as any).paymentsBatchSize
   ) => {
-    if (batchSize > MAX_BATCH_SIZE) batchSize = MAX_BATCH_SIZE
+    const batchSize =
+      customBatchSize > (config as any).paymentsBatchSize
+        ? (config as any).paymentsBatchSize
+        : customBatchSize
 
     const operations = destinations.reduce(
       (prev, cur) => {
@@ -224,7 +228,9 @@ const self: OperationsInterface = {
               {
                 kind: OperationTypes.transaction.type,
                 fee: String(fee),
+                // eslint-disable-next-line @typescript-eslint/camelcase
                 gas_limit: String(gasLimit),
+                // eslint-disable-next-line @typescript-eslint/camelcase
                 storage_limit: String(storageLimit),
                 amount: String(cur.amount),
                 destination: cur.destination
@@ -236,7 +242,9 @@ const self: OperationsInterface = {
         prev[prev.length - 1].push({
           kind: OperationTypes.transaction.type,
           fee: String(fee),
+          // eslint-disable-next-line @typescript-eslint/camelcase
           gas_limit: String(gasLimit),
+          // eslint-disable-next-line @typescript-eslint/camelcase
           storage_limit: String(storageLimit),
           amount: String(cur.amount),
           destination: cur.destination
@@ -247,33 +255,36 @@ const self: OperationsInterface = {
       [[]]
     )
 
-    const ops = []
-    for (const batch of operations) {
-      const op = await self.sendOperation(source, keys, batch, true)
-      // The result operation hash needs to be a string, otherwise is a error
-      if (op && typeof op.hash !== 'string') {
-        console.error('Operation Failed', op)
-        continue
-      }
+    const ops: UnsignedOperationProps[] = await Promise.all(
+      operations.map(async (batch: OperationProps[]) => {
+        const op = await self.sendOperation(source, keys, batch, true)
+        // The result operation hash needs to be a string, otherwise is a error
+        if (op && typeof op.hash !== 'string') {
+          console.error('Operation Failed', op)
+        }
+        console.log(op)
+        return op
+      })
+    )
 
-      ops.push(op)
-    }
     return ops
   },
   registerDelegate: keys => {
     const operation = {
       kind: OperationTypes.delegation.type,
       fee: String(self.feeDefaults.low),
+      // eslint-disable-next-line @typescript-eslint/camelcase
       gas_limit: String(self.delegationGasCost),
+      // eslint-disable-next-line @typescript-eslint/camelcase
       storage_limit: String(self.delegationStorage),
       delegate: keys.pkh
     }
-    console.log('1')
+
     return self.sendOperation(keys.pkh, keys, [operation], true)
   },
   activateAccount: (keys, secret) => {
     const operation = {
-      kind: OperationTypes.activate_account.type,
+      kind: OperationTypes.activateAccount.type,
       secret,
       pkh: keys.pkh
     }
@@ -286,16 +297,23 @@ const self: OperationsInterface = {
     const headHash = await rpc.getBlockHash('head')
     const operations = await rpc.getBlockOperations('head')
     if (prevHeadHash === headHash) {
-      return await self.awaitForOperationToBeIncluded(opHash, prevHeadHash)
+      return self.awaitForOperationToBeIncluded(opHash, prevHeadHash)
     }
 
-    for (const opCollection of operations) {
-      for (const op of opCollection) {
-        if (op.hash === opHash) return true
-      }
+    const included = await new Promise(resolve => {
+      operations.forEach((opCollection, index) => {
+        opCollection.forEach(op => (op.hash === opHash ? resolve(true) : false))
+        // Resolve the promise with false if all operations were verified and no match wasn't found
+        if (index === operations.length - 1) resolve(false)
+      })
+    })
+
+    // Operation was included
+    if (included) {
+      return true
     }
 
-    return await self.awaitForOperationToBeIncluded(opHash, headHash)
+    return self.awaitForOperationToBeIncluded(opHash, headHash)
   },
   sendOperation: async (
     source,
@@ -307,59 +325,63 @@ const self: OperationsInterface = {
     while (true) {
       // Wait for operation turn
       if (self.awaitingLock[source]) {
+        // eslint-disable-next-line no-await-in-loop
         await new Promise(resolve => setTimeout(resolve, 1000))
-        continue
-      }
-      // Cannot run more than one counter operation from the same source at the same time,
-      // otherwise the next operation will be rejected because counter will be too high
-      self.awaitingLock[source] = true
+      } else {
+        // Cannot run more than one counter operation from the same source at the same time,
+        // otherwise the next operation will be rejected because counter will be too high
+        self.awaitingLock[source] = true
 
-      try {
-        const preparedOp = await self.prepareOperations(
-          source,
-          keys,
-          operation,
-          skipReveal
-        )
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          const preparedOp = await self.prepareOperations(
+            source,
+            keys,
+            operation,
+            skipReveal
+          )
 
-        if (!preparedOp) return
+          if (!preparedOp) return null
 
-        const { forgedConfirmation, ...verifiedOp } = preparedOp
+          const { forgedConfirmation, ...verifiedOp } = preparedOp
 
-        const signed = crypto.sign(
-          forgedConfirmation,
-          utils.watermark.genericOperation
-        )
+          const signed = crypto.sign(
+            forgedConfirmation,
+            utils.watermark.genericOperation
+          )
 
-        const injectedOp = await self.injectOperation({
-          ...verifiedOp,
-          signature: signed.edsig,
-          signedOperationContents: signed.signedBytes
-        })
+          // eslint-disable-next-line no-await-in-loop
+          const injectedOp = await self.injectOperation({
+            ...verifiedOp,
+            signature: signed.edsig,
+            signedOperationContents: signed.signedBytes
+          })
 
-        if (!injectedOp || typeof injectedOp.hash !== 'string') {
-          console.error('Error -> ', injectedOp)
+          if (!injectedOp || typeof injectedOp.hash !== 'string') {
+            console.error('Error -> ', injectedOp)
+            self.awaitingLock[source] = false
+            return null
+          }
+
+          // Wait for operation to be included
+          if (shouldWait) {
+            // eslint-disable-next-line no-await-in-loop
+            await self.awaitForOperationToBeIncluded(injectedOp.hash, '')
+          }
+
           self.awaitingLock[source] = false
-          continue
+          return injectedOp
+        } catch (e) {
+          console.error(e)
         }
-
-        console.log(injectedOp)
-        // Wait for operation to be included
-        if (shouldWait) {
-          await self.awaitForOperationToBeIncluded(injectedOp.hash, '')
-        }
-
-        self.awaitingLock[source] = false
-        return injectedOp
-      } catch (e) {
-        console.error(e)
       }
 
       self.awaitingLock[source] = false
-      return
+      return null
     }
   },
   prepareOperations: async (source, keys, operations, skipReveal = false) => {
+    let ops = operations
     const header = await rpc.getBlockHeader('head')
 
     if (!self.contractManagers[source]) {
@@ -371,35 +393,43 @@ const self: OperationsInterface = {
      *   Prepare reveal operation if required
      */
     if (!self.contractManagers[source] && !skipReveal) {
-      operations = [
+      ops = [
         {
           kind: OperationTypes.reveal.type,
           fee: String(self.feeDefaults.low),
+          // eslint-disable-next-line @typescript-eslint/camelcase
           public_key: keys.pk,
           source,
+          // eslint-disable-next-line @typescript-eslint/camelcase
           gas_limit: String(self.revealGasCost),
+          // eslint-disable-next-line @typescript-eslint/camelcase
           storage_limit: String(self.revealStorage)
         },
-        ...operations
+        ...ops
       ]
     }
 
-    operations.forEach(op => {
+    // Add missing fields
+    ops = ops.map(operation => {
+      const op = operation
+
       if (self.operationRequiresSource(op.kind)) {
         if (!op.source) op.source = source
       }
       if (self.operationRequiresCounter(op.kind)) {
+        // eslint-disable-next-line @typescript-eslint/camelcase
         if (!op.gas_limit) op.gas_limit = String(0)
+        // eslint-disable-next-line @typescript-eslint/camelcase
         if (!op.storage_limit) op.storage_limit = String(0)
-        op.counter = String(++counter)
+        op.counter = String((counter += 1))
       }
-    })
 
-    console.log(operations)
+      return op
+    })
 
     return self.forgeOperation(header, {
       branch: header.hash,
-      contents: operations
+      contents: ops
     })
   },
   forgeOperationLocally: (operation: OperationProps) => {
@@ -539,7 +569,8 @@ const self: OperationsInterface = {
           utils.b58decode(operation.public_key, Prefix.edpk)
         )}`
         break
-      case 8: // Transaction
+      case 8: {
+        // Transaction
         forgeResult += utils.numberToZarith(Number(operation.amount))
 
         let cleanedDestination = ''
@@ -561,12 +592,15 @@ const self: OperationsInterface = {
 
         forgeResult += `${cleanedDestination}00`
         break
+      }
       case 9:
         break
       case 10: // Delegation
         forgeResult += `ff00${utils.bufferToHex(
           utils.b58decode(operation.delegate, Prefix.tz1)
         )}`
+        break
+      default:
         break
     }
     return forgeResult
@@ -578,7 +612,7 @@ const self: OperationsInterface = {
       [operation]
     )
 
-    return await rpc.queryNode(
+    return rpc.queryNode(
       '/chains/main/blocks/head/helpers/scripts/run_operation',
       QueryTypes.POST,
       verifiedOp
@@ -591,10 +625,10 @@ const self: OperationsInterface = {
       operation
     )
 
-    if (!forgedOperation) return
+    if (!forgedOperation) return null
 
     const forgedConfirmation = operation.contents.reduce(
-      (prev, cur) => (prev += self.forgeOperationLocally(cur)),
+      (prev, cur) => prev + self.forgeOperationLocally(cur),
       utils.bufferToHex(utils.b58decode(operation.branch, Prefix.blockHash))
     )
 
@@ -629,8 +663,8 @@ const self: OperationsInterface = {
         ({ contents }) =>
           contents &&
           contents.some(
-            ({ metadata: { operation_result } }) =>
-              operation_result && operation_result.status === 'failed'
+            ({ metadata: { operation_result: operationResult } }) =>
+              operationResult && operationResult.status === 'failed'
           )
       )
     ) {
@@ -672,7 +706,7 @@ const self: OperationsInterface = {
     )) as string[]
 
     // Remove operations that are too old
-    operations = operations.map(operationsType =>
+    const ops = operations.map(operationsType =>
       operationsType.filter(({ branch }: { branch: string }) =>
         liveBlocks.includes(branch)
       )
@@ -681,16 +715,15 @@ const self: OperationsInterface = {
     // Prepare Operations
     const validationPasses = self.validationPasses()
     const operationsList: UnsignedOperationProps[][] = []
-    for (let i = 0; i < validationPasses.length; i++) {
+    for (let i = 0; i < validationPasses.length; i += 1) {
       operationsList.push([] as UnsignedOperationProps[])
     }
 
-    operations.forEach(operationsType => {
-      operationsType.forEach((op: UnsignedOperationProps) => {
-        op.protocol = protocol
-        delete op.hash
+    ops.forEach(operationsType => {
+      operationsType.forEach(({ hash, ...op }: UnsignedOperationProps) => {
+        // Hash prop will be ignored
         const pass = self.acceptablePass(op)
-        operationsList[pass] = [...operationsList[pass], op]
+        operationsList[pass] = [...operationsList[pass], { ...op, protocol }]
       })
     })
 
@@ -702,7 +735,7 @@ const self: OperationsInterface = {
     return operationsList
   },
   /*
-   *   Sort operation consisdering potential gas and storage usage.
+   *   Sort operation considering potential gas and storage usage.
    *   Weight = fee / (max ( (size/size_total), (gas/gas_total)))
    */
   sortManagerOperations: (operations, maxSize) => {
@@ -713,7 +746,7 @@ const self: OperationsInterface = {
       gas: number
     ): number => {
       const size = op.contents.reduce(
-        (prev, cur) => (prev += self.forgeOperationLocally(cur)),
+        (prev, cur) => prev + self.forgeOperationLocally(cur),
         utils.bufferToHex(utils.b58decode(op.branch, Prefix.blockHash))
       ).length
 
@@ -736,13 +769,13 @@ const self: OperationsInterface = {
         return 0
       case OperationTypes.ballot.type || OperationTypes.proposal.type:
         return 1
-      case OperationTypes.activate_account.type:
+      case OperationTypes.activateAccount.type:
         return 2
-      case OperationTypes.double_baking_evidence.type:
+      case OperationTypes.doubleBakingEvidence.type:
         return 2
-      case OperationTypes.double_endorsement_evidence.type:
+      case OperationTypes.doubleEndorsementEvidence.type:
         return 2
-      case OperationTypes.seed_nonce_revelation.type:
+      case OperationTypes.seedNonceRevelation.type:
         return 2
       default:
         return 3

@@ -1,6 +1,5 @@
 import rpc from './rpc'
 import operations from './operations'
-import bakingController from './bakingController'
 
 import { LogOrigins, LogSeverity } from './logger'
 
@@ -8,9 +7,10 @@ import { AccuserInterface } from './accuser.d'
 
 const self: AccuserInterface = {
   /*
-	 *   States
-	 */
-  running: false,
+   *   States
+   */
+  active: false,
+  doubleBaking: false,
   // Endorsements seen so far
   endorsements: [],
   // Blocks received so far
@@ -19,17 +19,18 @@ const self: AccuserInterface = {
   // Highest level seen in a block
   highestLevelEncountered: 0,
   /*
-	 *   Functions
-	 */
+   *   Functions
+   */
   run: async (pkh, logger) => {
-    if (self.running) return
+    if (self.active) return
 
-    self.running = true
-    while (self.running) {
+    self.active = true
+    while (self.active) {
       try {
+        // eslint-disable-next-line no-await-in-loop
         await rpc.monitorValidBlocks('main', async (block, resolve) => {
-          if (!self.running) {
-            return resolve()
+          if (!self.active) {
+            resolve()
           }
 
           if (block.level > self.highestLevelEncountered) {
@@ -41,7 +42,7 @@ const self: AccuserInterface = {
             ...self.blocks.filter(
               b =>
                 b.header.level >
-								self.highestLevelEncountered - self.preservedLevels
+                self.highestLevelEncountered - self.preservedLevels
             )
           ]
 
@@ -49,16 +50,16 @@ const self: AccuserInterface = {
             (prev, cur) => {
               const evidenceIndex = prev.findIndex(
                 b =>
-                  b.header.level == cur.header.level &&
-									b.metadata.baker == cur.metadata.baker
+                  b.header.level === cur.header.level &&
+                  b.metadata.baker === cur.metadata.baker
               )
 
               /*
-							 *   Double Baking Found
-							 */
+               *   Double Baking Found
+               */
               if (evidenceIndex !== -1) {
                 if (cur.metadata.baker === pkh) {
-                  bakingController.forcedLock = true
+                  self.doubleBaking = true
                   logger({
                     message: `You double baked at level [ ${cur.header.level} ] on blocks [${cur.hash}, ${prev[evidenceIndex].hash}] , shutting down the baker...`,
                     type: 'error',
@@ -87,7 +88,7 @@ const self: AccuserInterface = {
 
               return [cur, ...prev]
             },
-						[] as BlockProps[]
+            [] as BlockProps[]
           )
         })
       } catch (e) {
@@ -96,7 +97,7 @@ const self: AccuserInterface = {
     }
   },
   stop: () => {
-    self.running = false
+    self.active = false
   }
 }
 

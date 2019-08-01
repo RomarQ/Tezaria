@@ -7,7 +7,6 @@ import accuser from './accuser'
 import rewarder from './rewarder'
 import crypto from './crypto'
 import operations from './operations'
-import signer from './signer'
 
 import {
   BakingControllerProps,
@@ -23,19 +22,11 @@ const self: BakingControllerProps = {
   monitoring: false,
 
   running: false,
-  baking: false,
   endorsing: false,
   accusing: false,
-  rewarding: false,
   levelOnStart: null,
   noncesToReveal: [],
   locked: false,
-  /*
-   *   This lock will only be used in case of double baking/endorsing to force baker to Stop.
-   *
-   *   (This should never happen unless there is more than 1 baker running)
-   */
-  forcedLock: false,
   locks: {
     endorser: false,
     rewarder: false
@@ -44,7 +35,7 @@ const self: BakingControllerProps = {
   // Functions
   //
   load: async keys => {
-    if (!signer) return self.delegate
+    if (!crypto.signer) return self.delegate
 
     try {
       const manager = await rpc.getManager(keys.pkh)
@@ -98,11 +89,15 @@ const self: BakingControllerProps = {
 
     self.noncesToReveal.forEach(async (nonce: NonceProps) => {
       const revealStart =
-        utils.firstCycleLevel(nonce.level) +
-        rpc.networkConstants.blocks_per_cycle
+        utils.firstCycleLevel(
+          nonce.level,
+          rpc.networkConstants.blocks_per_cycle
+        ) + rpc.networkConstants.blocks_per_cycle
       const revealEnd =
-        utils.lastCycleLevel(nonce.level) +
-        rpc.networkConstants.blocks_per_cycle
+        utils.lastCycleLevel(
+          nonce.level,
+          rpc.networkConstants.blocks_per_cycle
+        ) + rpc.networkConstants.blocks_per_cycle
 
       console.log(revealStart, nonce.level, revealEnd)
 
@@ -123,18 +118,15 @@ const self: BakingControllerProps = {
       nonces.push(nonce)
     })
 
-    if (nonces.length != self.noncesToReveal.length) {
+    if (nonces.length !== self.noncesToReveal.length) {
       storage.setBakerNonces(nonces)
     }
   },
   loadNoncesFromStorage: async () => {
     self.noncesToReveal = await storage.getBakerNonces()
   },
-  addNonce: async (nonce: NonceProps) => {
-    await storage.setBakerNonces(self.noncesToReveal)
-  },
   run: async (keys, logger) => {
-    if (self.locked || self.forcedLock || !self.delegate) return
+    if (self.locked || accuser.doubleBaking || !self.delegate) return
     self.locked = true
 
     const header = await rpc.getBlockHeader('head')
@@ -160,12 +152,16 @@ const self: BakingControllerProps = {
       await endorser.run(keys.pkh, header, logger)
     }
     // Baker
-    if (self.baking) {
-      baker.run(keys.pkh, header, logger)
+    if (baker.active) {
+      const nonce = await baker.run(keys.pkh, header, logger)
+
+      if (nonce) {
+        storage.setBakerNonces([nonce, ...self.noncesToReveal])
+      }
     }
     // Rewarder
     ;(async () => {
-      if (self.rewarding && !self.locks.rewarder) {
+      if (rewarder.active && !self.locks.rewarder) {
         self.locks.rewarder = true
         await rewarder.run(keys, logger)
         self.locks.rewarder = false
@@ -177,13 +173,13 @@ const self: BakingControllerProps = {
   start: async (keys: KeysProps, options: BakingControllerStartOptions) => {
     if (!rpc.ready) return false
 
-    self.baking = options.baking
+    baker.active = options.baking
     self.endorsing = options.endorsing
     if (self.accusing !== options.accusing) {
       self.accusing = !self.accusing
       self.accusing ? accuser.run(keys.pkh, options.logger) : accuser.stop()
     }
-    self.rewarding = options.rewarding
+    rewarder.active = options.rewarding
 
     /*
      *   Avoid running more than 1 instance
@@ -208,6 +204,7 @@ const self: BakingControllerProps = {
         if (self.monitoring) return true
 
         self.monitoring = true
+        // eslint-disable-next-line no-await-in-loop
         await rpc.monitorHeads('main', (header, resolve) => {
           console.log('Block Received', header)
           try {
@@ -226,16 +223,16 @@ const self: BakingControllerProps = {
   },
   stop: () => {
     self.running = false
-    self.baking = false
+    baker.active = false
     self.endorsing = false
     self.accusing = false
-    self.rewarding = false
+    rewarder.active = false
   },
   checkHashPower: () => {
     const tests: number[][] = []
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 5; i += 1) {
       tests[i] = []
-      for (let ii = 0; ii < 131; ii++) {
+      for (let ii = 0; ii < 131; ii += 1) {
         tests[i].push(Math.floor(Math.random() * 256))
       }
     }

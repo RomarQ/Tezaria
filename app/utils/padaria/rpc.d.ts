@@ -1,5 +1,5 @@
 import { GraphQLClient } from 'graphql-request'
-import { BakingRight } from './baker'
+import { BakingRight } from './baker.d'
 
 export interface RPCInterface extends TezariaSettingsProps {
   ready: boolean
@@ -66,6 +66,10 @@ export interface RPCInterface extends TezariaSettingsProps {
     chainID: string,
     endorsementOp: EndorsementOperationProps
   ) => Promise<number>
+  emmyDelay: (priority: number) => number
+  emmyPlusDelay: (priority: number, endorsingPower: number) => number
+  endorsingPower: (endorsements: EndorsementOperationProps[]) => Promise<number>
+  verifyNodeCommits: () => Promise<TezosCommitProps>
 }
 
 interface RequestOptions {
@@ -117,4 +121,14 @@ export interface NetworkConstants {
   quorum_min?: number
   min_proposal_quorum?: number
   initial_endorsers?: number
+}
+
+export interface TezosCommitProps {
+  updated: boolean
+  currentCommitHash: string
+  lastCommitHash: string
+  commitsBehind: number
+  author: string
+  date: string
+  message: string
 }
