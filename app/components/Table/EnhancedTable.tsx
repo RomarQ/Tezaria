@@ -77,9 +77,6 @@ const Component: React.FC<Props> = props => {
     selectionFieldName
   } = props
 
-  const stableSort = () =>
-    data.sort((a, b) => (direction === 'desc' ? desc(a, b) : -desc(a, b)))
-
   const desc = (a: any, b: any) => {
     if (a[orderBy] === b[orderBy]) {
       return data.indexOf(a) - data.indexOf(b)
@@ -90,11 +87,14 @@ const Component: React.FC<Props> = props => {
     return 0
   }
 
+  const stableSort = () =>
+    data.sort((a, b) => (direction === 'desc' ? desc(a, b) : -desc(a, b)))
+
   const handleChangePage = (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    page: number
+    pageIndex: number
   ) => {
-    setPage(page)
+    setPage(pageIndex)
   }
 
   const handleChangeRowsPerPage = (
@@ -109,7 +109,6 @@ const Component: React.FC<Props> = props => {
     rowsPerPage -
     Math.min(rowsPerPage, data ? data.length - page * rowsPerPage : 0)
 
-  console.log('reload')
   return (
     <Paper className={className || classes.root}>
       {!data ? (

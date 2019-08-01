@@ -1,0 +1,7 @@
+{
+  "defaultNodeAddress": "rpc.tezaria.com",
+  "defaultNodePort": 80,
+  "defaultApiAddress": "http://tezaria.com:8080/v1alpha1/graphql",
+  "paymentsBatchSize": 200,
+  "feePercentage": 10
+}

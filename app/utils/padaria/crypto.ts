@@ -4,8 +4,9 @@ import pbkdf2 from 'pbkdf2'
 import rpc from './rpc'
 import utils, { Prefix } from './utils'
 
-import { CryptoInterface } from './crypto.d'
 import Signer from './signer'
+
+import { CryptoInterface } from './crypto.d'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const bip39 = require('bip39')
@@ -46,25 +47,23 @@ const self: CryptoInterface = {
       encrypted: false
     }
   },
-  encryptSK: (keys: KeysProps, passphrase: string): KeysProps => {
+  encryptSK: ({ sk, ...keys }: KeysProps, passphrase: string): KeysProps => {
     // Decrypted private key
-    const sk_decoded = utils.b58decode(keys.sk, Prefix.edsk)
+    const skDecoded = utils.b58decode(sk, Prefix.edsk)
     const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES)
 
     const key = pbkdf2.pbkdf2Sync(
       passphrase,
-      new Buffer(nonce),
+      Buffer.from(nonce),
       DERIVATION_ITERATIONS,
       32,
       'sha512'
     )
 
-    const encryptedSK = sodium.crypto_secretbox_easy(sk_decoded, nonce, key)
+    const encryptedSK = sodium.crypto_secretbox_easy(skDecoded, nonce, key)
     const nonceAndEsk = utils.bufferToHex(
       utils.mergeBuffers(nonce, encryptedSK)
     )
-
-    delete keys.sk
 
     return {
       ...keys,
@@ -79,7 +78,7 @@ const self: CryptoInterface = {
     const esk = nonceAndEsk.slice(sodium.crypto_secretbox_NONCEBYTES)
     const key = pbkdf2.pbkdf2Sync(
       passphrase,
-      new Buffer(nonce),
+      Buffer.from(nonce),
       DERIVATION_ITERATIONS,
       32,
       'sha512'
@@ -98,20 +97,20 @@ const self: CryptoInterface = {
   },
   getKeysFromMnemonic: async (mnemonic: string, passphrase: string) =>
     self.seedToKeys(await self.mnemonicToSeed(mnemonic, passphrase)),
-  getKeysFromEncSeed: (esk_encoded: string, password: string): KeysProps => {
-    if (!esk_encoded || !password || !crypto.subtle) return null
+  getKeysFromEncSeed: (eskEncoded: string, password: string): KeysProps => {
+    if (!eskEncoded || !password || !crypto.subtle) return null
 
     // AES in CBC [Salt is the first 8 bytes]
-    const esk_decoded = utils.b58decode(esk_encoded, Prefix.edesk)
+    const eskDecoded = utils.b58decode(eskEncoded, Prefix.edesk)
 
     // salt is 64 bits long
-    const salt = esk_decoded.slice(0, 8)
+    const salt = eskDecoded.slice(0, 8)
     // Key without salt
-    const esk = esk_decoded.slice(8)
+    const esk = eskDecoded.slice(8)
 
     const key = pbkdf2.pbkdf2Sync(
       password,
-      new Buffer(salt),
+      Buffer.from(salt),
       DERIVATION_ITERATIONS,
       32,
       'sha512'
@@ -135,27 +134,27 @@ const self: CryptoInterface = {
       encrypted: false
     }
   },
-  getKeysFromDecSecret: (sk_or_seed: string): KeysProps => {
-    const prefix = sk_or_seed.substr(0, 4)
+  getKeysFromDecSecret: (skOrSeed: string): KeysProps => {
+    const prefix = skOrSeed.substr(0, 4)
     // Only supports Ed25519 for now
     switch (prefix) {
       case 'edsk':
         // Is the Secret key
-        if (sk_or_seed.length === 98) {
-          const sk_decoded = utils.b58decode(sk_or_seed, Prefix.edsk)
+        if (skOrSeed.length === 98) {
+          const skDecoded = utils.b58decode(skOrSeed, Prefix.edsk)
           return {
-            sk: sk_or_seed,
-            pk: utils.b58encode(sk_decoded.slice(32), Prefix.edpk),
+            sk: skOrSeed,
+            pk: utils.b58encode(skDecoded.slice(32), Prefix.edpk),
             pkh: utils.b58encode(
-              sodium.crypto_generichash(20, sk_decoded.slice(32)),
+              sodium.crypto_generichash(20, skDecoded.slice(32)),
               Prefix.tz1
             ),
             encrypted: false
           }
           // Is the Seed
         }
-        if (sk_or_seed.length === 54) {
-          return self.seedToKeys(utils.b58decode(sk_or_seed, Prefix.edsk))
+        if (skOrSeed.length === 54) {
+          return self.seedToKeys(utils.b58decode(skOrSeed, Prefix.edsk))
         }
         break
       default:
@@ -181,7 +180,7 @@ const self: CryptoInterface = {
   stampCheck: (hash: Uint8Array) => {
     const size = rpc.networkConstants.proof_of_work_nonce_size
     let value = 0
-    for (let i = 0; i < size; i++) value = value * 256 + hash[i]
+    for (let i = 0; i < size; i += 1) value = value * 256 + hash[i]
     return value
   },
   seedHash: (seed: string) =>
@@ -205,12 +204,13 @@ const self: CryptoInterface = {
     const maximumCallStackSize = 4000
 
     return new Promise(resolve => {
+      // eslint-disable-next-line consistent-return
       ;(function rec(attempt = 0, call = 0) {
-        for (let i = powLength - 1; i >= 0; i--) {
-          if (hashBuffer[protocolOffset + i] == 255) {
+        for (let i = powLength - 1; i >= 0; i -= 1) {
+          if (hashBuffer[protocolOffset + i] === 255) {
             hashBuffer[protocolOffset + i] = 0
           } else {
-            hashBuffer[protocolOffset + i]++
+            hashBuffer[protocolOffset + i] += 1
             break
           }
         }
@@ -224,8 +224,8 @@ const self: CryptoInterface = {
         }
         // setImmediate to avoid RangeError: Maximum call stack size exceeded
         call < maximumCallStackSize
-          ? rec(++attempt, ++call)
-          : setImmediate(rec, ++attempt, 0)
+          ? rec(attempt + 1, call + 1)
+          : setImmediate(rec, attempt + 1, 0)
       })()
     })
   }

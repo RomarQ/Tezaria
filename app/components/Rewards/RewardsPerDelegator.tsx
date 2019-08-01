@@ -117,6 +117,16 @@ const Component: React.FC<Props> = ({
   const [direction, setDirection] = React.useState('desc' as 'asc' | 'desc')
   const [rewards, setRewards] = React.useState(null as DelegatorReward[])
 
+  const updateRewards = () => {
+    rewarder
+      .prepareRewardsToSendByCycle(pkh, cycle)
+      .then(({ delegations }) => {
+        console.log(delegations)
+        if (isMounted.current) setRewards(delegations)
+      })
+      .catch(e => console.error(e))
+  }
+
   React.useEffect(() => {
     updateRewards()
     return () => {
@@ -133,15 +143,6 @@ const Component: React.FC<Props> = ({
     setOrderBy(property)
   }
 
-  const updateRewards = () => {
-    rewarder
-      .prepareRewardsToSendByCycle(pkh, cycle)
-      .then(rewards => {
-        if (isMounted.current) setRewards(rewards.Delegations)
-      })
-      .catch(e => console.error(e))
-  }
-
   const handleRewardsPayment = () => {
     if (paymentsAllowed) {
       props.handleRewardsPayment(
@@ -153,69 +154,6 @@ const Component: React.FC<Props> = ({
       setSelected([])
     }
   }
-
-  const getRow = (row: DelegatorReward, isItemSelected: boolean) => (
-    <TableRow
-      hover
-      onClick={() => handleSelect(row.delegation_pkh)}
-      role="checkbox"
-      aria-checked={isItemSelected}
-      key={row.delegation_pkh}
-      selected={isItemSelected}
-    >
-      <TableCell padding="checkbox">
-        {!row.paid ? <Checkbox checked={isItemSelected} /> : null}
-      </TableCell>
-      <TableCell>{row.paid ? <CheckIcon color="secondary" /> : null}</TableCell>
-      <TableCell>
-        <a className={classes.delegatorLink}>
-          <Blockies seed={row.delegation_pkh} className={classes.blockie} />
-          <Typography variant="caption">{row.delegation_pkh}</Typography>
-        </a>
-      </TableCell>
-      <TableCell align="right">
-        <Typography variant="caption">
-          {utils.parseTEZWithSymbol(row.balance)}
-        </Typography>
-      </TableCell>
-      <TableCell align="right">
-        <Typography variant="caption">{`${(row.share * 100).toLocaleString(
-          'fullwide',
-          {
-            maximumFractionDigits: 2
-          }
-        )}%`}</Typography>
-      </TableCell>
-      <TableCell align="right">
-        <Typography variant="caption">
-          {utils.parseTEZWithSymbol(Number(row.net_rewards))}
-        </Typography>
-      </TableCell>
-      <TableCell align="right">
-        <Typography variant="caption">
-          {utils.parseTEZWithSymbol(Number(row.fee))}
-        </Typography>
-      </TableCell>
-    </TableRow>
-  )
-
-  const getActions = (numSelected: number) => (
-    <div className={classes.actions}>
-      {numSelected > 0 && paymentsAllowed ? (
-        <Tooltip title="Send Payment">
-          <IconButton aria-label="Send Payment" onClick={handleRewardsPayment}>
-            <PaymentIcon color="secondary" />
-          </IconButton>
-        </Tooltip>
-      ) : numSelected > 0 ? (
-        <Typography variant="h6" color="secondary">
-          {bakingController.rewarding
-            ? 'Auto rewarder is enabled'
-            : 'Rewards not ready yet!'}
-        </Typography>
-      ) : null}
-    </div>
-  )
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -249,6 +187,80 @@ const Component: React.FC<Props> = ({
     }
 
     setSelected(newSelected)
+  }
+
+  const getRow = (row: DelegatorReward, isItemSelected: boolean) => (
+    <TableRow
+      hover
+      onClick={() => handleSelect(row.delegation_pkh)}
+      role="checkbox"
+      aria-checked={isItemSelected}
+      key={row.delegation_pkh}
+      selected={isItemSelected}
+    >
+      <TableCell padding="checkbox">
+        {!row.paid ? <Checkbox checked={isItemSelected} /> : null}
+      </TableCell>
+      <TableCell>{row.paid ? <CheckIcon color="secondary" /> : null}</TableCell>
+      <TableCell>
+        <div className={classes.delegatorLink}>
+          <Blockies seed={row.delegation_pkh} className={classes.blockie} />
+          <Typography variant="caption">{row.delegation_pkh}</Typography>
+        </div>
+      </TableCell>
+      <TableCell align="right">
+        <Typography variant="caption">
+          {utils.parseTEZWithSymbol(row.balance)}
+        </Typography>
+      </TableCell>
+      <TableCell align="right">
+        <Typography variant="caption">{`${(row.share * 100).toLocaleString(
+          'fullwide',
+          {
+            maximumFractionDigits: 2
+          }
+        )}%`}</Typography>
+      </TableCell>
+      <TableCell align="right">
+        <Typography variant="caption">
+          {utils.parseTEZWithSymbol(Number(row.net_rewards))}
+        </Typography>
+      </TableCell>
+      <TableCell align="right">
+        <Typography variant="caption">
+          {utils.parseTEZWithSymbol(Number(row.fee))}
+        </Typography>
+      </TableCell>
+    </TableRow>
+  )
+
+  const getActions = (numSelected: number) => {
+    const actions = () => {
+      if (numSelected > 0 && paymentsAllowed) {
+        return (
+          <Tooltip title="Send Payment">
+            <IconButton
+              aria-label="Send Payment"
+              onClick={handleRewardsPayment}
+            >
+              <PaymentIcon color="secondary" />
+            </IconButton>
+          </Tooltip>
+        )
+      }
+      if (numSelected > 0) {
+        return (
+          <Typography variant="h6" color="secondary">
+            {rewarder.active
+              ? 'Auto rewarder is enabled'
+              : 'Rewards not ready yet!'}
+          </Typography>
+        )
+      }
+      return null
+    }
+
+    return <div className={classes.actions}>{actions()}</div>
   }
 
   const CustomEnhancedTableHead = (

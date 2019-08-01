@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import rpc, { QueryTypes } from './rpc'
 import Operations from './operations'
-import bakingController from './bakingController'
+import storage from '../storage'
 import utils, { Prefix } from './utils'
 import crypto from './crypto'
 
@@ -11,6 +11,7 @@ import { LogOrigins, LogSeverity } from './logger'
 import { BakerInterface, CompletedBaking, BakingRight } from './baker.d'
 
 const self: BakerInterface = {
+  active: false,
   /*
    *   States
    */
@@ -121,6 +122,8 @@ const self: BakerInterface = {
   run: async (pkh, header, logger) => {
     self.levelWaterMark = header.level + 1
 
+    let nonce: NonceProps
+
     try {
       /*
        *   Check if the block was already baked before
@@ -130,12 +133,15 @@ const self: BakerInterface = {
       const bakingRight = await rpc.getBakingRights(pkh, self.levelWaterMark, 5)
 
       if (!Array.isArray(bakingRight)) {
-        return logger({
+        self.levelCompleted()
+        logger({
           message: 'Not able to get baking rights.',
           type: 'error',
           severity: LogSeverity.VERY_HIGH,
           origin: LogOrigins.BAKER
         })
+
+        return null
       }
 
       /*
@@ -143,12 +149,13 @@ const self: BakerInterface = {
        */
       if (bakingRight.length === 0) {
         self.levelCompleted()
-        return logger({
+        logger({
           message: `No baking rights found for level ${self.levelWaterMark}.`,
           type: 'info',
           severity: LogSeverity.NEUTRAL,
           origin: LogOrigins.BAKER
         })
+        return null
       }
 
       /*
@@ -203,7 +210,8 @@ const self: BakerInterface = {
                   severity: LogSeverity.HIGH,
                   origin: LogOrigins.BAKER
                 })
-                return null
+
+                break
               }
 
               self.injectedBlocks.push(blockHash)
@@ -211,12 +219,12 @@ const self: BakerInterface = {
                *   Add nonce if this block was a commitment
                */
               if (block.seed) {
-                bakingController.addNonce({
+                nonce = {
                   hash: blockHash,
                   seedNonceHash: block.seed_nonce_hash,
                   seed: block.seed,
                   level: block.level
-                })
+                }
               }
 
               logger({
@@ -245,8 +253,9 @@ const self: BakerInterface = {
       self.levelCompleted()
     }
 
-    return null
+    return nonce
   },
+
   bake: async (header, priority, timestamp, logger) => {
     let newTimestamp = new Date(timestamp).getTime()
 
@@ -254,9 +263,9 @@ const self: BakerInterface = {
     if (rpc.networkConstants.initial_endorsers) {
       const head = await rpc.getCurrentHead()
 
-      const emmyPlusDelay = await utils.emmyPlusDelay(
+      const emmyPlusDelay = await rpc.emmyPlusDelay(
         priority,
-        await utils.endorsingPower(head.operations[0])
+        await rpc.endorsingPower(head.operations[0])
       )
 
       console.log('emmyPlusDelay', emmyPlusDelay)

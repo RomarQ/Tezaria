@@ -21,13 +21,17 @@ const Container: React.FC<Props> = ({ userData, logger }) => {
 
   React.useEffect(() => {
     if (rewards.length === 0) {
-      const r = [] as RewardsReportWithoutDelegations[]
+      let r = [] as RewardsReportWithoutDelegations[]
+
       rewarder
-        .getRewards(userData.keys.pkh, 8, cycleRewards => {
+        .getRewards(userData.keys.pkh, 8, async response => {
+          const cycleRewards = await response
+
+          r = [cycleRewards, ...r].sort((a, b) => (a.cycle > b.cycle ? -1 : 1))
+
           if (isMounted.current) {
-            setRewards([...r, cycleRewards])
+            setRewards(r)
           }
-          r.push(cycleRewards)
         })
         .catch(e => console.error(e))
     }

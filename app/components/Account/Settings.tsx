@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-duplicate-props */
 import React from 'react'
 import {
   withStyles,
@@ -14,7 +15,8 @@ import RedoIcon from '@material-ui/icons/Redo'
 import { History } from 'history'
 import NumberPicker from '../NumberPicker'
 import { SetBakerSettingsPrototype } from '../../actions/userData'
-import { MAX_BATCH_SIZE } from '../../utils/padaria/operations'
+
+import config from '../../utils/padaria/baker-config.json'
 
 const styles = ({ palette, spacing }: Theme) =>
   createStyles({
@@ -176,7 +178,7 @@ const Component: React.FC<Props> = ({
           }}
           inputProps={{
             min: 1,
-            max: MAX_BATCH_SIZE
+            max: (config as any).paymentsBatchSize
           }}
         />
         <div className={classes.buttons}>

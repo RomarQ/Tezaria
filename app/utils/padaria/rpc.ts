@@ -2,8 +2,7 @@ import https from 'https'
 import http from 'http'
 import { GraphQLClient } from 'graphql-request'
 
-import utils from './utils'
-import rewarder from './rewarder'
+import config from './baker-config.json'
 import { RPCInterface, NetworkConstants } from './rpc.d'
 
 export enum QueryTypes {
@@ -11,15 +10,11 @@ export enum QueryTypes {
   POST = 'POST'
 }
 
-export const DEFAULT_NODE_ADDRESS = 'rpc.tezaria.com'
-export const DEFAULT_NODE_PORT = 80
-export const DEFAULT_API_ADDRESS = 'http://tezaria.com:8080/v1alpha1/graphql'
-
 const self: RPCInterface = {
   ready: false,
-  nodeAddress: DEFAULT_NODE_ADDRESS,
-  nodePort: DEFAULT_NODE_PORT,
-  apiAddress: DEFAULT_API_ADDRESS,
+  nodeAddress: (config as any).defaultNodeAddress,
+  nodePort: (config as any).defaultNodePort,
+  apiAddress: (config as any).defaultApiAddress,
   apiClient: null,
   network: '',
   networkEpoch: '',
@@ -28,8 +23,9 @@ const self: RPCInterface = {
     options.nodeAddress && (self.nodeAddress = options.nodeAddress)
     options.nodePort && (self.nodePort = options.nodePort)
     options.rewardsBatchSize &&
-      (rewarder.paymentsBatchSize = options.rewardsBatchSize)
-    options.delegatorFee && (rewarder.feePercentage = options.delegatorFee)
+      ((config as any).paymentsBatchSize = options.rewardsBatchSize)
+    options.delegatorFee &&
+      ((config as any).feePercentage = options.delegatorFee)
 
     if (options.apiAddress) {
       self.apiAddress = options.apiAddress
@@ -38,7 +34,7 @@ const self: RPCInterface = {
 
     await self.setNetworkConstants()
     await self.setCurrentNetwork()
-    await utils.verifyNodeCommits()
+    await self.verifyNodeCommits()
 
     self.ready = true
 
@@ -56,7 +52,9 @@ const self: RPCInterface = {
        *  <versions string format> : "TEZOS_<network>_<networkEpoch>"
        */
       const networkInfo = versions[0].chain_name.split('_')
+      // eslint-disable-next-line prefer-destructuring
       self.network = networkInfo[1]
+      // eslint-disable-next-line prefer-destructuring
       self.networkEpoch = networkInfo[2]
 
       return
@@ -136,7 +134,7 @@ const self: RPCInterface = {
     new Promise((resolve, reject) => {
       try {
         let req
-        if (options.port == 443) {
+        if (options.port === 443) {
           req = https.request(options, res => {
             res.setEncoding('utf8')
             let result = ''
@@ -153,6 +151,7 @@ const self: RPCInterface = {
               } catch (e) {
                 reject(new Error(e))
               }
+              return null
             })
           })
         } else {
@@ -173,6 +172,7 @@ const self: RPCInterface = {
                 console.log(result)
                 reject(new Error(e))
               }
+              return null
             })
           })
         }
@@ -194,7 +194,7 @@ const self: RPCInterface = {
     new Promise((resolve, reject) => {
       try {
         let req
-        if (options.port == 443) {
+        if (options.port === 443) {
           req = https.request(options, res => {
             res.setEncoding('utf8')
             let result = ''
@@ -204,7 +204,9 @@ const self: RPCInterface = {
                 result += chunk
                 cb(JSON.parse(result), resolve)
                 result = ''
-              } catch (e) {}
+              } catch (e) {
+                // Expected to receive exeptions when the json response is not yet complete, the response is being sent in chunks
+              }
             })
 
             res.on('end', () => resolve())
@@ -219,7 +221,9 @@ const self: RPCInterface = {
                 result += chunk
                 cb(JSON.parse(result), resolve)
                 result = ''
-              } catch (e) {}
+              } catch (e) {
+                // Expected to receive exeptions when the json response is not yet complete, the response is being sent in chunks
+              }
             })
 
             res.on('end', () => resolve())
@@ -296,9 +300,52 @@ const self: RPCInterface = {
       }
     } as any
     options.agent =
-      self.nodePort == 443 ? new https.Agent(options) : new http.Agent(options)
+      self.nodePort === 443 ? new https.Agent(options) : new http.Agent(options)
 
     return self.queryStreamRequest(options, callback)
+  },
+  verifyNodeCommits: async () => {
+    const nodeLastCommit = await self.queryNode(
+      '/monitor/commit_hash',
+      QueryTypes.GET
+    )
+    const options = {
+      hostname: 'gitlab.com',
+      port: 443,
+      path: `/api/v4/projects/tezos%2Ftezos/repository/commits/?ref_name=${self.network.toLocaleLowerCase()}&per_page=100`,
+      method: 'GET'
+    }
+    const commits = (await self.queryRequest(options)) as {
+      id: string
+      author_name: string
+      committed_date: string
+      parent_ids: string[]
+      message: string
+    }[]
+
+    if (!Array.isArray(commits)) return null
+
+    return new Promise(resolve => {
+      let index = 0
+      commits.forEach(commit => {
+        if (
+          commit.id === nodeLastCommit ||
+          commit.parent_ids.some(id => id === nodeLastCommit)
+        ) {
+          resolve({
+            updated: index === 0,
+            currentCommitHash: nodeLastCommit,
+            lastCommitHash: commit.id,
+            commitsBehind: index,
+            author: commit.author_name,
+            date: commit.committed_date,
+            message: commit.message
+          })
+        }
+        index += 1
+      })
+      resolve(null)
+    })
   },
   getPendingOperations: async () => {
     const pendingOperations = (await self.queryNode(
@@ -340,7 +387,43 @@ const self: RPCInterface = {
     return Array.isArray(res) && res.length > 0 ? res[0] : []
   },
   getBlock: blockHash =>
-    self.queryNode(`/chains/main/blocks/${blockHash}`, QueryTypes.GET)
+    self.queryNode(`/chains/main/blocks/${blockHash}`, QueryTypes.GET),
+  emmyDelay: priority => {
+    const times = self.networkConstants.time_between_blocks
+
+    return times.length > 1
+      ? Number(times[0]) + Number(times[1]) * priority
+      : Number(times[0]) * (priority + 1)
+  },
+  emmyPlusDelay: (priority, endorsingPower) => {
+    const emmyDelay = self.emmyDelay(priority)
+    const delayPerMissingEndorsement = Number(
+      self.networkConstants.delay_per_missing_endorsement
+    )
+
+    return endorsingPower >= 18
+      ? emmyDelay
+      : emmyDelay +
+          delayPerMissingEndorsement * Math.max(0, 18 - endorsingPower)
+  },
+  endorsingPower: async endorsements =>
+    (await Promise.all(
+      endorsements.map(
+        ({
+          chain_id: chainId,
+          branch,
+          contents: completeContents,
+          signature
+        }) => {
+          const { metadata, ...contents } = completeContents[0]
+          return self.getEndorsingPower(chainId, {
+            branch,
+            contents: [contents],
+            signature
+          })
+        }
+      )
+    )).reduce((p, c) => p + c, 0)
 }
 
 export * from './rpc.d'

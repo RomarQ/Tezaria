@@ -4,14 +4,11 @@ export interface BakingControllerProps {
   monitoring: boolean
 
   running: boolean
-  baking: boolean
   endorsing: boolean
   accusing: boolean
-  rewarding: boolean
   levelOnStart: number
   noncesToReveal: NonceProps[]
   locked: boolean
-  forcedLock: boolean
   locks: {
     endorser: boolean
     rewarder: boolean
@@ -20,7 +17,6 @@ export interface BakingControllerProps {
   load: (keys: KeysProps) => Promise<DelegateProps>
   revealNonces: (header: BlockHeaderProps) => void
   loadNoncesFromStorage: () => void
-  addNonce: (nonce: NonceProps) => void
   run: (keys: KeysProps, logger: (log: LoggerActionProps) => void) => void
   start: (
     keys: KeysProps,
@@ -50,10 +46,10 @@ export interface DelegateProps {
 }
 
 export interface BakingControllerStartOptions {
+  rewarding: boolean
   baking: boolean
   endorsing: boolean
   accusing: boolean
-  rewarding: boolean
   logger: (log: LoggerActionProps) => void
 }
 

@@ -22,7 +22,7 @@ const self: EndorderInterface = {
   ): Promise<CompletedEndorsing[]> => {
     try {
       const completedEndorsings: {
-      endorsing_resume: CompletedEndorsing[]
+        endorsing_resume: CompletedEndorsing[]
       } = await rpc.queryAPI(
         `
           query completedBakings($delegate: String!) {
@@ -49,14 +49,12 @@ const self: EndorderInterface = {
       )
 
       if (completedEndorsings && completedEndorsings.endorsing_resume) {
-        completedEndorsings.endorsing_resume.forEach(
-          endorsing =>
-            (endorsing.reward = utils.parseTEZWithSymbol(
-              Number(endorsing.reward)
-            ))
+        return completedEndorsings.endorsing_resume.map(
+          ({ reward, ...endorsement }) => ({
+            reward: utils.parseTEZWithSymbol(Number(reward)),
+            ...endorsement
+          })
         )
-
-        return completedEndorsings.endorsing_resume
       }
 
       return []
@@ -68,11 +66,12 @@ const self: EndorderInterface = {
     try {
       const { cycle } = (await rpc.getBlockMetadata('head')).level
 
-      if (!cycle) return
+      if (!cycle) return null
 
       let endorsingRights: EndorsingRight[] = []
 
-      for (let i = cycle; i < cycle + 6; i++) {
+      for (let i = cycle; i < cycle + 6; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
         const rights = (await rpc.queryNode(
           `/chains/main/blocks/head/helpers/endorsing_rights?delegate=${pkh}&cycle=${i}`,
           QueryTypes.GET
@@ -95,6 +94,8 @@ const self: EndorderInterface = {
     } catch (e) {
       console.error('Not able to get Incoming Endorsings.')
     }
+
+    return null
   },
   run: async (pkh, header, logger) => {
     const { level } = header

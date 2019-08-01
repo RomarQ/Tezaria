@@ -2,6 +2,7 @@ export interface BakerInterface {
   //
   // States
   //
+  active: boolean
   injectedBlocks: string[]
   bakedBlocks: number[]
   pendingBlocks: PendingBlockProps[]
@@ -13,12 +14,11 @@ export interface BakerInterface {
   getCompletedBakings: (pkh: string) => Promise<CompletedBaking[]>
   getIncomingBakings: (pkh: string) => Promise<IncomingBakings>
   levelCompleted: () => void
-
   run: (
     pkh: string,
     header: BlockHeaderProps,
     logger: (log: LoggerActionProps) => void
-  ) => Promise<void>
+  ) => Promise<NonceProps>
   bake: (
     header: BlockHeaderProps,
     priority: number,
