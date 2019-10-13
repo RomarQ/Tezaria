@@ -36,19 +36,19 @@ export const OperationTypes = {
   },
   reveal: {
     type: 'reveal' as 'reveal',
-    operationCode: 7
+    operationCode: 107
   },
   transaction: {
     type: 'transaction' as 'transaction',
-    operationCode: 8
+    operationCode: 108
   },
   origination: {
     type: 'origination' as 'origination',
-    operationCode: 9
+    operationCode: 109
   },
   delegation: {
     type: 'delegation' as 'delegation',
-    operationCode: 10
+    operationCode: 110
   }
 }
 
@@ -101,7 +101,7 @@ const self: OperationsInterface = {
       false
     )
 
-    const signed = crypto.sign(
+    const signed = await crypto.sign(
       forgedConfirmation,
       utils.watermark.genericOperation
     )
@@ -131,7 +131,7 @@ const self: OperationsInterface = {
       false
     )
 
-    const signed = crypto.sign(
+    const signed = await crypto.sign(
       forgedConfirmation,
       utils.watermark.genericOperation
     )
@@ -159,7 +159,7 @@ const self: OperationsInterface = {
       true
     )
 
-    const signed = crypto.sign(
+    const signed = await crypto.sign(
       forgedConfirmation,
       utils.watermark.genericOperation
     )
@@ -191,7 +191,7 @@ const self: OperationsInterface = {
       operation
     )
 
-    const signed = crypto.sign(
+    const signed = await crypto.sign(
       forgedConfirmation,
       utils.mergeBuffers(
         utils.watermark.endorsement,
@@ -345,7 +345,8 @@ const self: OperationsInterface = {
 
           const { forgedConfirmation, ...verifiedOp } = preparedOp
 
-          const signed = crypto.sign(
+          // eslint-disable-next-line no-await-in-loop
+          const signed = await crypto.sign(
             forgedConfirmation,
             utils.watermark.genericOperation
           )
@@ -465,7 +466,7 @@ const self: OperationsInterface = {
       (forgeResult += utils.numberToZarith(Number(operation.storage_limit)))
 
     switch (OperationTypes[operation.kind].operationCode) {
-      case 0: // Endorsement
+      case OperationTypes.endorsement.operationCode: // Endorsement
         typeof operation.slot !== 'undefined' &&
           (forgeResult += utils.bufferToHex(new Uint8Array([operation.slot])))
 
@@ -473,14 +474,14 @@ const self: OperationsInterface = {
           utils.int32Buffer(Number(operation.level))
         )
         break
-      case 1:
+      case OperationTypes.seedNonceRevelation.operationCode:
         forgeResult +=
           utils.bufferToHex(utils.int32Buffer(Number(operation.level))) +
           operation.nonce
         break
-      case 2:
+      case OperationTypes.doubleEndorsementEvidence.operationCode:
         break
-      case 3:
+      case OperationTypes.doubleBakingEvidence.operationCode:
         forgeResult += '000000ce'
         forgeResult += `${utils.bufferToHex(
           utils.int32Buffer(Number(operation.bh1.level))
@@ -555,21 +556,21 @@ const self: OperationsInterface = {
           utils.b58decode(operation.bh2.signature, Prefix.sig)
         )}`
         break
-      case 4: // Activate Account
+      case OperationTypes.activateAccount.operationCode:
         forgeResult +=
           utils.bufferToHex(utils.b58decode(operation.pkh, Prefix.tz1)) +
           operation.secret
         break
-      case 5:
+      case OperationTypes.proposal.operationCode:
         break
-      case 6:
+      case OperationTypes.ballot.operationCode:
         break
-      case 7: // Reveal
+      case OperationTypes.reveal.operationCode: // Reveal
         forgeResult += `00${utils.bufferToHex(
           utils.b58decode(operation.public_key, Prefix.edpk)
         )}`
         break
-      case 8: {
+      case OperationTypes.transaction.operationCode: {
         // Transaction
         forgeResult += utils.numberToZarith(Number(operation.amount))
 
@@ -593,9 +594,9 @@ const self: OperationsInterface = {
         forgeResult += `${cleanedDestination}00`
         break
       }
-      case 9:
+      case OperationTypes.origination.operationCode: // Origination
         break
-      case 10: // Delegation
+      case OperationTypes.delegation.operationCode: // Delegation
         forgeResult += `ff00${utils.bufferToHex(
           utils.b58decode(operation.delegate, Prefix.tz1)
         )}`

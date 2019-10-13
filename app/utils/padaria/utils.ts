@@ -1,5 +1,7 @@
 /* eslint-disable no-bitwise */
 import bs58check from 'bs58check'
+import TransportNodeHid from '@ledgerhq/hw-transport-node-hid'
+import LedgerXTZ from 'hw-app-xtz'
 
 import { UtilsInterface } from './utils.d'
 
@@ -178,6 +180,30 @@ const self: UtilsInterface = {
     return zarith
   }
 }
+
+const t = () => {
+  // eslint-disable-next-line prettier/prettier
+  (window as any).testt = async () => {
+    const transport = await TransportNodeHid.create()
+
+    const xtz = new LedgerXTZ(transport)
+
+    console.log(await xtz.getAppConfiguration())
+
+    /* const address = await xtz.getAddress("44'/1729'/0'/0'", true)
+
+    console.log(
+      address,
+      await xtz.sign(
+        "44'/1729'/0'/0'",
+        '03' +
+          '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+      )
+    ) */
+  }
+}
+
+t()
 
 export * from './utils.d'
 export default self

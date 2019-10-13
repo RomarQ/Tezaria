@@ -445,13 +445,13 @@ const self: BakerInterface = {
     )
 
     logger({
-      message: `POW found in ${pow.attempt} attemps and took ${secs} seconds with a ratio of [${attemptsRate}] Ka/s`,
+      message: `POW found in ${pow.attempt} attempts and took ${secs} seconds with a ratio of [${attemptsRate}] Ka/s`,
       type: 'info',
       severity: LogSeverity.NEUTRAL,
       origin: LogOrigins.BAKER
     })
 
-    const signed = crypto.sign(
+    const signed = await crypto.sign(
       pow.blockBytes,
       utils.mergeBuffers(
         utils.watermark.blockHeader,

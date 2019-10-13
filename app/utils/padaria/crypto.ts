@@ -21,8 +21,8 @@ const self: CryptoInterface = {
   /*
    *   Functions
    */
-  loadSigner: (sk: string) => {
-    self.signer = new Signer(sk)
+  loadSigner: (sk: string, signer?: (hash: string) => string) => {
+    self.signer = new Signer(sk, signer)
   },
   mnemonicToSeed: async (mnemonic, passphrase = '') => {
     if (!bip39.validateMnemonic(mnemonic)) {
@@ -151,7 +151,6 @@ const self: CryptoInterface = {
             ),
             encrypted: false
           }
-          // Is the Seed
         }
         if (skOrSeed.length === 54) {
           return self.seedToKeys(utils.b58decode(skOrSeed, Prefix.edsk))

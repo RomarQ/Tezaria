@@ -132,9 +132,10 @@ const self: RPCInterface = {
 
   queryRequest: (options, args) =>
     new Promise((resolve, reject) => {
+      let req
+      console.log(options, args)
       try {
-        let req
-        if (options.port === 443) {
+        if (Number(options.port) === 443) {
           req = https.request(options, res => {
             res.setEncoding('utf8')
             let result = ''
@@ -147,9 +148,9 @@ const self: RPCInterface = {
               try {
                 if (res.statusCode === 200) return resolve(JSON.parse(result))
 
-                reject(new Error(result))
+                reject(new Error(`${options.path} ${result}`))
               } catch (e) {
-                reject(new Error(e))
+                reject(new Error(`${options.path} ${e}`))
               }
               return null
             })

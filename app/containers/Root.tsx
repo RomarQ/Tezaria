@@ -1,14 +1,16 @@
 import React from 'react'
 import { Provider } from 'react-redux'
+import { History } from 'history'
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles'
 import blue from '@material-ui/core/colors/blue'
 import { ConnectedRouter } from 'connected-react-router'
 import { ApolloProvider } from 'react-apollo'
+
 import { ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
-// minified version is also included
-// import 'react-toastify/dist/ReactToastify.min.css';
-import { History } from 'history'
+import 'react-toastify/dist/ReactToastify.min.css'
+
+import HardwareWalletProvider from '../providers/HardwareWallet/HardwareWallet'
+
 import GQLclient from '../graphql-client'
 import App from './App'
 
@@ -30,8 +32,10 @@ export default (props: Props) => {
       <Provider store={store}>
         <MuiThemeProvider theme={theme}>
           <ConnectedRouter history={history}>
-            <ToastContainer />
-            <App />
+            <HardwareWalletProvider>
+              <ToastContainer />
+              <App />
+            </HardwareWalletProvider>
           </ConnectedRouter>
         </MuiThemeProvider>
       </Provider>

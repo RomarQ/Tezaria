@@ -7,5 +7,6 @@
   "SETTINGS": "/settings",
   "PROTECT_ACCOUNT": "/protect-account",
   "MAKE_TRANSACTION": "/make-trasaction",
-  "LOGS": "/logs"
+  "LOGS": "/logs",
+  "CONNECT_HARDWARE_WALLET": "/connect-hardware-wallet"
 }

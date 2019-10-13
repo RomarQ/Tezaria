@@ -246,10 +246,13 @@
     "yarn": "^1.16.0"
   },
   "dependencies": {
+    "@babel/polyfill": "^7.4.4",
     "@fortawesome/fontawesome-free": "^5.9.0",
+    "@ledgerhq/hw-transport-node-hid": "^4.68.4",
     "@material-ui/core": "^4.2.0",
     "@material-ui/icons": "^4.2.1",
     "@material-ui/styles": "^4.2.0",
+    "@types/ledgerhq__hw-transport-node-hid": "^4.22.1",
     "@typescript-eslint/parser": "^1.11.0",
     "apollo-boost": "^0.4.3",
     "bignumber.js": "^9.0.0",
@@ -266,6 +269,7 @@
     "graphql-request": "^1.8.2",
     "graphql-tag": "^2.10.1",
     "history": "^4.9.0",
+    "hw-app-xtz": "^1.0.1",
     "install": "^0.13.0",
     "libsodium-wrappers": "^0.7.4",
     "moment": "^2.24.0",

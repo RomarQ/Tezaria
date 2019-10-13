@@ -15,6 +15,7 @@ import { LoaderPrototype } from '../actions/loader'
 import { UserDataActionsPrototypes } from '../actions/userData'
 import { LoggerActionsPrototypes } from '../actions/logger'
 import MakeTransaction from './Account/MakeTransaction'
+import ConnectHardwareWallet from './Account/ConnectHardwareWallet'
 
 interface Props {
   loader: LoaderPrototype
@@ -101,6 +102,16 @@ export default ({ loader, history, userData, logger, userDataFunc }: Props) => (
         <NewAccount
           setBakerKeys={userDataFunc.setBakerKeys}
           loader={loader}
+          history={history}
+        />
+      )}
+    />
+    <Route
+      exact
+      path={routes.CONNECT_HARDWARE_WALLET}
+      render={() => (
+        <ConnectHardwareWallet
+          setBakerKeys={userDataFunc.setBakerKeys}
           history={history}
         />
       )}

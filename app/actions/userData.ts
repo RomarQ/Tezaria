@@ -44,9 +44,7 @@ export type UserDataActions =
 
 export type LoadUserDataPrototype = () => Promise<UserDataProps>
 export type ClearUserDataPrototype = () => Promise<void>
-export type SetBakerKeysPrototype = (
-  keys: KeysProps
-) => (dispatch: Dispatch) => void
+export type SetBakerKeysPrototype = (keys: KeysProps, signer?: Function) => void
 export type SetBakerSettingsPrototype = (
   settings: TezariaSettingsProps
 ) => Promise<void>
@@ -81,8 +79,10 @@ const clearUserData = () => async (dispatch: Dispatch) => {
   dispatch({ type: UserDataActionTypes.CLEAR })
 }
 
-const setBakerKeys = (keys: KeysProps) => (dispatch: Dispatch) => {
-  crypto.loadSigner(keys.sk)
+const setBakerKeys = (keys: KeysProps, signer?: Function) => (
+  dispatch: Dispatch
+) => {
+  crypto.loadSigner(keys.sk, signer)
 
   dispatch({
     type: UserDataActionTypes.SET_KEYS,
@@ -96,7 +96,7 @@ const setBakerSettings = (settings: TezariaSettingsProps) => (
   storage.setBakerSettings(settings).then(() => {
     dispatch({ type: UserDataActionTypes.SET_SETTINGS, settings })
 
-    return rpc.load({
+    rpc.load({
       nodePort: settings.nodePort,
       nodeAddress: settings.nodeAddress,
       apiAddress: settings.apiAddress,

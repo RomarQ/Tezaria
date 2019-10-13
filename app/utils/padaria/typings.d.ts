@@ -36,6 +36,7 @@ declare interface ContractManager {
 
 declare interface KeysProps {
   encrypted: boolean
+  ledger?: boolean
   sk?: string
   pk?: string
   pkh: string

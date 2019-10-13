@@ -8,25 +8,42 @@ interface SignatureProps {
 }
 
 export interface SignerProps {
-  sign: (bytes: string, watermark?: Uint8Array) => SignatureProps
+  sign: (bytes: string, watermark?: Uint8Array) => Promise<SignatureProps>
 }
 
 export default class Signer {
-  public sign: (bytes: string, watermark?: Uint8Array) => SignatureProps
+  public sign: (
+    bytes: string,
+    watermark?: Uint8Array
+  ) => Promise<SignatureProps>
 
-  public constructor(sk: string) {
-    this.sign = (bytes: string, watermark?: Uint8Array) => {
-      const secret = String(sk)
+  public constructor(sk: string, HWSigner?: (hash: string) => string) {
+    const privateKey = sk ? utils.b58decode(String(sk), Prefix.edsk) : null
+
+    this.sign = async (bytes: string, watermark?: Uint8Array) => {
       let buffer = utils.hexToBuffer(bytes)
 
       typeof watermark !== 'undefined' &&
         (buffer = utils.mergeBuffers(watermark, buffer))
 
-      const sig = sodium.crypto_sign_detached(
-        sodium.crypto_generichash(32, buffer),
-        utils.b58decode(secret, Prefix.edsk),
-        'uint8array'
-      )
+      let sig
+      if (typeof HWSigner !== 'undefined') {
+        const signature = await HWSigner(
+          utils.bufferToHex(sodium.crypto_generichash(32, buffer))
+        )
+        if (signature) {
+          sig = utils.hexToBuffer(signature)
+        }
+      } else {
+        sig = sodium.crypto_sign_detached(
+          sodium.crypto_generichash(32, buffer),
+          privateKey,
+          'uint8array'
+        )
+      }
+
+      console.log(sig)
+
       const edsig = utils.b58encode(sig, Prefix.edsig)
       const signedBytes = bytes + utils.bufferToHex(sig)
       return {

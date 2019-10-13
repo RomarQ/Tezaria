@@ -117,22 +117,22 @@ const BakingController: React.FC<Props> = ({
     }
   }, [])
 
+  const handleControllerLogs = (log: LoggerActionProps) => {
+    logger.add(log)
+  }
+
   // Only re-run the effect if states changes
   React.useEffect(() => {
     baking || endorsing || accusing || rewarding
       ? controllerFunc.startController(keys, {
-        baking,
-        endorsing,
-        accusing,
-        rewarding,
-        logger: handleControllerLogs
-      })
+          baking,
+          endorsing,
+          accusing,
+          rewarding,
+          logger: handleControllerLogs
+        })
       : controllerFunc.stopController()
   }, [baking, endorsing, accusing, rewarding])
-
-  const handleControllerLogs = (log: LoggerActionProps) => {
-    logger.add(log)
-  }
 
   const handleChange = (setter: Function, newValue: boolean) => {
     setter(newValue)
@@ -174,7 +174,9 @@ const BakingController: React.FC<Props> = ({
   return (
     <div className={classes.root}>
       <div className={classes.switchRow}>
-        <Typography variant="h6" className={classes.label} children="Baker" />
+        <Typography variant="h6" className={classes.label}>
+          {'Baker'}
+        </Typography>
         <Switch
           value="Baker"
           checked={baking}
@@ -182,11 +184,9 @@ const BakingController: React.FC<Props> = ({
         />
       </div>
       <div className={classes.switchRow}>
-        <Typography
-          variant="h6"
-          className={classes.label}
-          children="Endorser"
-        />
+        <Typography variant="h6" className={classes.label}>
+          {'Endorser'}
+        </Typography>
         <Switch
           value="Endorser"
           checked={endorsing}
@@ -194,7 +194,9 @@ const BakingController: React.FC<Props> = ({
         />
       </div>
       <div className={classes.switchRow}>
-        <Typography variant="h6" className={classes.label} children="Accuser" />
+        <Typography variant="h6" className={classes.label}>
+          {'Accuser'}
+        </Typography>
         <Switch
           value="Accuser"
           checked={accusing}
@@ -202,11 +204,9 @@ const BakingController: React.FC<Props> = ({
         />
       </div>
       <div className={classes.switchRow}>
-        <Typography
-          variant="h6"
-          className={classes.label}
-          children="Rewarder"
-        />
+        <Typography variant="h6" className={classes.label}>
+          {'Rewarder'}
+        </Typography>
         <Switch
           value="Rewarder"
           checked={rewarding}

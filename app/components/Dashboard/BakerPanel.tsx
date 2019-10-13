@@ -219,7 +219,7 @@ const Component: React.FC<Props> = ({
             disabled={bakerInfo.balance === 0}
             onClick={activateDelegate}
           >
-            {'Reveal Account'}
+            {'Register as Delegate'}
           </Button>
         ) : (
           <React.Fragment>

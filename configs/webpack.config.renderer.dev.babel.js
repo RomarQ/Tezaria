@@ -46,6 +46,8 @@ export default merge.smart(baseConfig, {
   target: 'electron-renderer',
 
   entry: [
+    // @TODO REMOVE POLYFILL when hw-transport-node-hid gets fixed
+    '@babel/polyfill',
     'react-hot-loader/patch',
     `webpack-dev-server/client?http://localhost:${port}/`,
     'webpack/hot/only-dev-server',

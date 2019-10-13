@@ -98,7 +98,12 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = props => {
   const [modalError, setModalError] = React.useState('')
   const [encrypting, setEncrypting] = React.useState(false)
 
-  React.useEffect(() => () => (isMounted.current = false), [])
+  React.useEffect(
+    () => () => {
+      isMounted.current = false
+    },
+    []
+  )
 
   const { setBakerKeys, clearUserData, keys, loader, history, classes } = props
 
@@ -110,8 +115,8 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = props => {
     try {
       await setBakerKeys(crypto.decryptSK(keys, password))
       history.push(routes.DASHBOARD)
-    } catch (e) {
-      isMounted.current && setModalError(e.message)
+    } catch (error) {
+      isMounted.current && setModalError(error.message)
     }
 
     isMounted.current && setEncrypting(false)
@@ -123,14 +128,14 @@ const Component: React.FC<Props & WithStyles<typeof styles>> = props => {
     e.preventDefault()
 
     if (!password && password !== passwordConfirmation && isMounted.current) {
-      return setModalError('Passwords are not equal...')
-    }
-
-    try {
-      await storage.setBakerKeys(crypto.encryptSK(keys, password))
-      history.push(routes.DASHBOARD)
-    } catch (e) {
-      console.error(e)
+      setModalError('Passwords are not equal...')
+    } else {
+      try {
+        await storage.setBakerKeys(crypto.encryptSK(keys, password))
+        history.push(routes.DASHBOARD)
+      } catch (error) {
+        console.error(error)
+      }
     }
   }
 
